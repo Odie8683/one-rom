@@ -677,10 +677,10 @@ endif
 	@ls -ltr sdrr/build/$(BIN_PREFIX).elf
 	@ls -ltr sdrr/build/$(BIN_PREFIX).bin
 ifeq ($(MCU),rp2350)
-	@ls -ltr sdrr/build/$(BIN_PREFIX).uf2
+	-@ls -ltr sdrr/build/$(BIN_PREFIX).uf2
 endif
 ifeq ($(DFU_SUPPORTED),1)
-	@ls -ltr sdrr/build/$(BIN_PREFIX).dfu
+	-@ls -ltr sdrr/build/$(BIN_PREFIX).dfu
 endif
 	@echo "=========================================="
 

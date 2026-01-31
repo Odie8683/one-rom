@@ -1,77 +1,83 @@
-FROM piersfinlayson/one-rom-build:latest
+FROM ubuntu:24.04
 
 # Metadata
-LABEL org.opencontainers.image.title="One ROM"
-LABEL org.opencontainers.image.description="One ROM firmware and tooling container"
+LABEL org.opencontainers.image.title="One ROM Build Environment"
+LABEL org.opencontainers.image.description="Multi-platform build environment for One ROM firmware and host tooling"
 LABEL org.opencontainers.image.authors="Piers Finlayson <piers@piers.rocks>"
 LABEL org.opencontainers.image.url="https://piers.rocks"
 LABEL org.opencontainers.image.source="https://github.com/piersfinlayson/one-rom"
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.vendor="piers.rocks"
 
-# One ROM build args
-ARG CONFIG
-ARG MCU
-ARG HW_REV
-ARG ROM_CONFIGS
-ARG SWD
-ARG BOOT_LOGGING
-ARG MAIN_LOOP_LOGGING
-ARG MAIN_LOOP_ONE_SHOT
-ARG DEBUG_LOGGING
-ARG MCO
-ARG MCO2
-ARG OSC
-ARG FREQ
-ARG OVERCLOCK
-ARG STATUS_LED
-ARG BOOTLOADER
-ARG DISABLE_PRELOAD_TO_RAM
-ARG SERVE_ALG
-ARG GEN_OUTPUT_DIR
-ARG CARGO_PROFILE
-ARG EXTRA_C_FLAGS
-ARG COUNT_ROM_ACCESS
+# Build-time metadata (populated by CI/build scripts)
+ARG BUILD_DATE
+ARG VERSION
+ARG VCS_REF
+LABEL org.opencontainers.image.created=${BUILD_DATE}
+LABEL org.opencontainers.image.version=${VERSION}
+LABEL org.opencontainers.image.revision=${VCS_REF}
 
-# Clone the repository
-RUN git clone https://github.com/piersfinlayson/one-rom.git
-COPY config/docker/ /home/build/one-rom/config/docker/
+# Multiplatform support
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+ARG TARGETARCH
 
-# Build One ROM
-WORKDIR /home/build/one-rom
-WORKDIR /home/build/one-rom
-RUN env \
-    ${CONFIG:+CONFIG=$CONFIG} \
-    ${MCU:+MCU=$MCU} \
-    ${HW_REV:+HW_REV=$HW_REV} \
-    ${ROM_CONFIGS:+ROM_CONFIGS="$ROM_CONFIGS"} \
-    ${SWD:+SWD=$SWD} \
-    ${BOOT_LOGGING:+BOOT_LOGGING=$BOOT_LOGGING} \
-    ${MAIN_LOOP_LOGGING:+MAIN_LOOP_LOGGING=$MAIN_LOOP_LOGGING} \
-    ${MAIN_LOOP_ONE_SHOT:+MAIN_LOOP_ONE_SHOT=$MAIN_LOOP_ONE_SHOT} \
-    ${DEBUG_LOGGING:+DEBUG_LOGGING=$DEBUG_LOGGING} \
-    ${MCO:+MCO=$MCO} \
-    ${MCO2:+MCO2=$MCO2} \
-    ${OSC:+OSC=$OSC} \
-    ${FREQ:+FREQ=$FREQ} \
-    ${OVERCLOCK:+OVERCLOCK=$OVERCLOCK} \
-    ${STATUS_LED:+STATUS_LED=$STATUS_LED} \
-    ${BOOTLOADER:+BOOTLOADER=$BOOTLOADER} \
-    ${DISABLE_PRELOAD_TO_RAM:+DISABLE_PRELOAD_TO_RAM=$DISABLE_PRELOAD_TO_RAM} \
-    ${SERVE_ALG:+SERVE_ALG=$SERVE_ALG} \
-    ${GEN_OUTPUT_DIR:+GEN_OUTPUT_DIR=$GEN_OUTPUT_DIR} \
-    ${CARGO_PROFILE:+CARGO_PROFILE=$CARGO_PROFILE} \
-    ${EXTRA_C_FLAGS:+EXTRA_C_FLAGS=$EXTRA_C_FLAGS} \
-    ${COUNT_ROM_ACCESS:+COUNT_ROM_ACCESS=$COUNT_ROM_ACCESS} \
-    make test info-detail
+# Install base dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    dfu-util \
+    git \
+    jq \
+    libcurl4-openssl-dev \
+    libjson-c-dev \
+    libudev-dev \
+    libzip-dev \
+    sudo \
+    vice \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy build artifacts to output directory
-RUN cp -r sdrr/build /home/build/output/
+# Download ARM toolchain based on target platform
+# See https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads
+ARG ARM_GCC_VERSION=14.3.rel1
+RUN case "${TARGETPLATFORM}" in \
+    "linux/amd64") \
+        ARCH_SUFFIX="x86_64" ;; \
+    "linux/arm64") \
+        ARCH_SUFFIX="aarch64" ;; \
+    "linux/arm/v7") \
+        ARCH_SUFFIX="x86_64" ;; \
+    *) \
+        echo "Unsupported platform: ${TARGETPLATFORM}" && exit 1 ;; \
+    esac && \
+    wget https://developer.arm.com/-/media/Files/downloads/gnu/${ARM_GCC_VERSION}/binrel/arm-gnu-toolchain-${ARM_GCC_VERSION}-${ARCH_SUFFIX}-arm-none-eabi.tar.xz && \
+    tar -xf arm-gnu-toolchain-${ARM_GCC_VERSION}-${ARCH_SUFFIX}-arm-none-eabi.tar.xz && \
+    mv arm-gnu-toolchain-${ARM_GCC_VERSION}-${ARCH_SUFFIX}-arm-none-eabi /opt/ && \
+    rm arm-gnu-toolchain-${ARM_GCC_VERSION}-${ARCH_SUFFIX}-arm-none-eabi.tar.xz && \
+    ln -s /opt/arm-gnu-toolchain-${ARM_GCC_VERSION}-${ARCH_SUFFIX}-arm-none-eabi /opt/arm-toolchain
 
-# Output detailed firmware information
-RUN ELF_FILE=$(basename $(find sdrr/build -name "sdrr-stm32*.elf" -type f)) && \
-    /home/build/one-rom/rust/target/release/one-rom-info info -d /home/build/output/build/$ELF_FILE >> /home/build/output/one-rom-info.txt
+# Create build user
+RUN useradd -m -s /bin/bash build
 
-# Default to staying in the project directory
-WORKDIR /home/build/one-rom
+# Switch to build user
+USER build
+WORKDIR /home/build
+
+# Set TOOLCHAIN environment variable
+ENV TOOLCHAIN="/opt/arm-toolchain/bin"
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+RUN rustup target install thumbv7em-none-eabihf
+RUN cargo install wasm-pack cross cargo-dist
+ENV PATH="/home/build/.cargo/bin:${PATH}"
+
+# Install probe-rs
+RUN curl --proto '=https' --tlsv1.2 -LsSf https://github.com/probe-rs/probe-rs/releases/latest/download/probe-rs-tools-installer.sh | sh
+
+# Create output directory
+RUN mkdir -p /home/build/output
+
+WORKDIR /home/build
 VOLUME ["/home/build/output"]
