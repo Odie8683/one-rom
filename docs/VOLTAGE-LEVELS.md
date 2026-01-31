@@ -6,7 +6,11 @@ One of the biggest difficulties of this project, alongside hitting the timing re
 
 The STM32F1 series (64-bit variant) on the face of it has the required number of 5V tolerant (FT) GPIOs, but on further examination, there are not sufficient contiguous and starting at pin 0, FT pins on any port to hit the required performance - that is to allow the assembly code to perform optimal chip select comparisons, address lookups, and apply the results those to the data pins.
 
-Therefore the STM32F4 series was chosen, both to give sufficient raw horsepower (clock speed and flash instruction prefetch and cache), and also to provide the required FT hardware configuration.
+Therefore the STM32F4 series was initially chosen, followed by the RP2350, both to give sufficient raw horsepower (clock speed and flash instruction prefetch and cache), and also to provide the required FT hardware configuration.
+
+There are two areas which are important to understand when considering voltage levels:
+1. The logic level compatibility between One ROM and the retro system - that is, ensuring that One ROM's outputs are within the acceptable input levels of the retro system, and vice versa.  See [5V and 3.3V Logic Levels](#5v-and-33v-logic-levels).
+2. The absolute maximum voltage levels that One ROM can tolerate on its pins, especially during power-on, when One ROM's MCU VDD is not yet at 3.3V.  See [Absolute Maximum VIN](#absolute-maximum-vin).
 
 ## 5V and 3.3V Logic Levels
 
@@ -15,6 +19,8 @@ As One ROM's purpose is to replace 5V logic level ROMs, it must be compatible wi
 - [6502](http://www.6502.org/documents/datasheets/mos/mos_65ce02_mpu.pdf)
 - [6567](http://www.6502.org/documents/datasheets/mos/mos_6567_vic_ii_preliminary.pdf) (C64 VIC-II chip)
 - [6560/6561](http://www.6502.org/documents/datasheets/mos/mos_6560_6561_vic.pdf) (VIC-20 VIC chip)
+
+(A similar analysis has been done for the RP2350, although at the highest GPIO drive strength, 12mA, the RP2350 strictly contravenes the requires specification.  Therefore One ROM Fire uses 8mA drive strength, which is within specification.)
 
 ### One ROM outputs, 6502 inputs
 
@@ -48,8 +54,33 @@ One ROM's minimum low input voltage is greater than the 6502/6567/6560/6561's ma
 
 One ROM's minimum high input voltage is less than the 6502/6567/6560/6561's minimum high output voltage so we're good.
 
-### Absolute Maximum STM32F4 VIL
+## Absolute Maximum VIN
 
-The absolute maximum VIN for the STM32F4 on its FT pins is 5.5V.  This is _lower_ than the absolute maximum supply and input voltage of the 6502/6567/6560/6561 which is 7.0V.
+According to the MCU datasheets, the absolulte maximum rated voltage on any 5V tolerant pin is VDD + 4.0V for the STM32F4 and VDD + 3.63V on the RP2350.  There is also a 5.5V absolute maximum - so when VDD is at its usual 3.3V, the absolute maximum on any pin is 5.5V.
 
-Hence the STM32F4 is more sensitive to an over-voltage scenario than the original ICs.
+When VDD is 0V (before the voltage regulator is powering the chip), this means the absolute maximum voltage on any pin is 4.0V/3.63V (Ice/Fire).  When One ROM is installed in a retro system and powered on there is likely to be a 20us delay (see AP2112K-3.3TRG1 datasheet) between VCC being applied to One ROM and the voltage regulator outputting 3.3V to the MCU.
+
+During this time then, technically, according to the MCUs' datasheets, the voltage on any GPIO must not exceed 4.0V/3.63V.  This is the case for most pins on most retro host systems as most systems have a reset circuit, and the bus master(s) are often held in reset for much longer than 20us - so most pins will be a 0V.  However, in some cases, some CS lines are permanently pulled to 5V, either through pull-ups or directly.  This means that 5.0V is applied to those pins for around 20us before VDD comes up to 3.3V.
+
+System resets (where the internal host's reset line is used to reset the host system) typically do not trigger the 20us over-voltage scenario, as the MCU's VDD remains at already at 3.3V, as 5V remains applied to One ROM's VCC pin.  So, this applies to physical power-on (after power-off) events only.
+
+To provide confidence in One ROM as a solution given its use strictly contravening the MCUs' datasheet figures, validation testing has been done with both Ice and Fire 24 boards, to ensure it is tolerant of 5.0V being applied to a single CS pin through a 0R resistor, across many power on events.
+
+The test philosophy used was as follows:
+
+- Use a 555 timer circuit to drive a transistor to power One ROM on and off - around 2.5s on, 1.5s off for a 4s/0.25Hz cycle.
+- Hard pull (through a 0R resistor or wire) one CS pin (One ROM physical pin 20) to the 555/transistor switched VCC - i.e. it is powered at the same time as VCC is provided to One ROMs power pin, 24.
+- Assume that a One ROM will receive, in heavy use, an average of 10 power cycles in any day = ~3600 cycles a year.  Hence one hour of testing (900 cycles) is equivalent to around 3 months of heavy use.
+- Run the test for at least 24 hours = 6 years equivalent heavy use.
+- After the test, validate that the all pins still operate correctly, by ensuring One ROM 24 can still serve a 2364 C64 kernal ROM in a C64.  If any address, data or CS line were damaged, the C64 would fail to boot.
+
+Fire 24 serves as a reasonable proxy for Fire 28, as the designs are essentially identical, with a different GPIO mapping and couple more GPIOs used.
+
+The 2.5s/1.5s timing was chosen, using convenient 555 circuit component values, to give One ROM plenty of time to fully boot and stabilise, and enough time for internal capacitors to meaningfully discharge during the off period, bringing VDD back down to close to zero before the next cycle.  Remember - during the period when VDD is 3.3V, all pins are fully 5v tolerant (up to 5.5V), so the testing is focused on the power-on period only.
+
+Both Ice and Fire boards passed this test without issue.  The conclusion is that both One ROM Ice and Fire (using the STM32F4 and RP2350 respectively) can happily tolerate this over-voltage scenario under heavy use for extended periods of time.
+
+The precise boards versions tested were:
+
+- ice-24-f STM32F411RET6
+- fire-24-d RP2350A, A4 stepping
