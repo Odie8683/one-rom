@@ -1,73 +1,213 @@
-# Docker
+# One ROM Build Container
 
-This directory contains Dockerfiles for building One ROM in a consistent environment.
+This directory contains the files to build a One ROM build container.
 
-* `Dockerfile.build` - creates `one-rom-build` container for building One ROM.
-* `Dockerfile` - creates `one-rom` tooling and firmware, using `one-rom-build` container.
+It supports Linux, macOS, and Windows hosts (x86_64 and arm64). Docker Desktop automatically provides the Linux VM on macOS and Windows.
 
-Uses:
+Dependencies are installed in the container, so you do not need to install them on your host system.
 
-* Ubuntu 24.04
-* arm-gnu-toolchain-14.3.rel1-x86_64-arm-none
-* Latest Rust and probe-rs versions
+Example usage:
+
+```bash
+mkdir ./output
+docker run --rm -v $(pwd)/output:/home/build/output \
+    --name onerom-build ghcr.io/piersfinlayson/onerom-build:latest \
+    sh -c './clone.sh && \
+            cd one-rom && \
+            scripts/onerom.sh fire-24-d onerom-config/vic20-pal.json && \
+            ../copy-fw.sh'
+```
+
+The firmware is now available in `./output/` on your host:
+
+```bash
+$ ls -l ./output
+total 3088
+-rw-r--r--  1 pdf  wheel  393216 Jan 31 18:16 onerom_fire-24-d_vic20-pal.bin
+-rwxr-xr-x  1 pdf  wheel  398168 Jan 31 18:16 onerom_fire-24-d_vic20-pal.elf
+-rw-r--r--  1 pdf  wheel  786432 Jan 31 18:16 onerom_fire-24-d_vic20-pal.uf2
+```
 
 ## Building One ROM
 
-Either build via the [`one-rom` container](#building-one-rom-via-one-rom-container) or use the `one-rom-build` container directly, like this:
+To build One ROM using the build container, you have two options:
+
+* Use the container in the foreground, running the build commands directly.
+* Use the container in the background, running each command via `docker exec`.
+
+### Foreground
+
+This example:
+
+* creates a `./output/` directory on your host for the built firmware
+* clones the One ROM repo
+* builds One ROM for the `fire-24-d` configuration using the `onerom-config/vic20-pal.json` configuration file
+* copies the built firmware to the mounted output directory on your host
+* exits the container (which is then auto-deleted).
 
 ```bash
-docker run --name one-rom-builder piersfinlayson/one-rom-build:latest sh -c '
-git clone https://github.com/piersfinlayson/one-rom.git && \
-cd one-rom && \
-MCU=f401re HW_REV=24-f CONFIG=old-config/vic20-pal.mk make test info-detail
-'
-docker cp one-rom-builder:/home/build/one-rom/sdrr/build/sdrr-stm32f401re.elf /tmp/
-docker rm one-rom-builder
+mkdir -p ./output
+docker run -it --rm -v $(pwd)/output:/home/build/output --hostname onerom-build --name onerom-build ghcr.io/piersfinlayson/onerom-build:latest bash
+./clone.sh
+cd one-rom
+scripts/onerom.sh fire-24-d onerom-config/vic20-pal.json
+../copy-fw.sh
+exit
 ```
 
-Change the `MCU=f401re HW_REV=24-f CONFIG=old-config/vic20-pal.mk` values to the appropriate ones for your firmware.
+You can now retrieve the built firmware from your host at `./output/`.
 
-You can build additional configurations using the same container (i.e. not running `docker rm one-rom-builder`, but running further commands in `one-rom-builder`).  This avoids re-cloning the repo, and also avoids rebuilding all of the Rust tooling, which takes most of the build time.
+The first time you run `scripts/onerom.sh` it will take a while to build all of the Rust toolchain components.  Subsequent builds using the same container will be much faster.
 
-## Building `one-rom-build` Container
+### Background
 
-To create the one-rom-build container, from the repo root:
+This example is similar to the foreground example, but runs the container in the background and uses `docker exec` to run commands inside the container.
 
 ```bash
-docker buildx build \
-    --platform linux/amd64 \
-    --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
-    --build-arg VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev") \
-    --build-arg VCS_REF=$(git rev-parse HEAD 2>/dev/null || echo "unknown") \
-    -t piersfinlayson/one-rom-build:latest \
-    -f ci/docker/Dockerfile.build .
+mkdir -p ./output
+docker run -d -v $(pwd)/output:/home/build/output --name onerom-build ghcr.io/piersfinlayson/onerom-build:latest
+docker exec -it onerom-build ./clone.sh
+docker exec -it onerom-build sh -c 'cd one-rom && scripts/onerom.sh fire-24-d onerom-config/vic20-pal.json && ./copy-fw.sh'
 ```
 
-Then tag with the correct version number and push:
+You can now retrieve the built firmware from your host at `./output/`.
+
+When finished, stop and remove the container:
 
 ```bash
-docker tag piersfinlayson/one-rom-build:latest piersfinlayson/one-rom-build:x.y.z
-docker push piersfinlayson/one-rom-build:latest
-docker push piersfinlayson/one-rom-build:x.y.z
+docker stop onerom-build
+docker rm onerom-build
 ```
 
-## Building One ROM via `one-rom` Container
+## Programming One ROM
 
-To build One ROM, create the one-rom container, from the repo root:
+The easiest ways of programming One ROM using the firmware built in this container are:
+
+* [One ROM Studio](https://onerom.org/studio)
+* [One ROM Web](https://onerom.org/web)
+
+Both tools allow you to select locally built firmware files to program to your One ROM.
+
+However, it is possible to use `probe-rs`, `picotool` (One ROM Fire) and `dfu-util` (One ROM Ice) from within the container by giving the container access to the required hardware devices.  Use `--privileged` or `--device` flags to give the container access to USB devices.
+
+## Building the Container
+
+### Local Use
+
+To build the `onerom-build` container for local use only, from the repo root run:
 
 ```bash
-docker build \
-    -f ci/docker/Dockerfile \
-    -t piersfinlayson/one-rom:latest .
+ci/docker/build.sh
 ```
 
-To use non-default build configuration, pass in build arguments.  For example:
+The script takes an optional version argument, and also tags the container `latest`.
+
+### Release Version
+
+To build and push a multi-architecture version of the `onerom-build` container to the GitHub Container Registry, use buildx.
+
+#### Setting up buildx - Optional
+
+The script that follows sets up a buildx configuration called `onerom-multiarch` automatically, if it doesn't already exist.  This uses qemu locally to emulate non-native architectures.
+
+However, if you'd like to use another system for building a non-native architecture (i.e. a remote host that is natively that architecture) you can do that like this:
+- configure `LOCAL_ARCH` with the _local_ architecure (e.g. `linux/arm64`, when run on an Apple Silicon Mac, as `arm64` is natively supported by docker)
+- configure `REMOTE_ARCH` with the _remote_ architecture (e.g. `linux/amd64`, when using a remote `x86_64` linux host)
+- configure `SSH_CREDS` with your SSH details to the remote host:
 
 ```bash
-docker build \
-    --build-arg MCU=f401re \
-    --build-arg CONFIG=vic20-pal.mk \
-    --build-arg HW_REV=24-f \
-    -f ci/docker/Dockerfile \
-    -t piersfinlayson/sdrr-f401re-24-f-vic20-pal:latest .
+export LOCAL_ARCH=linux/arm64
+export REMOTE_ARCH=linux/amd64
+export SSH_CREDS=user@host
+docker buildx create --name onerom-multiarch --platform $LOCAL_ARCH --use
+docker buildx create --append --name onerom-multiarch --platform $REMOTE_ARCH ssh://$SSH_CREDS
 ```
+
+If you are natively using a `x86_64` linux host, and remotely building on an `arm64` host like a Rasperrby Pi, switch over the values of `LOCAL_ARCH` and `REMOTE_ARCH` above.
+
+Once created, inspect the builder to ensure both platforms are listed:
+
+```bash
+docker buildx inspect onerom-multiarch
+```
+
+#### Building and Pushing
+
+To build and push the container, run:
+
+```bash
+ci/docker/build-release.sh <version>
+```
+
+This uses docker buildx to build multi-architecture images for `x86_64` and `arm64`, and pushes them to GitHub Container Registry.  As well as `version`, it also tags the image as `latest`.
+
+#### GitHub Container Registry Credentials
+
+To push to GitHub Container Registry, you need to be authenticated.  The easiest way to do this is to create a personal access token (classic type) with Write and Read Package permissions.
+
+Then, for macOS, ensure that `~/.docker/config.json` looks like this
+
+```json
+{
+        "auths": {
+                "ghcr.io": {}
+        },
+        "credsStore": "osxkeychain",
+        "currentContext": "desktop-linux"
+}
+```
+
+Unlock your keychain like this:
+
+```bash
+security unlock-keychain ~/Library/Keychains/login.keychain-db
+```
+
+And login like this:
+
+```bash
+docker login ghcr.io -u username
+```
+
+When prompted for a password, provide your personal access token.
+
+Your credentials should now have been stored in your macOS keychain, and should be retrieved automatically by docker when pushing to GitHub Container Registry.
+
+## Building Other Tools
+
+As well as the core One ROM firmware, this container can be used to build other tools, such as One ROM Lab.  See their respective READMEs for more information.
+
+## Building One ROM Studio
+
+### Linux Version
+
+You can build the linux version of One ROM Studio using this container.  To build for your host's architecture:
+
+```bash
+cd rust/studio
+cargo build --release
+```
+
+### Windows Version
+
+It is possible to build a GNU Windows version of One ROM Studio using this container, by specifying the appropriate target.  For example:
+
+```bash
+cd rust/studio
+cargo build --release --target x86_64-pc-windows-gnu
+```
+
+This _does not_ create the Windows version of Studio which is available to download at https://onerom.org/studio, which is built on Windows using the MSVC target, and also creates the installer.  Building this on linux is extremely involved and not recommended, as it requires the Windows SDK.
+
+The Windows `arm64` version is also difficult to build on linux and not recommended.
+
+### macOS Version
+
+You cannot build the macOS version of One ROM Studio using this container, as it requires Xcode and macOS SDKs.
+
+### Release Builds
+
+For production releases a triple setup of Windows, macOS, and Linux (virtual) machines is required, as well as credentials for signing on Windows and macOS.
+
+See `/rust/studio/README.md` for more information.
+

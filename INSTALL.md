@@ -1,12 +1,16 @@
 # INSTALL
 
-one-rom requires a fairly involved toolchain to build, due to the extend of the project (embedded firmware, desktop application, webassembly, etc).  This document covers installing the toolchain and dependencies on linux (primarily focusing on an x86_64 Debian-based distribution, although notes are also provided for an ARM64 based host).
+One ROM requires a fairly involved toolchain to build, due to the extent of the project (embedded firmware, extensive RUST tooling, desktop application, webassembly, etc).
+
+You are _strongly_ recommended to use the [Docker container](ci/docker/README.md#building-one-rom) to build the One ROM firmware, as this contains a pre-configured build environment that works across multiple host platforms.
+
+If you'd like to build the toolchain and dependencies locally, read on.
+
+This document covers installing the toolchain and dependencies on linux (primarily focusing on an x86_64 Debian-based distribution, although notes are also provided for an ARM64 based host).
 
 Other hosts (Mac, Windows) are possible, and it is recommended to use macOS for building One ROM Studio for Mac, and Windows for building Windows installers.
 
 However, we strongly recommend sticking to a *nix based host (Linux or macOS) for building the One ROM firmware itself, and instructions for settig up a full Windows build host are not included below.
-
-You can choose to install the dependencies locally, or use the [Docker container](ci/docker/README.md) to build the One ROM firmware.
 
 0. Install pre-requisites
 
