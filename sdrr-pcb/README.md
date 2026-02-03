@@ -7,25 +7,26 @@ Contains SDRR PCB design files.  These are organised into two directories:
 
 ## Recommended Revisions
 
-Last Updated 28th January 2026.
+Last Updated 3rd February 2026.
 
 I recommend Fire over Ice boards for most users.  See [MCU-SELECTION.md](../docs/MCU-SELECTION.md) for a comparison between Fire and Ice capabilities.
 
-### Fire (RP2350)
+The following table lists the recommended verified designs.  Each design has been manufactured and assembled using JLCPCB's PCB assembly service, and verified to work correctly.
 
-The current recommended 24 pin hardware revision is [fire-24-d](./verified/fire-24-d/README.md).  This is a combined Pro (SWD) and micro USB version, with 4 image select jumpers (v0.6.1 onwards).  It supports PIO and CPU serving algorithms.  This is recommended over revisions A (Pro only) and B (USB only).
-
-The current recommended 28 pin hardware revision is [fire-28-a3](./verified/fire-28-a3/README.md).  This is a combined Pro (SWD) and USB-C version, with 2 image select pins.  (The 28 pin version does not have X pins.)  It supports PIO and CPU serving algorithms.  The incorrect SWD CLK/DIO silkscreen in A2 has been corrected in this revision.
-
-### Ice (STM32F4)
-
-The current recommended 24 pin hardware revision is [ice-24-j](./verified/ice-24-j/README.md).  This is a combined Pro (SWD) and USB version, with 4 image select pins (v0.6.1 onwards) and 2 X (special function) pins.  It supports both SWD programming and USB programming.
-
-There is no recommended 28 pin Ice version.  (Revision A does exist, but is not recommended and support may have been removed from the latest firware revisions.)
+| Model | MCU | Pins | USB | SWD | Image Select Pins | X Pins | PCB |
+|-------|-----|------|-----|-----|-------------------|--------|-------|
+| Fire  | RP2350 | 24 | Micro-B | ✓ | 4 | 2 | [fire-24-d](./verified/fire-24-d/README.md) |
+| Fire  | RP2354 | 24 | C | ✓ | 4 | 2 | [fire-24-e](./verified/fire-24-e/README.md) |
+| Ice   | STM3F4 | 24 | Micro-B | ✓ | 4 | 2 | [ice-24-j](./verified/ice-24-j/README.md) |
+| Fire  | RP2350 or RP2354 | 28 | C | ✓ | 2 | n/a | [fire-28-a3](./verified/fire-28-a3/README.md) |
 
 ## Notes on Fabrication
 
-All recommended designs have been manufactured and assembled using JLCPCB's PCB assembly service.  The gerbers and BOM files in each revision's `fab/` directory are compatible with JLCPCB's requirements.  However, you need to exercise care when submitting the order to ensure the correct options are selected.  In particular:
+All recommended designs have been manufactured and assembled using JLCPCB's PCB assembly service.  The gerbers and BOM/POS files in each revision's `fab/` directory are compatible with JLCPCB's requirements.
+
+Some variants offer multiple sets of BOM/POS files or different combinations of components.  Read the relevant revision's README for details.
+
+You need to exercise care when submitting the order to ensure the correct options are selected.  In particular:
 
 - Select economic assembly, not standard assembly, for cost reasons.
 - Use standard 1.6mm PCB thickness.  You probably want HASL with lead finish for cost reasons.

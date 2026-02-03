@@ -1,6 +1,6 @@
 # Fire 24 Rev E
 
-**Unverified**
+**Verified**
 
 23xx Fire (RP2350 24 pin) combined USB+SWD One ROM PCB.  Includes 4 image select jumpers.  Supports PIO and CPU serving algorithms.  USB-C.
 
@@ -9,7 +9,7 @@ This board is intended for production and panelisation:
 - The board is now rectangular, making it easier to panelise.
 - Pin assigment is slightly changed from D.
 - Many passives moved to 0201 to make USB-C viable.  This is requires JLC standard assembly, but that is also required for panelisation.
-- Requires RP2354A only (in-built flash), as no footprint for external flash is provided.  Again, this makd USB-C viable.
+- Requires RP2354A only (in-built flash), as no footprint for external flash is provided.  Again, this makes USB-C viable.
 
 ## Contents
 
