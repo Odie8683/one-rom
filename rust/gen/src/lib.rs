@@ -13,15 +13,15 @@ pub mod firmware;
 pub mod image;
 pub mod meta;
 
-pub use builder::{Builder, Config, FileData, FileSpec, License, ChipConfig, ChipSetConfig};
-pub use image::{CsConfig, CsLogic, Chip, ChipSet, ChipSetType, SizeHandling};
+pub use builder::{Builder, ChipConfig, ChipSetConfig, Config, FileData, FileSpec, License};
+pub use image::{Chip, ChipSet, ChipSetType, CsConfig, CsLogic, SizeHandling};
 pub use image::{PAD_BLANK_BYTE, PAD_NO_CHIP_BYTE};
 pub use meta::{MAX_METADATA_LEN, Metadata, PAD_METADATA_BYTE};
 
 use alloc::string::String;
+use onerom_config::chip::ChipType;
 use onerom_config::fw::{FirmwareVersion, ServeAlg};
 use onerom_config::mcu::Family;
-use onerom_config::chip::ChipType;
 
 /// Version of metadata produced by this version of the crate
 pub const METADATA_VERSION: u32 = 1;

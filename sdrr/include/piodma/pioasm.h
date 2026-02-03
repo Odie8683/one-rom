@@ -170,7 +170,7 @@ _Static_assert((MAX_PIO_INSTRS == 32), "MAX_PIO_INSTRS must be 32");
 // Add an instruction to the current PIO program.
 #if defined(DEBUG_LOGGING) && (DEBUG_LOGGING == 1)
 #define PIO_ADD_INSTR(INST)     if (__pio_offset[__block] >= MAX_PIO_INSTRS) {      \
-                                    LOG("!!! PIO program overflow in PIO block %d SM %d", __block, __sm);   \
+                                    ERR("PIO program overflow in PIO block %d SM %d", __block, __sm);   \
                                     limp_mode(LIMP_MODE_INVALID_CONFIG);            \
                                 } else {                                            \
                                     instr_scratch[__pio_offset[__block]++] = INST;  \

@@ -6,7 +6,7 @@ CC = gcc
 
 # Note the output -D'__attribute__(x)=' is to neutralise section headers in
 # the auto-generated source files, which macOS doesn't like.
-CFLAGS = $(EXTRA_C_FLAGS) -DTEST_BUILD -Werror -Wall -Wextra -g -I include -I../sdrr/include -I../output -I../output -D'__attribute__(x)=' -fshort-enums
+CFLAGS = $(EXTRA_C_FLAGS) -DTEST_BUILD -Werror -Wall -Wextra -Wimplicit-fallthrough -g -I include -I../sdrr/include -I../output -I../output -D'__attribute__(x)=' -fshort-enums
 LDFLAGS = -lcurl -lzip -ljson-c
 TARGET = image-test
 BUILD_DIR = build

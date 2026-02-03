@@ -382,7 +382,7 @@ static void pioram_load_programs(pioram_config_t *config) {
     DEBUG("Checking RAM table address 0x%08X is %uKB aligned", config->ram_table_addr, alignment_size);
     DEBUG("High bits mask: 0x%08X, low bits mask: 0x%08X", high_bits_mask, low_bits_mask);
     if (config->ram_table_addr & low_bits_mask) {
-        LOG("!!! PIO RAM serving requires RAM table address to be %uKB aligned",
+        ERR("PIO RAM serving requires RAM table address to be %uKB aligned",
             alignment_size);
         limp_mode(LIMP_MODE_INVALID_CONFIG);
     }
@@ -451,10 +451,10 @@ static void pioram_load_programs(pioram_config_t *config) {
     uint8_t data_read_check_count = PIORAM_WRITE_ACTIVE_CHECK_COUNT;
     if (data_read_check_count > PIORAM_WRITE_ACTIVE_CHECK_MAX) {
         data_read_check_count = PIORAM_WRITE_ACTIVE_CHECK_MAX;
-        LOG("!!! PIORAM WE ACTIVE CHECK COUNT too high, limiting to %d", PIORAM_WRITE_ACTIVE_CHECK_MAX);
+        ERR("PIORAM WE ACTIVE CHECK COUNT too high, limiting to %d", PIORAM_WRITE_ACTIVE_CHECK_MAX);
     } else if (data_read_check_count < PIORAM_WRITE_ACTIVE_CHECK_MIN) {
         data_read_check_count = 1;
-        LOG("!!! PIORAM WE ACTIVE CHECK COUNT too low, setting to 1");
+        ERR("PIORAM WE ACTIVE CHECK COUNT too low, setting to 1");
     }
     for (int ii = 0; ii < data_read_check_count; ii++) {
         // Read /CE and /W

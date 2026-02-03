@@ -70,7 +70,10 @@ static void init_address_mangler(
         case CHIP_TYPE_23512:
             mangler->cs1_pin = config->mcu.pins.cs1.pin_23512;
             mangler->cs2_pin = config->mcu.pins.cs2.pin_23512;
-            mangler->cs3_pin = config->mcu.pins.cs3.pin_23512;
+            break;
+
+        case CHIP_TYPE_231024:
+            mangler->cs1_pin = config->mcu.pins.cs1.pin_231024;
             break;
 
         case CHIP_TYPE_2716:
@@ -164,10 +167,46 @@ void create_address_mangler(const json_config_t* config, const sdrr_rom_type_t r
             }
         }
     } else {
-        // CS pins are not part of address space for 28 pin ROMs, but we do
-        // need to left shift address pins
+#if defined(RP235X)
+        // RP235X: CS pins ARE part of address space for 28 pin ROMs
+        // Find the minimum across address AND CS pins
+        uint8_t min_pin = 255;
+        for (int ii = 0; ii < MAX_ADDR_LINES; ii++) {
+            if (address_mangler.addr_pins[ii] < min_pin) {
+                min_pin = address_mangler.addr_pins[ii];
+            }
+        }
+        if (address_mangler.cs1_pin != 255 && address_mangler.cs1_pin < min_pin) {
+            min_pin = address_mangler.cs1_pin;
+        }
+        if (address_mangler.cs2_pin != 255 && address_mangler.cs2_pin < min_pin) {
+            min_pin = address_mangler.cs2_pin;
+        }
+        if (address_mangler.cs3_pin != 255 && address_mangler.cs3_pin < min_pin) {
+            min_pin = address_mangler.cs3_pin;
+        }
+
+        // Subtract minimum from all address pins
+        for (int ii = 0; ii < MAX_ADDR_LINES; ii++) {
+            if (address_mangler.addr_pins[ii] != 255) {
+                address_mangler.addr_pins[ii] -= min_pin;
+            }
+        }
         
-        // Find the minimum address pin
+        // Subtract minimum from all CS pins
+        if (address_mangler.cs1_pin != 255) {
+            address_mangler.cs1_pin -= min_pin;
+        }
+        if (address_mangler.cs2_pin != 255) {
+            address_mangler.cs2_pin -= min_pin;
+        }
+        if (address_mangler.cs3_pin != 255) {
+            address_mangler.cs3_pin -= min_pin;
+        }
+#endif // RP235X
+#if defined(STM32F4)
+        // STM32F4: CS pins are NOT part of address space for 28 pin ROMs
+        // Only left shift address pins
         uint8_t min_addr_pin = 255;
         for (int ii = 0; ii < MAX_ADDR_LINES; ii++) {
             if (address_mangler.addr_pins[ii] < min_addr_pin) {
@@ -175,12 +214,12 @@ void create_address_mangler(const json_config_t* config, const sdrr_rom_type_t r
             }
         }
 
-        // Now subtract it off all address pins
         for (int ii = 0; ii < MAX_ADDR_LINES; ii++) {
             if (address_mangler.addr_pins[ii] != 255) {
                 address_mangler.addr_pins[ii] -= min_addr_pin;
             }
         }
+#endif // STM32F4
     }
 
 #if defined(DEBUG_TEST)
@@ -207,7 +246,16 @@ static struct {
 void create_byte_demangler(const json_config_t* config) {
     memcpy(byte_demangler.data_pins, config->mcu.pins.data, sizeof(byte_demangler.data_pins));
     if (!strcmp(config->mcu.family, "rp2350")) {
+        // See how many data pins are valid
+        uint8_t num_valid_data_pins = 0;
         for (int ii = 0; ii < NUM_DATA_LINES; ii++) {
+            if (config->mcu.pins.data[ii] < 255) {
+                num_valid_data_pins++;
+            } else {
+                break;
+            }
+        }
+        for (int ii = 0; ii < num_valid_data_pins; ii++) {
             // RP2350 uses a higher byte for data lines, but still expects to
             // read a single byte at a time - the RP2350 hardware takes care
             // of getting the value shifted. 
@@ -218,13 +266,13 @@ void create_byte_demangler(const json_config_t* config) {
 }
 
 // lookup_rom_byte - Simulates the lookup of a byte from the ROM image based on the mangled address
-uint8_t lookup_rom_byte(uint8_t set, uint16_t mangled_addr) {  // Removed unused CS parameters
+uint8_t lookup_rom_byte(uint8_t set, uint32_t mangled_addr) {  // Removed unused CS parameters
     return rom_set[set].data[mangled_addr];
 }
 
-uint16_t create_mangled_address(
+uint32_t create_mangled_address(
     size_t rom_pins,
-    uint16_t logical_addr,
+    uint32_t logical_addr,
     uint8_t cs1,
     uint8_t cs2,
     uint8_t cs3,
@@ -233,7 +281,9 @@ uint16_t create_mangled_address(
 ) {
     assert(address_mangler.initialized);
     
-    uint16_t mangled = 0;
+    uint32_t mangled = 0;
+
+    uint8_t max_addr_pins;
     
     if (rom_pins == 24) {
         // Strictly these asserts aren't valid for RP2350 as one could use later pins for CS lines,
@@ -243,9 +293,9 @@ uint16_t create_mangled_address(
         if (address_mangler.cs2_pin != 255) {
             assert(address_mangler.cs2_pin <= 15);
             // CS2 does not have to be provided
-        }
-        if (address_mangler.cs3_pin != 255) {
-            assert(address_mangler.cs3_pin <= 15);
+            if (address_mangler.cs3_pin != 255) {
+                assert(address_mangler.cs3_pin <= 15);
+            }
             // CS3 does not have to be provided
         }
         assert(address_mangler.x1_pin <= 15);
@@ -259,12 +309,31 @@ uint16_t create_mangled_address(
         if (cs3 == 1) mangled |= (1 << address_mangler.cs3_pin);
         if (x1 == 1)  mangled |= (1 << address_mangler.x1_pin);  
         if (x2 == 1)  mangled |= (1 << address_mangler.x2_pin);
+
+        max_addr_pins = 16;
+    } else {
+    // 28-pin ROMs
+        max_addr_pins = 16;
+#if defined(RP235X)
+        // RP235X: CS lines are part of the address space
+        // Map CS bits to their physical pin positions
+        if (cs1 != 255) {
+            if (cs1 == 1) mangled |= (1 << address_mangler.cs1_pin);
+        }
+        if (cs2 != 255 && address_mangler.cs2_pin != 255) {
+            if (cs2 == 1) mangled |= (1 << address_mangler.cs2_pin);
+        }
+        if (cs3 != 255 && address_mangler.cs3_pin != 255) {
+            if (cs3 == 1) mangled |= (1 << address_mangler.cs3_pin);
+        }
+        max_addr_pins = 18;
+#endif // RP235X
     }
     
     // Map logical address bits to configured GPIO positions
     for (int i = 0; i < MAX_ADDR_LINES; i++) {
         if (logical_addr & (1 << i)) {
-            assert(address_mangler.addr_pins[i] <= 15);
+            assert(address_mangler.addr_pins[i] <= (max_addr_pins-1));
             mangled |= (1 << address_mangler.addr_pins[i]);
         }
     }
@@ -277,7 +346,7 @@ uint8_t demangle_byte(uint8_t mangled_byte) {
     
     uint8_t logical = 0;
     
-    for (int i = 0; i < NUM_DATA_LINES; i++) {
+    for (int i = 0; i < 8; i++) {
         assert(byte_demangler.data_pins[i] <= 7);
         if (mangled_byte & (1 << byte_demangler.data_pins[i])) {
             logical |= (1 << i);
@@ -296,6 +365,7 @@ const char* rom_type_to_string(sdrr_rom_type_t rom_type) {
         case CHIP_TYPE_23128: return "23128";
         case CHIP_TYPE_23256: return "23256";
         case CHIP_TYPE_23512: return "23512";
+        case CHIP_TYPE_231024: return "231024";
         case CHIP_TYPE_2716: return "2716";
         case CHIP_TYPE_2732: return "2732";
         case CHIP_TYPE_2764: return "2764";
@@ -372,6 +442,7 @@ size_t get_expected_rom_size(sdrr_rom_type_t rom_type) {
         case CHIP_TYPE_23128: return 16384;
         case CHIP_TYPE_23256: return 32768;
         case CHIP_TYPE_23512: return 65536;
+        case CHIP_TYPE_231024: return 131072;
         case CHIP_TYPE_2716: return 2048;
         case CHIP_TYPE_2732: return 4096;
         case CHIP_TYPE_2764: return 8192;
@@ -389,6 +460,7 @@ sdrr_rom_type_t rom_type_from_string(const char* type_str) {
     else if (strcmp(type_str, "23128") == 0) return CHIP_TYPE_23128;
     else if (strcmp(type_str, "23256") == 0) return CHIP_TYPE_23256;
     else if (strcmp(type_str, "23512") == 0) return CHIP_TYPE_23512;
+    else if (strcmp(type_str, "231024") == 0) return CHIP_TYPE_231024;
     else if (strcmp(type_str, "2704") == 0) return CHIP_TYPE_2704;
     else if (strcmp(type_str, "2708") == 0) return CHIP_TYPE_2708;
     else if (strcmp(type_str, "2716") == 0) return CHIP_TYPE_2716;

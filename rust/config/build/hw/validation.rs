@@ -187,7 +187,7 @@ impl Chip {
     pub fn max_addr_pins(&self) -> u8 {
         match self.pins.quantity {
             24 => 16, // Includes CS and X pins
-            28 => 16, // Just addr pins
+            28 => 18, // Includes CS lines (to allow for 231024 which uses /OE as address line) 
             40 => 19, // Just addr pins
             _ => panic!(
                 "Unsupported ROM type {}, expected 24, 28, or 40-pin ROM",

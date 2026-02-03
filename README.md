@@ -12,7 +12,7 @@ Replaces failed ROMs in Commodore 64s, VIC-20s, PETs, Ataris, BBC, TIs, disk dri
 
 ROM types replaced:
 - 24 pin: 2704, 2708, 2716, 2732, 2316, 2332, 2364
-- 28 pin: 2764, 27128, 27256, 27512, 23128, 23256, 23512
+- 28 pin: 2764, 27128, 27256, 27512, 23128, 23256, 23512, 231024
 
 As of the latest firmware, One ROM also supports RAM chips of the correct footprint, including the 6116 and 2016 2K SRAM chips.
 

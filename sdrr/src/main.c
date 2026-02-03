@@ -138,7 +138,7 @@ uint8_t metadata_present(const sdrr_info_t *info) {
         if (metadata->version == 1) {
             LOG("Metadata v%d", metadata->version);
         } else {
-            LOG("!!! Unsupported metadata version: %d", metadata->version);
+            ERR("Unsupported metadata version: %d", metadata->version);
             present = 0;
         }
     } else {
@@ -223,7 +223,7 @@ void process_firmware_overrides(
     else if (set->extra_info == 0) {
         LOG("No extra info in ROM set - no overrides present");
     } else {
-        LOG("!!! Unsupported extra_info value in ROM set: %d", set->extra_info);
+        ERR("Unsupported extra_info value in ROM set: %d", set->extra_info);
     }
 }
 
@@ -311,7 +311,7 @@ int main(void) {
     } else if (!md) {
         LOG("No metadata");
     } else {
-        LOG("!!! No ROM sets");
+        ERR("No ROM sets");
     }
 
     // Check the bit mode
@@ -319,7 +319,7 @@ int main(void) {
         sdrr_runtime_info.bit_mode = BIT_MODE_16;
         LOG("16-bit mode");
 #if defined(STM32F4)
-        LOG("!!! 16-bit mode not supported on STM32F4");
+        ERR("16-bit mode not supported on STM32F4");
         limp_mode(LIMP_MODE_INVALID_BUILD);
 #endif // STM32F4
     } else {
@@ -421,7 +421,7 @@ int main(void) {
     DEBUG("RAM start: 0x%08X, end: 0x%08X", (unsigned int)sdrr_info_ram_start, (unsigned int)sdrr_info_ram_end);
     DEBUG("RAM size: 0x%08X bytes, required size: 0x%08X bytes", ram_size, required_size);
     if (required_size > ram_size) {
-        LOG("!!! Not enough RAM for sdrr_info and related data");
+        ERR("Not enough RAM for sdrr_info and related data");
     }
     // Continue anyway :-|
 
@@ -490,7 +490,7 @@ int main(void) {
     ram_func(info, rom_set);
 #endif // EXECUTE_FROM_RAM
 
-    LOG("!!! Unreachable code reached - main_loop() returned or never executed");
+    ERR("Unreachable code reached - main_loop() returned or never executed");
 
     return 0;
 }

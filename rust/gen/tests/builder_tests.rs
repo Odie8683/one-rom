@@ -858,7 +858,10 @@ mod tests {
         let rom_info0 = RomInfoStruct::parse(&metadata_buf, rom_info0_offset);
 
         // Validate Set 0 ROM info
-        assert_eq!(rom_info0.rom_type, CHIP_TYPE_2364, "Set 0 ROM type mismatch");
+        assert_eq!(
+            rom_info0.rom_type, CHIP_TYPE_2364,
+            "Set 0 ROM type mismatch"
+        );
         assert_eq!(rom_info0.cs1_state, CsLogic::ActiveLow.c_enum_val());
         assert_eq!(rom_info0.cs2_state, CsLogic::Ignore.c_enum_val());
         assert_eq!(rom_info0.cs3_state, CsLogic::Ignore.c_enum_val());
@@ -875,7 +878,10 @@ mod tests {
         let rom_info1 = RomInfoStruct::parse(&metadata_buf, rom_info1_offset);
 
         // Validate Set 1 ROM info
-        assert_eq!(rom_info1.rom_type, CHIP_TYPE_2332, "Set 1 ROM type mismatch");
+        assert_eq!(
+            rom_info1.rom_type, CHIP_TYPE_2332,
+            "Set 1 ROM type mismatch"
+        );
         assert_eq!(rom_info1.cs1_state, CsLogic::ActiveLow.c_enum_val());
         assert_eq!(rom_info1.cs2_state, CsLogic::ActiveHigh.c_enum_val());
         assert_eq!(rom_info1.cs3_state, CsLogic::Ignore.c_enum_val());
@@ -3828,7 +3834,8 @@ mod tests {
                     Ok((metadata_buf, _rom_images_buf)) => {
                         // Verify filename if build succeeded
                         let header = MetadataHeader::parse(&metadata_buf);
-                        let chip_set_offset = (header.chip_sets_ptr - metadata_flash_start) as usize;
+                        let chip_set_offset =
+                            (header.chip_sets_ptr - metadata_flash_start) as usize;
                         let chip_set = RomSetStruct::parse(&metadata_buf, chip_set_offset);
                         let rom_array_offset = (chip_set.chips_ptr - metadata_flash_start) as usize;
                         let rom_info_ptr = u32::from_le_bytes([
@@ -4140,7 +4147,8 @@ mod tests {
                     Ok((metadata_buf, _rom_images_buf)) => {
                         // If build succeeded, verify null byte handling
                         let header = MetadataHeader::parse(&metadata_buf);
-                        let chip_set_offset = (header.chip_sets_ptr - metadata_flash_start) as usize;
+                        let chip_set_offset =
+                            (header.chip_sets_ptr - metadata_flash_start) as usize;
                         let chip_set = RomSetStruct::parse(&metadata_buf, chip_set_offset);
                         let rom_array_offset = (chip_set.chips_ptr - metadata_flash_start) as usize;
                         let rom_info_ptr = u32::from_le_bytes([

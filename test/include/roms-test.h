@@ -57,16 +57,16 @@ typedef struct {
 // query-roms.c
 extern void create_address_mangler(const json_config_t* config, const sdrr_rom_type_t rom_type);
 extern void create_byte_demangler(const json_config_t* config);
-extern uint16_t create_mangled_address(
+extern uint32_t create_mangled_address(
     size_t rom_pins,
-    uint16_t logical_addr,
+    uint32_t logical_addr,
     uint8_t cs1_active,
     uint8_t cs2_active,
     uint8_t cs3_active,
     uint8_t x1_active,
     uint8_t x2_active
 );
-extern uint8_t lookup_rom_byte(uint8_t set, uint16_t mangled_addr);
+extern uint8_t lookup_rom_byte(uint8_t set, uint32_t mangled_addr);
 extern uint8_t demangle_byte(uint8_t mangled_byte);
 extern const char* rom_type_to_string(sdrr_rom_type_t rom_type);
 extern uint8_t get_num_cs(sdrr_rom_type_t);

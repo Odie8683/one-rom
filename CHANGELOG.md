@@ -2,6 +2,11 @@
 
 All notables changes between versions are documented in this file.
 
+## v0.6.3 - 2026-02-03
+
+- Added 231024 mask programmed ROM support.  Used by BBC Master and Apple IIgs.  (Only tested on BBC Master.)
+- Add some Studio keyboard shortcuts (r for rescan, f for flash).
+
 ## v0.6.2 - 2026-01-27
 
 This release of One ROM introduces RAM support - for 6116 and 2016 2KB 24-pin static RAM chips, using Fire 24 C and onwards hardware revisions.

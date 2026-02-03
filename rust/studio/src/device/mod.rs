@@ -13,8 +13,9 @@ mod usb;
 mod view;
 
 use futures::stream::{self, Stream, StreamExt};
+use iced::keyboard::Key;
 use iced::widget::Column;
-use iced::{Element, Subscription, Task};
+use iced::{Element, Subscription, Task, event, keyboard};
 #[allow(unused_imports)]
 use log::{debug, error, info, trace, warn};
 use onerom_config::Model;
@@ -323,7 +324,23 @@ impl Device {
 
     /// Device subscriptions
     pub fn subscription(&self) -> Subscription<Message> {
-        Subscription::none()
+        let mut subs = vec![];
+
+        #[allow(clippy::collapsible_if)]
+        subs.push(event::listen_with(|event, status, _id| {
+            if let iced::Event::Keyboard(keyboard::Event::KeyPressed {
+                key: Key::Character(ref c),
+                ..
+            }) = event
+            {
+                if status == event::Status::Ignored && c.as_ref() == "r" {
+                    return Some(Message::KeyRescan);
+                }
+            }
+            None
+        }));
+
+        Subscription::batch(subs)
     }
 }
 

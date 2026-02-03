@@ -9,9 +9,9 @@ use iced::Task;
 use log::{debug, error, info, trace, warn};
 use std::path::PathBuf;
 
+use onerom_config::chip::ChipType;
 use onerom_config::hw::{Board, Model};
 use onerom_config::mcu::Variant as McuVariant;
-use onerom_config::chip::ChipType;
 use onerom_fw::net::Release;
 
 use crate::app::AppMessage;
@@ -24,6 +24,7 @@ use crate::create::file::{
 use crate::create::hw::{
     detect_hardware, detected_hardware_info, flash_firmware, flash_firmware_result,
 };
+use crate::device::Device;
 use crate::studio::RuntimeInfo;
 use crate::task_from_msg;
 
@@ -67,6 +68,7 @@ pub enum Message {
     SaveFirmwareComplete,
 
     // Flash firmware
+    KeyFlashFirmware,
     FlashFirmware,
     FlashFirmwareResult(Result<(), String>),
 
@@ -82,7 +84,12 @@ pub enum Message {
 }
 
 // Main Create Message handling function
-pub fn message(create: &mut Create, runtime_info: &RuntimeInfo, msg: Message) -> Task<AppMessage> {
+pub fn message(
+    create: &mut Create,
+    runtime_info: &RuntimeInfo,
+    device: &Device,
+    msg: Message,
+) -> Task<AppMessage> {
     match msg {
         // Hardware and firmware release picklist values changed
         Message::ModelSelected(model) => {
@@ -145,6 +152,18 @@ pub fn message(create: &mut Create, runtime_info: &RuntimeInfo, msg: Message) ->
         Message::SaveFirmwareComplete => save_firmware_complete(create),
 
         // Flash firmware
+        Message::KeyFlashFirmware => {
+            if runtime_info.image().is_some()
+                && !create.is_building()
+                && !create.is_busy()
+                && device.is_ready()
+            {
+                flash_firmware(create, runtime_info)
+            } else {
+                trace!("Flash firmware requested but device not ready or create busy");
+                Task::none()
+            }
+        }
         Message::FlashFirmware => flash_firmware(create, runtime_info),
         Message::FlashFirmwareResult(result) => flash_firmware_result(create, result),
 
@@ -211,6 +230,7 @@ impl std::fmt::Display for Message {
             }
             Message::SaveFirmwareComplete => write!(f, "SaveFirmwareComplete"),
 
+            Message::KeyFlashFirmware => write!(f, "KeyFlashFirmware"),
             Message::FlashFirmware => write!(f, "FlashFirmware"),
             Message::FlashFirmwareResult(result) => {
                 write!(f, "FlashFirmwareResult({:?})", result)

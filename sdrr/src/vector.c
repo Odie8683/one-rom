@@ -152,7 +152,7 @@ void Reset_Handler(void) {
     uint32_t code_size = (unsigned int)((char*)&_main_loop_end - (char*)&_main_loop_start);
 #if defined(BOOT_LOGGING)
     if (code_size > (unsigned int)((char*)&_ram_func_end - (char*)&_ram_func_start)) {
-        LOG("!!! Code size too large for RAM function area");
+        ERR("Code size too large for RAM function area");
     }
 #endif // BOOT_LOGGING
     copy_func_to_ram((void (*)(void))(&_main_loop_start), (uint32_t)&_ram_func_start, code_size);

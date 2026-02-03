@@ -5,12 +5,12 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
+use onerom_config::chip::ChipType;
 use onerom_config::fw::ServeAlg;
 use onerom_config::hw::Board;
 use onerom_config::mcu::{Port, Variant as McuVariant};
-use onerom_config::chip::ChipType;
 
-use onerom_gen::image::{CsConfig, Chip, ChipSet, ChipSetType, SizeHandling};
+use onerom_gen::image::{Chip, ChipSet, ChipSetType, CsConfig, SizeHandling};
 
 use crate::fw::PllConfig;
 

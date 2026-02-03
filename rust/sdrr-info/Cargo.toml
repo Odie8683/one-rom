@@ -10,10 +10,11 @@ license = "MIT"
 keywords = ["embedded", "rom", "eeprom", "eprom", "flash"]
 
 [dependencies]
+
+sdrr-fw-parser = { version = "0.6.3", features = ["std"] }
+
 anyhow = "1.0"
 chrono = "0.4"
 clap = { version = "4.5.42", features = ["derive"] }
 goblin = "0.10"
 smol = "2.0"
-
-sdrr-fw-parser = { version = "0.6.2", features = ["std"] }

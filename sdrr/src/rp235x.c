@@ -66,7 +66,7 @@ void setup_vbus_interrupt(void) {
     // Check we have the information required to enable DFU
     if ((sdrr_info.extra->usb_port != PORT_0) ||
         (sdrr_info.extra->vbus_pin >= MAX_USED_GPIOS)) {
-        LOG("!!! Invalid USB port or pin for VBUS detect - not enabling USB DFU");
+        ERR("Invalid USB port or pin for VBUS detect - not enabling USB DFU");
         return;
     }
     uint8_t vbus_pin = sdrr_info.extra->vbus_pin;
@@ -126,7 +126,7 @@ uint8_t calculate_pll_settings(
     uint32_t target_freq_mhz = config->sys_clock_freq_mhz;
 
     if ((target_freq_mhz > RP235X_STOCK_CLOCK_SPEED_MHZ) && (!overclock)) {
-        LOG("!!! Requested frequency %dMHz exceeds max %dMHz - cannot calculate PLL",
+        ERR("Requested frequency %dMHz exceeds max %dMHz - cannot calculate PLL",
             target_freq_mhz, RP235X_STOCK_CLOCK_SPEED_MHZ);
         return 0;
     }
@@ -207,7 +207,7 @@ void get_clock_config(rp235x_clock_config_t *config) {
     } else if (sdrr_runtime_info.fire_freq < RP235X_MAX_CONFIGURABLE_MHZ) {
         config->sys_clock_freq_mhz = sdrr_runtime_info.fire_freq;
     } else {
-        LOG("!!! Freq too high %d/%dMHz - using default", sdrr_runtime_info.fire_freq, RP235X_MAX_CONFIGURABLE_MHZ);
+        ERR("Freq too high %d/%dMHz - using default", sdrr_runtime_info.fire_freq, RP235X_MAX_CONFIGURABLE_MHZ);
         config->sys_clock_freq_mhz = RP235X_STOCK_CLOCK_SPEED_MHZ;
     }
 
@@ -216,7 +216,7 @@ void get_clock_config(rp235x_clock_config_t *config) {
         if (sdrr_runtime_info.overclock_enabled) {
             LOG("OC - %dMHz", config->sys_clock_freq_mhz);
         } else {
-            LOG("!!! No OC - cap %dMHz", RP235X_STOCK_CLOCK_SPEED_MHZ);
+            ERR("No OC - cap %dMHz", RP235X_STOCK_CLOCK_SPEED_MHZ);
             config->sys_clock_freq_mhz = RP235X_STOCK_CLOCK_SPEED_MHZ;
         }
     }
@@ -227,7 +227,7 @@ void get_clock_config(rp235x_clock_config_t *config) {
         config,
         sdrr_runtime_info.overclock_enabled
     )) {
-        LOG("!!! No valid PLL - using CT %dMHz", TARGET_FREQ_MHZ);
+        ERR("No valid PLL - using CT %dMHz", TARGET_FREQ_MHZ);
         config->sys_clock_freq_mhz = TARGET_FREQ_MHZ;  
         config->pll_refdiv = PLL_SYS_REFDIV;
         config->pll_sys_fbdiv = PLL_SYS_FBDIV;
@@ -289,7 +289,7 @@ void setup_gpio(void) {
             GPIO_PAD(sdrr_info.pins->data[ii]) |= PAD_DRIVE(PAD_DRIVE_8MA) | PAD_SLEW_FAST;
             GPIO_CTRL(pin) = GPIO_CTRL_FUNC_SIO;
         } else {
-            LOG("!!! Invalid data pin %d", pin);
+            ERR("Invalid data pin %d", pin);
         }
     }
 
@@ -302,7 +302,7 @@ void setup_gpio(void) {
             SIO_GPIO_OE_SET_PIN(pin);
             SIO_GPIO_OUT_SET_PIN(pin);
         } else {
-            LOG("!!! Invalid LED %d", pin);
+            ERR("Invalid LED %d", pin);
         }
     } else {
         DEBUG("No status LED pin defined");
@@ -347,7 +347,7 @@ void setup_vreg(rp235x_clock_config_t *config) {
     DEBUG("Target VREG setting: %d", voltage);
 
     if (voltage > 0b11111) {
-        LOG("!!! Invalid VREG %d - ignore", voltage);
+        ERR("Invalid VREG %d - ignore", voltage);
         return;
     }
 
@@ -365,7 +365,7 @@ void setup_vreg(rp235x_clock_config_t *config) {
         while (!(POWMAN_VREG_CTRL & POWMAN_VREG_CTRL_UNLOCK));
 
         if (unlimited_voltage) {
-            LOG("!!! Disable voltage limit");
+            ERR("Disable voltage limit");
             vreg_ctrl |= POWMAN_VREG_CTRL_DISABLE_VOLTAGE_LIMIT;
             POWMAN_VREG_CTRL = vreg_ctrl;
             while (!(POWMAN_VREG_CTRL & POWMAN_VREG_CTRL_DISABLE_VOLTAGE_LIMIT));
@@ -499,7 +499,7 @@ void final_checks(rp235x_clock_config_t *config) {
         uint16_t temp = get_temp();
         (void)temp;  // In case not logged
 
-        LOG("!!! Temperature sensor reading: 0x%03X", temp);
+        ERR("Temperature sensor reading: 0x%03X", temp);
     }
 }
 
@@ -515,7 +515,7 @@ void setup_cp(void) {
 }
 
 void setup_mco(void) {
-    LOG("!!! MCO not supported on RP235X");
+    ERR("MCO not supported on RP235X");
 }
 
 // Set up the image select pins to be inputs with the appropriate pulls.
@@ -579,7 +579,7 @@ uint32_t setup_sel_pins(uint64_t *sel_mask, uint64_t *flip_bits) {
 
             num += 1;
         } else if (pin != INVALID_PIN) {
-            LOG("!!! Pin %d >= %d - ignore", pin, MAX_USED_GPIOS);
+            ERR("Pin %d >= %d - ignore", pin, MAX_USED_GPIOS);
         }
     }
 
@@ -692,7 +692,7 @@ void enter_bootloader(void) {
     reboot_fn_t reboot = (reboot_fn_t)rom_table_lookup(reboot_code, 0x0004);
 
     if (reboot == NULL) {
-        LOG("!!! Unable to find reboot function in ROM - cannot enter bootloader");
+        ERR("Unable to find reboot function in ROM - cannot enter bootloader");
         return;
     }
 
@@ -724,30 +724,30 @@ void check_config(
     uint8_t failed = 0;
     const uint8_t chip_pins = info->pins->chip_pins;
     if ((chip_pins != 24) && (chip_pins != 28) && (chip_pins != 40)) {
-        LOG("!!! Invalid ROM pins: %d", chip_pins);
+        ERR("Invalid ROM pins: %d", chip_pins);
         failed = 1;
     } else if (chip_pins >= 28) {
         if (runtime->fire_serve_mode == FIRE_SERVE_CPU) {
-            LOG("!!! ROM requires PIO support");
+            ERR("ROM requires PIO support");
             failed = 1;
         }
     }
 
     // Check ports (banks on RP235X) are as expected
     if (info->pins->data_port != PORT_0) {
-        LOG("!!! Data pins should be using bank 0");
+        ERR("Data pins should be using bank 0");
         failed = 1;
     }
     if (info->pins->addr_port != PORT_0) {
-        LOG("!!! Address pins should be using bank 0");
+        ERR("Address pins should be using bank 0");
         failed = 1;
     }
     if (info->pins->cs_port != PORT_0) {
-        LOG("!!! CS pins should be using bank 0");
+        ERR("CS pins should be using bank 0");
         failed = 1;
     }
     if (info->pins->sel_port != PORT_0) {
-        LOG("!!! Sel pins should be using bank 0");
+        ERR("Sel pins should be using bank 0");
         failed = 1;
     }
 
@@ -767,7 +767,7 @@ void check_config(
                 }
             }
             if (seen_a_0_7 && seen_a_16_23) {
-                LOG("!!! ROM address lines using invalid mix of pins");
+                ERR("ROM address lines using invalid mix of pins");
                 failed = 1;
             }
 
@@ -783,38 +783,101 @@ void check_config(
                 }
             }
             if (seen_d_0_7 && seen_d_16_23) {
-                LOG("!!! ROM data lines using invalid mix of pins");
+                ERR("ROM data lines using invalid mix of pins");
                 failed = 1;
             }
 
             // Check X1/X2 pins
             if (set->rom_count > 1) {
                 if (seen_a_0_7 && (info->pins->x1 > 16)) {
-                    LOG("!!! Multi-ROM mode, but pin X1 invalid");
+                    ERR("Multi-ROM mode, but pin X1 invalid");
                     failed = 1;
                 }
                 if (seen_a_0_7 && (info->pins->x2 > 17)) {
-                    LOG("!!! Multi-ROM mode, but pin X2 invalid");
+                    ERR("Multi-ROM mode, but pin X2 invalid");
                     failed = 1;
                 }
                 if (seen_a_16_23 && ((info->pins->x1 < 8) || (info->pins->x1 > 23))) {
-                    LOG("!!! Multi-ROM mode, but pin X1 invalid");
+                    ERR("Multi-ROM mode, but pin X1 invalid");
                     failed = 1;
                 }
                 if (seen_a_16_23 && ((info->pins->x2 < 8) || (info->pins->x2 > 23))) {
-                    LOG("!!! Multi-ROM mode, but pin X2 invalid");
+                    ERR("Multi-ROM mode, but pin X2 invalid");
                     failed = 1;
                 }
                 if (info->pins->x1 == info->pins->x2) {
-                    LOG("!!! Multi-ROM mode, but pin X1==X2");
+                    ERR("Multi-ROM mode, but pin X1==X2");
                     failed = 1;
                 }
                 if (info->pins->x_jumper_pull > 1) {
-                    LOG("!!! X jumper pull value invalid");
+                    ERR("X jumper pull value invalid");
                     failed = 1;
                 }
             }
         }
+    } else if (chip_pins == 28) {
+        // Checks only valid for 28-pin ROMs
+        if (runtime->fire_serve_mode != FIRE_SERVE_PIO) {
+            ERR("28-pin ROM requires PIO serving mode");
+            failed = 1;
+        }
+
+        // Check CS and CE/OE lines are valid
+        uint8_t ce_pin = info->pins->ce;
+        uint8_t oe_pin = info->pins->oe;
+        uint8_t cs1_pin = info->pins->cs1;
+        uint8_t cs2_pin = info->pins->cs2;
+        uint8_t cs3_pin = info->pins->cs3;
+        if ((cs1_pin >= MAX_USED_GPIOS) ||
+            (cs2_pin >= MAX_USED_GPIOS) ||
+            (cs3_pin >= MAX_USED_GPIOS) ||
+            (ce_pin >= MAX_USED_GPIOS) ||
+            (oe_pin >= MAX_USED_GPIOS)) {
+            ERR("28-pin ROM requires 3xCS and CE/OE pins");
+            failed = 1;
+        }
+
+        // Check that we have 18 address pins (16 in addr, 2 in addr2).  Also,
+        // check CE/OE lines are within the address lines.
+        uint8_t ce_in_addr = 0;
+        uint8_t oe_in_addr = 0;
+        uint8_t num_addr_pins = 0;
+        for (int ii = 0; ii < 16; ii++) {
+            if (info->pins->addr[ii] < MAX_USED_GPIOS) {
+                num_addr_pins += 1;
+                if (info->pins->addr[ii] == ce_pin) {
+                    ce_in_addr = 1;
+                }
+                if (info->pins->addr[ii] == oe_pin) {
+                    oe_in_addr = 1;
+                }
+            }
+        }
+        for (int ii = 0; ii < 2; ii++) {
+            if (info->pins->addr2[ii] < MAX_USED_GPIOS) {
+                num_addr_pins += 1;
+            }
+            if (info->pins->addr2[ii] == ce_pin) {
+                ce_in_addr = 1;
+            }
+            if (info->pins->addr2[ii] == oe_pin) {
+                oe_in_addr = 1;
+            }
+        }
+        if (num_addr_pins != 18) {
+            ERR("28-pin ROM requires 18 address pins");
+            failed = 1;
+        }
+        if (!ce_in_addr || !oe_in_addr) {
+            ERR("28-pin ROM requires CE/OE within address pins");
+            failed = 1;
+        }
+
+        // Other checking we could do includes that all CS/CE/OE and address
+        // pins are contiguous
+    } else {
+        ERR("Only 24/28 pins currently supported");
+        failed = 1;
     }
 
     // As of 0.6.0 sel_jumper_pulls is a bit field.  Check it isn't larger
@@ -827,18 +890,18 @@ void check_config(
         }
     }
     if (info->pins->sel_jumper_pull >= (1 << sel_pins_used)) {
-        LOG("!!! Sel jumper pull value invalid for number of sel pins used");
+        ERR("Sel jumper pull value invalid for number of sel pins used");
         failed = 1;
     }
 
     // Warn if serve mode is incorrectly set for multiple ROM images
     if ((set->rom_count == 1) && (set->serve == SERVE_ADDR_ON_ANY_CS)) {
         // Correction is done in main_loop() using a local variable
-        LOG("!!! Single ROM image - wrong serve mode - will correct");
+        ERR("Single ROM image - wrong serve mode - will correct");
     }
 
     if (failed) {
-        LOG("!!! Invalid configuration - entering limp mode");
+        ERR("Invalid configuration - entering limp mode");
         limp_mode(LIMP_MODE_INVALID_CONFIG);
     }
 }
@@ -854,14 +917,14 @@ void platform_logging(void) {
 #if defined(DEBUG_LOGGING)
 #endif // DEBUG_LOGGING
     } else {
-        LOG("!!! %s RP2350B but built for RP2350A", sdrr_info.hw_rev);
+        ERR("%s RP2350B but built for RP2350A", sdrr_info.hw_rev);
         limp_mode(LIMP_MODE_INVALID_BUILD);
     }
 #elif defined(RP2350B)
     if (!SYSINFO_IS_QFN60()) {
         LOG("%s RP2350B", sdrr_info.hw_rev);
     } else {
-        LOG("!!! %s RP2350A but built for RP2350B", sdrr_info.hw_rev);
+        ERR("%s RP2350A but built for RP2350B", sdrr_info.hw_rev);
         limp_mode(LIMP_MODE_INVALID_BUILD);
     }
 #else 
@@ -871,7 +934,7 @@ void platform_logging(void) {
     DEBUG("Chip commit: 0x%08X", SYSINFO_GITREF_RP2350);
     DEBUG("Core: %d", SIO_CPUID);
     if ((MCU_RAM_SIZE_KB != RP2350_RAM_SIZE_KB) || (MCU_RAM_SIZE != (RP2350_RAM_SIZE_KB * 1024))) {
-        LOG("!!! RAM error: actual %dKB, expected: %dKB",
+        ERR("RAM error: actual %dKB, expected: %dKB",
             MCU_RAM_SIZE_KB,
             RP2350_RAM_SIZE_KB);
         limp_mode(LIMP_MODE_INVALID_BUILD);

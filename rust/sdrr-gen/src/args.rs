@@ -11,14 +11,14 @@
 use clap::Parser;
 use std::path::PathBuf;
 
+use onerom_config::chip::ChipType;
 use onerom_config::fw::ServeAlg;
 use onerom_config::hw::{BOARDS, Board};
 use onerom_config::mcu::{MCU_VARIANTS, Variant as McuVariant};
-use onerom_config::chip::ChipType;
 
 use onerom_gen::image::{CsConfig, CsLogic, SizeHandling};
 
-use crate::config::{Config, ChipConfig};
+use crate::config::{ChipConfig, Config};
 use crate::file::{FileSource, check_output_dir, source_image_file};
 
 #[derive(Parser, Debug)]
@@ -401,7 +401,9 @@ impl Args {
                         );
                     }
                     if !matches!(size_handling, SizeHandling::None) {
-                        return Err("Cannot specify more than one of 'trunc', 'dup' and 'pad'".to_string());
+                        return Err(
+                            "Cannot specify more than one of 'trunc', 'dup' and 'pad'".to_string()
+                        );
                     }
                     size_handling = SizeHandling::Duplicate;
                 }
@@ -412,7 +414,9 @@ impl Args {
                         );
                     }
                     if !matches!(size_handling, SizeHandling::None) {
-                        return Err("Cannot specify more than one of 'trunc', 'dup' and 'pad'".to_string());
+                        return Err(
+                            "Cannot specify more than one of 'trunc', 'dup' and 'pad'".to_string()
+                        );
                     }
                     size_handling = SizeHandling::Pad;
                 }
@@ -423,7 +427,9 @@ impl Args {
                         );
                     }
                     if !matches!(size_handling, SizeHandling::None) {
-                        return Err("Cannot specify more than one of 'trunc', 'dup' and 'pad'".to_string());
+                        return Err(
+                            "Cannot specify more than one of 'trunc', 'dup' and 'pad'".to_string()
+                        );
                     }
                     size_handling = SizeHandling::Truncate;
                 }

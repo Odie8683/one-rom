@@ -12,13 +12,14 @@ mod hw;
 mod msg;
 mod view;
 
-use iced::{Element, Subscription, Task};
+use iced::keyboard::Key;
+use iced::{Element, Subscription, Task, event, keyboard};
 #[allow(unused_imports)]
 use log::{debug, error, info, trace, warn};
 
+use onerom_config::chip::ChipType;
 use onerom_config::hw::{Board, Model};
 use onerom_config::mcu::{Family, MCU_VARIANTS, Variant as McuVariant};
-use onerom_config::chip::ChipType;
 use onerom_fw::net::{Release, Releases};
 
 use crate::app::{AppMessage, progress_tick_subscription};
@@ -113,8 +114,13 @@ impl Create {
     }
 
     /// Main Create Message handling function
-    pub fn update(&mut self, runtime_info: &RuntimeInfo, message: Message) -> Task<AppMessage> {
-        msg::message(self, runtime_info, message)
+    pub fn update(
+        &mut self,
+        runtime_info: &RuntimeInfo,
+        device: &Device,
+        message: Message,
+    ) -> Task<AppMessage> {
+        msg::message(self, runtime_info, device, message)
     }
 
     // Update progress display
@@ -236,10 +242,26 @@ impl Create {
 
     /// Create tab subscription function
     pub fn subscription(&self) -> Subscription<Message> {
+        let mut subs = vec![];
+
         if self.is_busy() {
-            progress_tick_subscription(Message::ProgressTick)
-        } else {
-            Subscription::none()
+            subs.push(progress_tick_subscription(Message::ProgressTick))
         }
+
+        #[allow(clippy::collapsible_if)]
+        subs.push(event::listen_with(|event, status, _id| {
+            if let iced::Event::Keyboard(keyboard::Event::KeyPressed {
+                key: Key::Character(ref c),
+                ..
+            }) = event
+            {
+                if status == event::Status::Ignored && c.as_ref() == "f" {
+                    return Some(Message::KeyFlashFirmware);
+                }
+            }
+            None
+        }));
+
+        Subscription::batch(subs)
     }
 }

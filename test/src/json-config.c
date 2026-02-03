@@ -68,6 +68,7 @@ static void parse_cs_config(json_object* cs_obj, cs_config_t* cs_config) {
     cs_config->pin_23128 = 255;
     cs_config->pin_23256 = 255;
     cs_config->pin_23512 = 255;
+    cs_config->pin_231024 = 255;
     cs_config->pin_2716 = 255;
     cs_config->pin_2732 = 255;
     cs_config->pin_2764 = 255;
@@ -93,6 +94,9 @@ static void parse_cs_config(json_object* cs_obj, cs_config_t* cs_config) {
     }
     if (json_object_object_get_ex(cs_obj, "23512", &pin_obj)) {
         cs_config->pin_23512 = json_object_get_int(pin_obj);
+    }
+    if (json_object_object_get_ex(cs_obj, "231024", &pin_obj)) {
+        cs_config->pin_231024 = json_object_get_int(pin_obj);
     }
     if (json_object_object_get_ex(cs_obj, "2716", &pin_obj)) {
         cs_config->pin_2716 = json_object_get_int(pin_obj);
@@ -242,11 +246,13 @@ json_config_t* load_json_config(const char* hw_rev) {
         json_object* pins_obj;
         if (json_object_object_get_ex(mcu_obj, "pins", &pins_obj)) {
             json_object* arr_obj;
+            memset(config->mcu.pins.data, 255, sizeof(config->mcu.pins.data));
             if (json_object_object_get_ex(pins_obj, "data", &arr_obj)) {
                 parse_int_array(arr_obj, config->mcu.pins.data, NUM_DATA_LINES);
             } else {
                 error = "data";
             }
+            memset(config->mcu.pins.addr, 255, sizeof(config->mcu.pins.addr));
             if (json_object_object_get_ex(pins_obj, "addr", &arr_obj)) {
                 parse_int_array(arr_obj, config->mcu.pins.addr, MAX_ADDR_LINES);
             } else {

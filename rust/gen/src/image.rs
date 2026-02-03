@@ -20,16 +20,17 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::cmp::Ordering;
 
+use onerom_config::chip::{ChipFunction, ChipType};
 use onerom_config::fw::{FirmwareVersion, ServeAlg};
 use onerom_config::hw::Board;
 use onerom_config::mcu::Family as McuFamily;
-use onerom_config::chip::{ChipFunction, ChipType};
 
-use crate::{MIN_FIRMWARE_OVERRIDES_VERSION, PAD_METADATA_BYTE};
 use crate::meta::{
-    CHIP_SET_FIRMWARE_OVERRIDES_METADATA_LEN, CHIP_SET_METADATA_LEN, CHIP_SET_METADATA_LEN_EXTRA_INFO,
+    CHIP_SET_FIRMWARE_OVERRIDES_METADATA_LEN, CHIP_SET_METADATA_LEN,
+    CHIP_SET_METADATA_LEN_EXTRA_INFO,
 };
 use crate::{Error, Result, builder::FirmwareConfig};
+use crate::{MIN_FIRMWARE_OVERRIDES_VERSION, PAD_METADATA_BYTE};
 
 /// Value to use when told to pad a Chip image
 pub const PAD_BLANK_BYTE: u8 = 0xAA;
@@ -42,6 +43,9 @@ pub const PAD_RAM_BYTE: u8 = 0x55;
 
 const CHIP_METADATA_LEN_NO_FILENAME: usize = 4;
 const CHIP_METADATA_LEN_WITH_FILENAME: usize = 8;
+
+// From 0.6.3 28 pin Fire boards report 18 address pins, up from 16.
+const MIN_FW_VER_FIRE_28_18_ADDR_PINS: FirmwareVersion = FirmwareVersion::new(0, 6, 3, 0);
 
 /// How to handle Chip images that are too small for the Chip type
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
@@ -259,7 +263,7 @@ impl Chip {
             if chip_type.chip_function() == ChipFunction::Ram {
                 return Ok(Self::new(
                     index, filename, label, chip_type, cs_config, None, location,
-                ))
+                ));
             } else {
                 // This is an internal error
                 return Err(Error::MissingFile { id: index });
@@ -378,7 +382,13 @@ impl Chip {
         }
 
         Ok(Self::new(
-            index, filename, label, chip_type, cs_config, Some(dest), location,
+            index,
+            filename,
+            label,
+            chip_type,
+            cs_config,
+            Some(dest),
+            location,
         ))
     }
 
@@ -468,13 +478,18 @@ impl Chip {
     // This ensures that when the hardware reads from a certain address
     // through its GPIO pins, it gets the correct byte value with bits
     // arranged according to its data pin connections.
+    //
+    // Chip::get_byte()
     fn get_byte(
         &self,
         phys_pin_to_addr_map: &[Option<usize>],
         address: usize,
         board: &Board,
     ) -> u8 {
-        let data = self.data.as_ref().expect("Shouldn't be called get_byte on empty image");
+        let data = self
+            .data
+            .as_ref()
+            .expect("Shouldn't be called get_byte on empty image");
 
         // We have been passed a physical address based on the hardware pins,
         // so we need to transform it to a logical address based on the Chip
@@ -494,16 +509,13 @@ impl Chip {
         }
 
         // Get the byte from the logical Chip address.
-        let byte = data
-            .get(transformed_address)
-            .copied()
-            .unwrap_or_else(|| {
-                panic!(
-                    "Address {} out of bounds for Chip image of size {}",
-                    transformed_address,
-                    data.len()
-                )
-            });
+        let byte = data.get(transformed_address).copied().unwrap_or_else(|| {
+            panic!(
+                "Address {} out of bounds for Chip image of size {}",
+                transformed_address,
+                data.len()
+            )
+        });
 
         // Now transform the byte, as the physical data lines are not in the
         // expected order (0-7).
@@ -577,7 +589,7 @@ pub struct ChipSet {
 }
 
 impl ChipSet {
-    /// Creates a new ChipM set of the specified ID, type, and containing the
+    /// Creates a new Chip set of the specified ID, type, and containing the
     /// given Chips.
     ///
     /// The ID is an arbitrary index, usually the set ID from the config,
@@ -714,18 +726,55 @@ impl ChipSet {
     }
 
     /// Returns the size of the data required for this Chip set, in bytes.
-    pub fn image_size(&self, family: &McuFamily, chip_pins: u8) -> usize {
-        if family == &McuFamily::Rp2350 {
-            // RP2350 can address full 64KB space for each Chip set
-            65536
-        } else {
-            match self.set_type {
-                ChipSetType::Single => {
-                    // STM32F4 uses 16KB images for single 24 pin Chips, and
-                    // 64KB images for 28 pin Chips.
-                    if chip_pins == 24 { 16384 } else { 65536 }
+    pub fn image_size(&self, board: &Board, fw_version: &FirmwareVersion) -> usize {
+        let family = board.mcu_family();
+        let num_addr_pins = board.addr_pins().len();
+        let board_pins = board.chip_pins();
+        let num_chips = self.chips().len();
+        let set_type = &self.set_type;
+        assert!(num_chips >= 1);
+
+        if (*set_type == ChipSetType::Multi) || (*set_type == ChipSetType::Banked) {
+            // Multi-ROM/banked sets: combined 64KB image.  Only supported for
+            // 24-pin boards.
+            assert!(board_pins == 24);
+            return 2_usize.pow(16); // 64KB
+        }
+
+        // Single chip image.
+        assert!(self.chips.len() == 1);
+        match (board_pins, family) {
+            (24, McuFamily::Stm32f4) => {
+                assert!(num_addr_pins == 13);
+                2_usize.pow(14) // 16KB
+            }
+            (28, McuFamily::Stm32f4) => {
+                // Only ever developed a 14 address pin version, ice-28-a
+                assert!(num_addr_pins == 14);
+                2_usize.pow(16) // 64KB
+            }
+            (24, McuFamily::Rp2350) => {
+                assert!(num_addr_pins == 13);
+                2_usize.pow(16) // 64KB
+            }
+            (28, McuFamily::Rp2350) => {
+                if *fw_version < MIN_FW_VER_FIRE_28_18_ADDR_PINS {
+                    assert!(num_addr_pins == 16);
+                    2_usize.pow(16) // 64KB
+                } else {
+                    assert!(num_addr_pins == 18);
+                    2_usize.pow(18) // 256KB
                 }
-                ChipSetType::Banked | ChipSetType::Multi => 65536,
+            }
+            (40, McuFamily::Rp2350) => {
+                assert!(num_addr_pins == 29);
+                2_usize.pow(19) // 512KB
+            }
+            (_, _) => {
+                panic!(
+                    "Unsupported board configuration: {} pins, family {:?}",
+                    board_pins, family
+                );
             }
         }
     }
@@ -747,41 +796,31 @@ impl ChipSet {
 
     /// Gets a byte from the chip set at the given address (as far as the MCU is
     /// concerned) and returns the byte, ready for the MCU to serve.
-    pub fn get_byte(&self, address: usize, board: &Board, invert_cs1_x: bool) -> u8 {
+    ///
+    /// ChipSet::get_byte
+    pub fn get_byte(
+        &self,
+        address: usize,
+        board: &Board,
+        fw_version: &FirmwareVersion,
+        invert_cs1_x: bool,
+    ) -> u8 {
+        // Deal with RAM chips
         if (!self.has_data()) && (self.chip_function() == ChipFunction::Ram) {
-            return Chip::byte_mangled(PAD_RAM_BYTE, board)
+            return Chip::byte_mangled(PAD_RAM_BYTE, board);
         }
+        // Early return above
 
         // Hard-coded assumption that X1/X2 (STM32F4) are pins 14/15 for
         // single chip sets and banked chip sets.  However, for RP2350 they may
         // be other pins.
+        assert!(address < self.image_size(board, fw_version));
         if (self.chips.len() == 1) || (self.set_type == ChipSetType::Banked) {
             let (chip_index, masked_address) = if self.set_type != ChipSetType::Banked {
-                match board.mcu_family() {
-                    McuFamily::Rp2350 => {
-                        // Single Chip set: uses entire 64KB space
-                        assert!(
-                            address < 65536,
-                            "Address out of bounds for RP235X single Chip set"
-                        );
-                    }
-                    McuFamily::Stm32f4 => {
-                        if board.chip_pins() == 24 {
-                            assert!(
-                                address < 16384,
-                                "Address out of bounds for STM32F4 single 24 pin Chip"
-                            );
-                        } else {
-                            assert!(
-                                address < 65536,
-                                "Address out of bounds for STM32F4 single 28 pin Chip"
-                            );
-                        }
-                    }
-                }
+                // Common case - single ROM chip image
                 (0, address)
             } else {
-                // Banked mode: use X1/X2 to select Chip
+                // Banked mode: use X1/X2 to select Chip.  Only supported on 24 pin boards
                 assert!(address < 65536, "Address out of bounds for banked Chip set");
                 let x1_pin = board.bit_x1();
                 let x2_pin = board.bit_x2();
@@ -809,9 +848,11 @@ impl ChipSet {
 
             return self.chips[chip_index].get_byte(&phys_pin_to_addr_map, masked_address, board);
         }
+        // Early return above
 
         // Multiple Chips: check CS line states to select responding Chip.  This
-        // code can handle any X1/X2 positions - but the above can't.
+        // code can handle any X1/X2 positions - but the above can't.  Again,
+        // multi-chip sets are 24 pin only concepts
         assert!(address < 65536, "Address out of bounds for multi-Chip set");
 
         for (index, chip_in_set) in self.chips.iter().enumerate() {
@@ -871,7 +912,8 @@ impl ChipSet {
                     .filter(|&&x| x)
                     .count();
 
-                if active_count == 1 && self.check_chip_cs_requirements(chip_in_set, address, board) {
+                if active_count == 1 && self.check_chip_cs_requirements(chip_in_set, address, board)
+                {
                     return chip_in_set.get_byte(&phys_pin_to_addr_map, address, board);
                 }
             }
@@ -881,7 +923,12 @@ impl ChipSet {
         Chip::byte_mangled(PAD_NO_CHIP_BYTE, board)
     }
 
-    fn check_chip_cs_requirements(&self, chip_in_set: &Chip, address: usize, board: &Board) -> bool {
+    fn check_chip_cs_requirements(
+        &self,
+        chip_in_set: &Chip,
+        address: usize,
+        board: &Board,
+    ) -> bool {
         let cs_config = &chip_in_set.cs_config;
         let chip_type = chip_in_set.chip_type;
 
@@ -1110,8 +1157,7 @@ impl ChipSet {
         buf: &mut [u8],
         data_ptr: u32,
         chip_array_ptr: u32,
-        family: &McuFamily,
-        chip_pins: u8,
+        board: &Board,
         version: &FirmwareVersion,
         serve_config_ptr: Option<u32>,
         firmware_overrides_ptr: Option<u32>,
@@ -1133,7 +1179,7 @@ impl ChipSet {
         offset += 4;
 
         // Write the chip data size
-        let data_size = self.image_size(family, chip_pins) as u32;
+        let data_size = self.image_size(board, version) as u32;
         buf[offset..offset + 4].copy_from_slice(&data_size.to_le_bytes());
         offset += 4;
 

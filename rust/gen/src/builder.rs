@@ -10,11 +10,11 @@ use alloc::string::{String, ToString};
 use alloc::vec;
 use alloc::vec::Vec;
 
+use onerom_config::chip::{ChipFunction, ChipType};
 use onerom_config::fw::{FirmwareProperties, FirmwareVersion, ServeAlg};
 use onerom_config::mcu::Family;
-use onerom_config::chip::{ChipFunction, ChipType};
 
-use crate::image::{CsConfig, CsLogic, Location, Chip, ChipSet, ChipSetType, SizeHandling};
+use crate::image::{Chip, ChipSet, ChipSetType, CsConfig, CsLogic, Location, SizeHandling};
 use crate::meta::Metadata;
 use crate::{Error, FIRMWARE_SIZE, MAX_METADATA_LEN, MIN_FIRMWARE_OVERRIDES_VERSION, Result};
 
@@ -234,8 +234,8 @@ impl Builder {
                         "cs2" => chip.cs2,
                         "cs3" => chip.cs3,
                         // Clumsy code to ignore these
-                        "ce"|"oe" => Some(CsLogic::Ignore),
-                        "write"|"byte" => Some(CsLogic::Ignore),
+                        "ce" | "oe" => Some(CsLogic::Ignore),
+                        "write" | "byte" => Some(CsLogic::Ignore),
                         _ => {
                             return Err(Error::InvalidConfig {
                                 error: format!("Unknown control line {}", line.name),
@@ -453,7 +453,7 @@ impl Builder {
                     chip_id += 1;
                     continue;
                 }
-                
+
                 let key = (chip.file.clone(), chip.extract.clone());
 
                 let assigned_file_id = if let Some(&existing_id) = seen_files.get(&key) {
@@ -713,7 +713,11 @@ impl Builder {
     }
 
     fn num_roms(&self) -> usize {
-        self.config.chip_sets.iter().map(|set| set.chips.len()).sum()
+        self.config
+            .chip_sets
+            .iter()
+            .map(|set| set.chips.len())
+            .sum()
     }
 
     /// Build config description
@@ -920,7 +924,7 @@ pub struct FileData {
 }
 
 /// One ROM chip configuration format.
-/// 
+///
 /// Used to indicate:
 /// - What ROM chips, RAM chips and any other devices to emulate
 /// - What ROM images to include
@@ -949,7 +953,7 @@ pub struct Config {
     /// Array of chip set configurations.  Note that even if not using complex
     /// features like dynamic banking and multi-ROM sets, each ROM image, or
     /// other chip types is in its own set.
-    /// 
+    ///
     /// The builder description output lists either "Images" or "Sets"
     /// depending on whether there are any multi-set or banked sets in use.
     #[serde(alias = "rom_sets")]

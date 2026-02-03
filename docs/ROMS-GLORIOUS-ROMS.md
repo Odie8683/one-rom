@@ -27,9 +27,10 @@ All 23 series ROMs are powered by 5V.
 | 2316  | 2KB  | 24   | 3    | yes             |
 | 2332  | 4KB  | 24   | 2    | yes             |
 | 2364  | 8KB  | 24   | 1    | yes             |
-| 23128 | 16KB | 28   | 3    | in progress     |
-| 23256 | 32KB | 28   | 2    | in progress     |
-| 23512 | 64KB | 28   | 2    | in progress     |
+| 23128 | 16KB | 28   | 3    | yes             |
+| 23256 | 32KB | 28   | 2    | yes             |
+| 23512 | 64KB | 28   | 2    | yes             |
+|231024 | 128KB| 28   | 1    | yes             |
 
 # 27 Series
 
@@ -55,16 +56,14 @@ It is also important to note that, as 27 series ROMs were reprogrammable, they a
 |-------|------|------|-----------------|
 | 2704  | 0.5KB| 24   | maybe*          |
 | 2708  | 1KB  | 24   | maybe*          |
-| 2716  | 2KB  | 24   | maybe*          |
-| 2732  | 4KB  | 24   | yes+            |
-| 2764  | 8KB  | 28   | in progress     |
-| 27128 | 16KB | 28   | in progress     |
-| 27256 | 32KB | 28   | in progress     |
-| 27512 | 64KB | 28   | in progress     |
+| 2716  | 2KB  | 24   | yes             |
+| 2732  | 4KB  | 24   | yes             |
+| 2764  | 8KB  | 28   | yes             |
+| 27128 | 16KB | 28   | yes             |
+| 27256 | 32KB | 28   | yes             |
+| 27512 | 64KB | 28   | yes             |
 
 (*) It is likely that One ROM can be programmed to emulate these chips by ensuring a compatible ROM image is written, and an appropriate 23 type selected in its config.  Raise a github issue if you'd like to understand how to do this.
-
-(+) The 2732 is pin compatible with the 2332 (excepting the programming voltage, see above), so One ROM can emulate it using `type=2332,cs1=0,cs2=0`.
 
 # 23 and 27 compatibility
 
@@ -82,13 +81,14 @@ One ROM (24):
 - 2364
 - 2704 (maybe*)
 - 2708 (maybe*)
-- 2716 (maybe*)
+- 2716
 - 2732
 
 One ROM (28) - in progress:
 - 23128
 - 23256
 - 23512
+- 231024
 - 2764
 - 27128
 - 27256

@@ -36,7 +36,7 @@ static uint8_t check_idcode(void);
 void platform_specific_init(void) {
     // Check that the firmware was built for this MCU
     if (check_idcode()) {
-        LOG("!!! MCU IDCODE does not match firmware - entering limp mode");
+        ERR("MCU IDCODE does not match firmware - entering limp mode");
 
         // Set up USB DFU if supported first
         if (sdrr_info.extra->usb_dfu) {
@@ -57,7 +57,7 @@ void setup_vbus_interrupt(void) {
     // Does NOT currently honour configured VBUS port/pin - assumes PA9
     if (sdrr_info.extra->vbus_pin != 9 ||
         sdrr_info.extra->usb_port != PORT_A) {
-        LOG("!!! Invalid USB port or pin for VBUS detect - not enabling USB DFU");
+        ERR("Invalid USB port or pin for VBUS detect - not enabling USB DFU");
         return;
     }
 
@@ -118,7 +118,7 @@ void setup_clock(void) {
     if (sdrr_info.mcu_line < NUM_ICE_MCU_CLOCK_CONFIGS) {
         memcpy(&clock_config, &ice_mcu_clock_config[sdrr_info.mcu_line], sizeof(ice_mcu_clock_config_t));
     } else {
-        LOG("!!! Unknown MCU line - default to F401DE");
+        ERR("Unknown MCU line - default to F401DE");
         memcpy(&clock_config, &ice_mcu_clock_config[F401DE], sizeof(ice_mcu_clock_config_t));
     }
 
@@ -131,13 +131,13 @@ void setup_clock(void) {
     } else if (sdrr_runtime_info.ice_freq == ICE_FREQ_STOCK) {
         // No-op - stock settings already loaded
     } else {
-        LOG("!!! Invalid ICE frequency requested - using compile time");
+        ERR("Invalid ICE frequency requested - using compile time");
         clock_config.freq_mhz = sdrr_info.freq;
     }
 
     // Only allow overclocking if enabled
     if ((clock_config.freq_mhz > clock_config.max_freq_mhz) && (!sdrr_runtime_info.overclock_enabled)) {
-        LOG("!!! Requested clock %dMHz exceeds max for MCU line %d (%dMHz) - capping",
+        ERR("Requested clock %dMHz exceeds max for MCU line %d (%dMHz) - capping",
             clock_config.freq_mhz,
             sdrr_info.mcu_line,
             clock_config.max_freq_mhz);
@@ -220,7 +220,7 @@ void setup_clock(void) {
         pll_config.pllp = PLL_P;
         pll_config.pllq = PLL_Q;
         sdrr_runtime_info.sysclk_mhz = TARGET_FREQ_MHZ;
-        LOG("!!! Could not calculate PLL settings - using compile time settings %dMHz", TARGET_FREQ_MHZ);
+        ERR("Could not calculate PLL settings - using compile time settings %dMHz", TARGET_FREQ_MHZ);
     }
     setup_pll_mul(&pll_config);
     setup_pll_src(pll_src);
@@ -238,7 +238,7 @@ void setup_clock(void) {
             }
         }
         if (!(PWR_CR & PWR_CSR_ODRDY_MASK)) {
-            LOG("!!! OD not ready - proceeding anyway");
+            ERR("OD not ready - proceeding anyway");
         }
 
         LOG("Set overdrive mode");
@@ -274,7 +274,7 @@ uint32_t setup_sel_pins(uint64_t *sel_mask, uint64_t *flip_bits) {
 
     if (sdrr_info.pins->sel_port != PORT_B) {
         // sel_mask of 0 means invalid response
-        LOG("!!! Sel port not B - not using");
+        ERR("Sel port not B - not using");
         return 0;
     }
 
@@ -327,7 +327,7 @@ uint32_t setup_sel_pins(uint64_t *sel_mask, uint64_t *flip_bits) {
             pulls |= (pull << (pin * 2));
             num += 1;
         } else if (pin != INVALID_PIN) {
-            LOG("!!! Sel pin %d >= %d - not using", pin, MAX_PORT_PINS);
+            ERR("Sel pin %d >= %d - not using", pin, MAX_PORT_PINS);
         }
     }
     *sel_mask = sel_1bit_mask;
@@ -459,11 +459,11 @@ void setup_gpio(void) {
 // Common setup for status LED output using PB15 (inverted logic: 0=on, 1=off)
 void setup_status_led(void) {
     if (sdrr_info.pins->status_port != PORT_B) {
-        LOG("!!! Status port not B - not using");
+        ERR("Status port not B - not using");
         return;
     }
     if (sdrr_info.pins->status > 15) {
-        LOG("!!! Status pin %d > 15 - not using", sdrr_info.pins->status);
+        ERR("Status pin %d > 15 - not using", sdrr_info.pins->status);
         return;
     }
     if (sdrr_runtime_info.status_led_enabled) {
@@ -532,23 +532,23 @@ void check_config(
 
     // Check ports (banks on RP235X) are as expected
     if (info->pins->data_port != PORT_A) {
-        LOG("!!! Data pins not using port A");
+        ERR("Data pins not using port A");
     }
     if (info->pins->addr_port != PORT_C) {
-        LOG("!!! Address pins not using port C");
+        ERR("Address pins not using port C");
     }
     if (info->pins->cs_port != PORT_C) {
-        LOG("!!! Chip select pins not using port C");
+        ERR("Chip select pins not using port C");
     }
     if (info->pins->sel_port != PORT_B) {
-        LOG("!!! Image select pins not using port B");
+        ERR("Image select pins not using port B");
     }
 
     // We expect to use pins 0-12 for address lines
     for (int ii = 0; ii < 13; ii++) {
         uint8_t pin = info->pins->addr[ii];
         if (pin > 13) {
-            LOG("!!! Address line A%d using invalid pin %d", ii, pin);
+            ERR("Address line A%d using invalid pin %d", ii, pin);
         }
     }
 
@@ -556,39 +556,39 @@ void check_config(
     for (int ii = 0; ii < 8; ii++) {
         uint8_t pin = info->pins->data[ii];
         if (pin > 7) {
-            LOG("!!! ROM line D%d using invalid pin %d", ii, pin);
+            ERR("ROM line D%d using invalid pin %d", ii, pin);
         }
     }
 
     // Check X1/X2 pins
     if (set->rom_count > 1) {
         if (info->pins->x1 > 15) {
-            LOG("!!! Multi-ROM mode, but pin X1 invalid");
+            ERR("Multi-ROM mode, but pin X1 invalid");
         }
         if (info->pins->x2 > 15) {
-            LOG("!!! Multi-ROM mode, but pin X2 invalid");
+            ERR("Multi-ROM mode, but pin X2 invalid");
         }
         if (info->pins->x1 == info->pins->x2) {
-            LOG("!!! Multi-ROM mode, but pin X1=X2");
+            ERR("Multi-ROM mode, but pin X1=X2");
         }
         if (info->pins->x_jumper_pull > 1) {
-            LOG("!!! X jumper pull value invalid");
+            ERR("X jumper pull value invalid");
         }
     }
 
     // Check CS pins
     if (info->pins->chip_pins == 24) {
         if (info->pins->cs1 > 15) {
-            LOG("!!! CS1 pin invalid");
+            ERR("CS1 pin invalid");
         }
         if (info->pins->cs2 > 15) {
-            LOG("!!! CS2 pin invalid");
+            ERR("CS2 pin invalid");
         }
         if (info->pins->cs3 > 15) {
-            LOG("!!! CS3 pin invalid");
+            ERR("CS3 pin invalid");
         }
     } else {
-        LOG("!!! Not yet checking CS pins for 28 pin ROMs");
+        ERR("Not yet checking CS pins for 28 pin ROMs");
     }
 
     // As of 0.6.0 sel_jumper_pulls is a bit field.  Check it isn't larger
@@ -601,13 +601,13 @@ void check_config(
         }
     }
     if (info->pins->sel_jumper_pull >= (1 << sel_pins_used)) {
-        LOG("!!! Sel jumper pull value invalid for number of sel pins used");
+        ERR("Sel jumper pull value invalid for number of sel pins used");
     }
 
     // Warn if serve mode is incorrectly set for multiple ROM images
     if ((set->rom_count == 1) && (set->serve == SERVE_ADDR_ON_ANY_CS)) {
         // Correction is done in main_loop() using a local variable
-        LOG("!!! Single ROM image - wrong serve mode - will correct");
+        ERR("Single ROM image - wrong serve mode - will correct");
     }
 }
 
@@ -671,7 +671,7 @@ uint8_t check_idcode(void) {
             break;
     }
     if (mismatch) {
-        LOG("!!! MCU mismatch: actual %s, firmware expected %s", idcode, sdrr_info.mcu_line);
+        ERR("MCU mismatch: actual %s, firmware expected %s", idcode, sdrr_info.mcu_line);
     }
     return mismatch;
 }
@@ -726,7 +726,7 @@ void platform_logging(void) {
     LOG("%s used: %dKB %d bytes", flash, flash_kb, flash_bytes);
 #endif
     if (hw_flash_size != MCU_FLASH_SIZE_KB) {
-        LOG("!!! Flash size mismatch: actual %dKB, firmware expected %dKB", hw_flash_size, MCU_FLASH_SIZE_KB);
+        ERR("Flash size mismatch: actual %dKB, firmware expected %dKB", hw_flash_size, MCU_FLASH_SIZE_KB);
     }
 
     uint32_t ram_size_bytes = (uint32_t)&_ram_size;
@@ -827,7 +827,7 @@ uint8_t calculate_pll_settings(
 ) {
     // Validate target frequency is within limits
     if (clock_config->freq_mhz > clock_config->max_freq_mhz && !overclock) {
-        LOG("!!! Requested clock %dMHz exceeds max %dMHz - cannot calculate PLL",
+        ERR("Requested clock %dMHz exceeds max %dMHz - cannot calculate PLL",
             clock_config->freq_mhz,
             clock_config->max_freq_mhz);
         return 0;
@@ -850,7 +850,7 @@ uint8_t calculate_pll_settings(
     } else if (xtal_freq_mhz == 12) {
         PLLM = 6;  // 12/6 = 2 MHz VCO input
     } else {
-        LOG("!!! Unsupported XTAL frequency %dMHz for PLL calculation", xtal_freq_mhz);
+        ERR("Unsupported XTAL frequency %dMHz for PLL calculation", xtal_freq_mhz);
         return 0;
     }
     

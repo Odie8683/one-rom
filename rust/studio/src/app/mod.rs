@@ -145,7 +145,7 @@ impl<'a> App<'a> {
             }
             AppMessage::Create(prog_msg) => self
                 .create
-                .update(&runtime_info, prog_msg)
+                .update(&runtime_info, &self.device, prog_msg)
                 .map(|m| m.into()),
             AppMessage::Studio(studio_msg) => self.studio.update(studio_msg).map(|m| m.into()),
             AppMessage::Log(log_msg) => self.log.update(&runtime_info, log_msg).map(|m| m.into()),

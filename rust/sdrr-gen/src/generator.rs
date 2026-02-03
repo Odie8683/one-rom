@@ -5,16 +5,17 @@
 //! sdrr-gen - Generates the firmware files required by SDRR.
 
 use anyhow::{Context, Result};
+use onerom_config::fw::FirmwareVersion;
 use onerom_config::hw::Board;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
 use strum::IntoEnumIterator;
 
-use onerom_config::mcu::Family as McuFamily;
 use onerom_config::chip::ChipType;
+use onerom_config::mcu::Family as McuFamily;
 
-use onerom_gen::image::{CsLogic, ChipSet, ChipSetType};
+use onerom_gen::image::{ChipSet, ChipSetType, CsLogic};
 
 use crate::config::Config;
 use crate::file::{OutType, out_filename};
@@ -143,6 +144,15 @@ fn generate_roms_implementation_file(
 ) -> Result<()> {
     let mut file = create_file(&config.output_dir, filename, FileType::C)?;
 
+    let board = &config.board;
+    let fw_version = FirmwareVersion::new(
+        env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap_or(0),
+        env!("CARGO_PKG_VERSION_MINOR").parse().unwrap_or(6),
+        env!("CARGO_PKG_VERSION_PATCH").parse().unwrap_or(3),
+        0,
+    );
+
+
     writeln!(file, "#include \"sdrr_config.h\"")?;
     writeln!(file, "#include \"config_base.h\"")?;
     writeln!(file, "#include \"roms.h\"")?;
@@ -262,31 +272,12 @@ fn generate_roms_implementation_file(
     writeln!(file)?;
 
     for rom_set in rom_sets {
+        let image_size = rom_set.image_size(board, &fw_version);
         let ii = rom_set.id;
         writeln!(file, "// ROM set {}", ii)?;
         let num_roms = rom_set.chips.len();
-        writeln!(file, "#define ROM_SET_{}_ROM_COUNT  {}", ii, num_roms)?;
-        if num_roms == 1 {
-            match config.mcu_variant.family() {
-                McuFamily::Rp2350 => writeln!(
-                    file,
-                    "#define ROM_SET_{}_DATA_SIZE  ROM_IMAGE_SIZE_RP235X",
-                    ii
-                )?,
-                McuFamily::Stm32f4 => writeln!(
-                    file,
-                    "#define ROM_SET_{}_DATA_SIZE  {}",
-                    ii,
-                    if config.board.chip_pins() == 28 {
-                        "ROM_IMAGE_SIZE_STM32F4_28PIN"
-                    } else {
-                        "ROM_IMAGE_SIZE_STM32F4"
-                    }
-                )?,
-            }
-        } else {
-            writeln!(file, "#define ROM_SET_{}_DATA_SIZE  ROM_SET_IMAGE_SIZE", ii)?;
-        }
+        writeln!(file, "#define ROM_SET_{ii}_ROM_COUNT  {num_roms}")?;
+        writeln!(file, "#define ROM_SET_{ii}_DATA_SIZE  {image_size}")?;
         writeln!(
             file,
             "static const uint8_t rom_set_{}_data[];  // Forward declaration",
@@ -356,24 +347,8 @@ fn generate_roms_implementation_file(
     writeln!(file)?;
 
     // Generate ROM set data arrays
-    let board = &config.board;
     for rom_set in rom_sets {
-        // Determine image size based on number of ROMs in the set
-        let image_size = if rom_set.chips.len() == 1 {
-            match config.board.mcu_family() {
-                McuFamily::Stm32f4 => {
-                    if config.board.chip_pins() == 28 {
-                        65536
-                    } else {
-                        16384
-                    }
-                }
-                McuFamily::Rp2350 => 65536,
-            }
-        } else {
-            // Multi-ROM/banked sets: combined 64KB image
-            65536
-        };
+        let image_size = rom_set.image_size(board, &fw_version);
         let ii = rom_set.id;
 
         writeln!(file, "// ROM set {} data", rom_set.id)?;
@@ -424,7 +399,7 @@ fn generate_roms_implementation_file(
                 write!(file, "    ")?;
             }
 
-            let byte = rom_set.get_byte(address, board, flip_cs1_x);
+            let byte = rom_set.get_byte(address, board, &fw_version, flip_cs1_x);
             write!(file, "0x{:02x}, ", byte)?;
         }
 
@@ -463,9 +438,7 @@ fn generate_sdrr_config_header(filename: &Path, config: &Config) -> Result<()> {
         // Special case for Fire 40 A board which uses RP2350B variant
         writeln!(file, "#define RP2350B        1")?;
     } else {
-        writeln!(
-            file, "{}", config.mcu_variant.define_var_sub_fam()
-        )?;
+        writeln!(file, "{}", config.mcu_variant.define_var_sub_fam())?;
     }
     writeln!(file, "{}", config.mcu_variant.define_var_str())?;
     writeln!(
@@ -745,20 +718,18 @@ fn generate_sdrr_config_implementation(filename: &Path, config: &Config) -> Resu
                 board.pin_oe(ChipType::Chip27256),
             )
         }
-        40 => {
-            (
-                board.pin_cs1(ChipType::Chip27C400),
-                board.pin_cs2(ChipType::Chip27C400),
-                board.pin_cs3(ChipType::Chip27C400),
-                board.pin_ce(ChipType::Chip27C400),
-                board.pin_oe(ChipType::Chip27C400),
-            )
-        }
+        40 => (
+            board.pin_cs1(ChipType::Chip27C400),
+            board.pin_cs2(ChipType::Chip27C400),
+            board.pin_cs3(ChipType::Chip27C400),
+            board.pin_ce(ChipType::Chip27C400),
+            board.pin_oe(ChipType::Chip27C400),
+        ),
         _ => {
             return Err(anyhow::anyhow!(
                 "Unsupported number of ROM pins: {}",
                 board.chip_pins()
-            ))
+            ));
         }
     };
 
@@ -809,18 +780,20 @@ fn generate_sdrr_config_implementation(filename: &Path, config: &Config) -> Resu
 
     // Data 2 - contains D8-15 if present on this board
     if board.bit_modes().contains(&16) {
-        let high_data_str = board
-            .data_pins()[8..]
+        let high_data_str = board.data_pins()[8..]
             .iter()
             .map(|v| v.to_string())
             .collect::<Vec<_>>()
             .join(", ");
         writeln!(file, "    .data2 = {{{}}},", high_data_str)?;
     } else {
-        writeln!(file, "    .data2 = {{255, 255, 255, 255, 255, 255, 255, 255}},")?;
+        writeln!(
+            file,
+            "    .data2 = {{255, 255, 255, 255, 255, 255, 255, 255}},"
+        )?;
     }
 
-    // Addr 32 - contains A16-31 (or a subset) if present on this board 
+    // Addr 32 - contains A16-31 (or a subset) if present on this board
     if board.addr_pins().len() > 16 {
         // Pad out to 32 pins
         let high_addr = &board.addr_pins()[16..];
@@ -833,16 +806,16 @@ fn generate_sdrr_config_implementation(filename: &Path, config: &Config) -> Resu
             .join(", ");
         writeln!(file, "    .addr2 = {{{}}},", high_addr_str)?;
     } else {
-        writeln!(file, "    .addr2 = {{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255}},")?;
+        writeln!(
+            file,
+            "    .addr2 = {{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255}},"
+        )?;
     }
 
     // sdrr_pins_t extended padding/reserved space.
     writeln!(file, "    .reserved6 = {{")?;
     for _ in 0..21 {
-        writeln!(
-            file,
-            "        0, 0, 0, 0, 0, 0, 0,"
-        )?;
+        writeln!(file, "        0, 0, 0, 0, 0, 0, 0,")?;
     }
     writeln!(file, "    }},")?;
 

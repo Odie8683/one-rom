@@ -177,7 +177,6 @@ impl Metadata {
         }
 
         let mut offset = 0;
-        let chip_pins = self.board.chip_pins();
 
         // Write the header
         offset += self.write_header(&mut buf[offset..])?;
@@ -254,7 +253,7 @@ impl Metadata {
             // Either ROM or RAM has an image
             rom_data_ptrs[ii] = rom_data_ptr;
             rtn_chip_data_ptrs[ii] = rtn_chip_data_ptr;
-            let rom_data_size = set.image_size(&self.board.mcu_family(), chip_pins);
+            let rom_data_size = set.image_size(&self.board, &self.firmware_version);
             rom_data_ptr += rom_data_size as u32;
             rtn_chip_data_ptr += rom_data_size as u32;
         }
@@ -298,8 +297,7 @@ impl Metadata {
                 &mut buf[offset..],
                 rom_data_ptrs[ii],
                 actual_chip_array_ptrs[ii],
-                &self.board.mcu_family(),
-                chip_pins,
+                &self.board,
                 &self.firmware_version,
                 serve_config_ptrs[ii],
                 firmware_overrides_ptrs[ii],
@@ -419,7 +417,7 @@ impl Metadata {
         self.chip_sets
             .iter()
             .filter(|set| set.has_data())
-            .map(|set| set.image_size(&self.board.mcu_family(), self.board.chip_pins()))
+            .map(|set| set.image_size(&self.board, &self.firmware_version))
             .sum()
     }
 
@@ -447,7 +445,8 @@ impl Metadata {
             // are all flipped in hardware.  Without this image flipping, the
             // wrong bytes would be served.
             let mut pio = self.pio();
-            if let Some(serve_mode) = chip_set.firmware_overrides
+            if let Some(serve_mode) = chip_set
+                .firmware_overrides
                 .as_ref()
                 .and_then(|o| o.fire.as_ref())
                 .and_then(|f| f.serve_mode.as_ref())
@@ -460,11 +459,12 @@ impl Metadata {
                 false
             };
 
-            let size = chip_set.image_size(&self.board.mcu_family(), self.board.chip_pins());
+            let size = chip_set.image_size(&self.board, &self.firmware_version);
 
             // Fill buffer by calling get_byte for each address
             for addr in 0..size {
-                buf[offset + addr] = chip_set.get_byte(addr, &self.board, flip_cs1_x);
+                buf[offset + addr] =
+                    chip_set.get_byte(addr, &self.board, &self.firmware_version, flip_cs1_x);
             }
 
             offset += size;

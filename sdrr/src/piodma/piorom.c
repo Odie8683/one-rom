@@ -546,15 +546,14 @@ typedef struct piorom_config {
 static void piorom_load_programs(piorom_config_t *config) {
     // Get the high X bits of the RAM table address for preloading into the
     // address reader SM.
-    uint8_t num_address_pins = 16;  // Hardcode for now
-    uint8_t rom_table_num_addr_bits = 32 - num_address_pins;
+    uint8_t rom_table_num_addr_bits = 32 - config->num_addr_pins;
     uint32_t high_bits_mask = (1 << rom_table_num_addr_bits) - 1;
-    uint32_t low_bits_mask = (1 << num_address_pins) - 1;
-    uint32_t __attribute__((unused)) alignment_size = (1 << num_address_pins) / 1024;
+    uint32_t low_bits_mask = (1 << config->num_addr_pins) - 1;
+    uint32_t __attribute__((unused)) alignment_size = (1 << config->num_addr_pins) / 1024;
     DEBUG("Checking RAM table address 0x%08X is %uKB aligned", config->rom_table_addr, alignment_size);
     DEBUG("High bits mask: 0x%08X, low bits mask: 0x%08X", high_bits_mask, low_bits_mask);
     if (config->rom_table_addr & low_bits_mask) {
-        LOG("!!! PIO ROM serving requires ROM table address to be %uKB aligned",
+        ERR("PIO ROM serving requires ROM table address to be %uKB aligned",
             alignment_size);
         limp_mode(LIMP_MODE_INVALID_CONFIG);
     }
@@ -742,7 +741,7 @@ static void piorom_load_programs(piorom_config_t *config) {
         }
     }
     PIO_WRAP_TOP();
-    PIO_ADD_INSTR(IN_PINS(num_address_pins));
+    PIO_ADD_INSTR(IN_PINS(config->num_addr_pins));
 
     // Configure the address read SM
     PIO_SM_CLKDIV_SET(
@@ -751,11 +750,11 @@ static void piorom_load_programs(piorom_config_t *config) {
     );
     PIO_SM_EXECCTRL_SET(0);
     PIO_SM_SHIFTCTRL_SET(
-        PIO_IN_COUNT(num_address_pins) |    // Reading the address pins (unused
-                                            // as this is for mov instructions)
-        PIO_AUTOPUSH |                      // Auto push when we hit threshold
-        PIO_PUSH_THRESH(32) |               // Push when we have 32 bits (from
-                                            // X and from address pins)
+        PIO_IN_COUNT(config->num_addr_pins) |   // Reading the address pins (unused
+                                                // as this is for mov instructions)
+        PIO_AUTOPUSH |                          // Auto push when we hit threshold
+        PIO_PUSH_THRESH(32) |                   // Push when we have 32 bits (from
+                                                // X and from address pins)
         PIO_IN_SHIFTDIR_L |     // Shift left, so address lines are in low bits
         PIO_OUT_SHIFTDIR_L      // Direction doesn't matter, as we push 32 bits
     );
@@ -932,7 +931,7 @@ static uint8_t get_lowest_data_gpio(
 // Get lowest address GPIO from the pin info.
 //
 // For 24 pin ROMs this includes CS lines and X pins.
-// For 28 pin ROMs this doesn't.
+// For 28 pin ROMs this include CS lines.
 static uint8_t get_lowest_addr_gpio(
     const sdrr_info_t *info,
     const uint8_t cs_base_pin
@@ -945,6 +944,15 @@ static uint8_t get_lowest_addr_gpio(
         }
     }
 
+    if (info->pins->chip_pins != 24) {
+        // Consider addr2 pins
+        for (int ii = 0; ii < 8; ii++) {
+            if (info->pins->addr2[ii] < lowest) {
+                lowest = info->pins->addr2[ii];
+            }
+        }
+    }
+
     if (info->pins->chip_pins == 24) {
         // Consider X pins
         if (info->pins->x1 < lowest) {
@@ -954,12 +962,14 @@ static uint8_t get_lowest_addr_gpio(
             lowest = info->pins->x2;
         }
 
-        // Consider CS pins - only need to check the base as this will be the
-        // lowest
-        if (cs_base_pin < lowest) {
-            lowest = cs_base_pin;
-        }
     }
+
+    // Consider CS pins - only need to check the base as this will be the
+    // lowest
+    if (cs_base_pin < lowest) {
+        lowest = cs_base_pin;
+    }
+
     return lowest;
 }
 
@@ -986,14 +996,14 @@ static void piorom_handle_non_contiguous_cs_pins(
         high_cs
     );
     if (!config->contiguous_cs_pins) {
-        LOG("!!! Multiple non-contiguous CS pin ranges not supported");
+        ERR("Multiple non-contiguous CS pin ranges not supported");
         limp_mode(LIMP_MODE_INVALID_CONFIG);
         return;
     }
 
     // We have non-contiguous CS pins.  Only support a single pin break.
     if ((high_cs - low_cs) != 2) {
-        LOG("!!! Non-contiguous CS pins with break of more than 1 pin not supported");
+        ERR("Non-contiguous CS pins with break of more than 1 pin not supported");
         limp_mode(LIMP_MODE_INVALID_CONFIG);
         return;
     }
@@ -1018,7 +1028,7 @@ static void piorom_finish_config(
                 config->num_cs_pins = 1;
             } else {
                 if ((set->rom_count < 2) || (set->rom_count > 3)) {
-                    LOG("!!! PIO ROM serving invalid multi-ROM count %d for 2364",
+                    ERR("PIO ROM serving invalid multi-ROM count %d for 2364",
                         set->rom_count);
                     limp_mode(LIMP_MODE_INVALID_CONFIG);
                     config->num_cs_pins = 1;
@@ -1049,8 +1059,12 @@ static void piorom_finish_config(
             config->num_cs_pins = 2;
             break;
 
+        case CHIP_TYPE_231024:
+            config->num_cs_pins = 1;
+            break;
+
         default:
-            LOG("!!! PIO ROM serving invalid ROM type %d", rom->rom_type);
+            ERR("PIO ROM serving invalid ROM type %d", rom->rom_type);
             limp_mode(LIMP_MODE_INVALID_CONFIG);
             config->num_cs_pins = 1;
             break;
@@ -1081,13 +1095,13 @@ static void piorom_finish_config(
                 // this restriction)
                 if ((info->pins->x1 > (info->pins->cs1 + 1)) ||
                     (info->pins->x1 < (info->pins->cs1 - 1))) {
-                    LOG("!!! PIO ROM serving non-contiguous CS/X1 pins not supported");
+                    ERR("PIO ROM serving non-contiguous CS/X1 pins not supported");
                     limp_mode(LIMP_MODE_INVALID_CONFIG);
                 }
                 if (config->num_cs_pins == 3) {
                     if ((info->pins->x2 > (info->pins->x1 + 1)) ||
                         (info->pins->x2 < (info->pins->x1 - 1))) {
-                        LOG("!!! PIO ROM serving non-contiguous CS/X1/X2 pins not supported");
+                        ERR("PIO ROM serving non-contiguous CS/X1/X2 pins not supported");
                         limp_mode(LIMP_MODE_INVALID_CONFIG);
                     }
                 }
@@ -1100,6 +1114,7 @@ static void piorom_finish_config(
         case CHIP_TYPE_23128:
         case CHIP_TYPE_23256:
         case CHIP_TYPE_23512:
+        case CHIP_TYPE_231024:
             series_23 = 1;
             // Figure out base CS pin from SDRR info
 
@@ -1207,7 +1222,7 @@ static void piorom_finish_config(
             break;
 
         default:
-            LOG("!!! PIO ROM serving invalid ROM type %d", rom->rom_type);
+            ERR("PIO ROM serving invalid ROM type %d", rom->rom_type);
             limp_mode(LIMP_MODE_INVALID_CONFIG);
             config->num_cs_pins = 1;
             break;
@@ -1284,33 +1299,40 @@ static void piorom_finish_config(
     // Set the ROM table address
     config->rom_table_addr = rom_table_addr;
 
+    // Set the number of address lines from ROM pins
+    if (info->pins->chip_pins == 24) {
+        config->num_addr_pins = 16;
+    } else {
+        config->num_addr_pins = 18; // Includes OE/CE (OE also A16 for 231024)
+    }
+
     // Final checks
     if ((config->rom_table_addr == 0) || (config->rom_table_addr == 0xFFFFFFFF)) {
-        LOG("!!! PIO ROM serving requires valid ROM table address");
+        ERR("PIO ROM serving requires valid ROM table address");
         limp_mode(LIMP_MODE_INVALID_CONFIG);
     }
     if (config->cs_base_pin >= 26) {
-        LOG("!!! PIO ROM serving requires CS pins to be GPIO 0-25");
+        ERR("PIO ROM serving requires CS pins to be GPIO 0-25");
         limp_mode(LIMP_MODE_INVALID_CONFIG);
     }
     if (config->data_base_pin >= 26) {
-        LOG("!!! PIO ROM serving requires Data pins to be GPIO 0-25");
+        ERR("PIO ROM serving requires Data pins to be GPIO 0-25");
         limp_mode(LIMP_MODE_INVALID_CONFIG);
     }
     if (config->addr_base_pin >= 26) {
-        LOG("!!! PIO ROM serving requires Address pins to be GPIO 0-25");
+        ERR("PIO ROM serving requires Address pins to be GPIO 0-25");
         limp_mode(LIMP_MODE_INVALID_CONFIG);
     }
     if (config->addr_read_irq > 1) {
-        LOG("!!! PIO ROM serving invalid addr_read_irq config");
+        ERR("PIO ROM serving invalid addr_read_irq config");
         limp_mode(LIMP_MODE_INVALID_CONFIG);
     }
     if (config->addr_read_delay > 32) {
-        LOG("!!! PIO ROM serving invalid addr_read_delay config");
+        ERR("PIO ROM serving invalid addr_read_delay config");
         limp_mode(LIMP_MODE_INVALID_CONFIG);
     }
     if (config->cs_active_delay > 32) {
-        LOG("!!! PIO ROM serving invalid cs_active_delay config");
+        ERR("PIO ROM serving invalid cs_active_delay config");
         limp_mode(LIMP_MODE_INVALID_CONFIG);
     }
 
@@ -1406,7 +1428,7 @@ void piorom_overrides(
                     config->no_dma
                 );
             } else {
-                LOG("!!! PIO ROM serving invalid serve_config signature");
+                ERR("PIO ROM serving invalid serve_config signature");
                 DEBUG("  Bytes: 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X",
                     serve_config[0],
                     serve_config[1],

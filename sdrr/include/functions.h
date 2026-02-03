@@ -24,6 +24,7 @@ extern uint32_t check_sel_pins(uint32_t *sel_mask);
 extern void log_init();
 extern void log_roms(const onerom_metadata_header_t *metadata);
 extern void do_log(const char *, ...);
+extern void err_log(const char *, ...);
 #endif // BOOT_LOGGING
 #if defined(MAIN_LOOP_LOGGING) || defined(DEBUG_LOGGING)
 typedef void (*ram_log_fn)(const char*, ...);

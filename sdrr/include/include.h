@@ -154,9 +154,11 @@ extern const sdrr_info_t sdrr_info;
 #if defined(BOOT_LOGGING)
 #define LOG_INIT()   log_init()
 #define LOG(X, ...)  do_log(X, ##__VA_ARGS__)
+#define ERR(X, ...)  err_log(X, ##__VA_ARGS__)
 #else // BOOT_LOGGING
 #define LOG_INIT()
 #define LOG(X, ...)
+#define ERR(X, ...)
 #endif // BOOT_LOGGING
 #if defined(DEBUG_LOGGING)
 #define DEBUG(X, ...)  do_log(X, ##__VA_ARGS__)

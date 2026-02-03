@@ -23,6 +23,7 @@ use crate::studio::RuntimeInfo;
 #[derive(Debug, Clone)]
 pub enum Message {
     // Rescan for all device types
+    KeyRescan,
     Rescan,
 
     // Detect probe or USB devices
@@ -113,6 +114,7 @@ impl std::fmt::Display for Message {
             Message::ReadFailed(client, error) => {
                 write!(f, "ReadFailed(client={client}, {})", error)
             }
+            Message::KeyRescan => write!(f, "KeyRescan"),
             Message::Rescan => write!(f, "Rescan"),
         }
     }
@@ -126,7 +128,7 @@ pub fn handle_message(
 ) -> Task<AppMessage> {
     match message {
         // Rescan all device types
-        Message::Rescan => {
+        Message::KeyRescan | Message::Rescan => {
             if device.is_idle() {
                 Task::batch([
                     Task::done(Message::DetectUsbDevices.into()),

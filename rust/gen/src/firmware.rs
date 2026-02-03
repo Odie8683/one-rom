@@ -10,9 +10,9 @@ use alloc::vec::Vec;
 
 // Required for custom schemas implementations
 #[cfg(feature = "schemars")]
-use schemars::{Schema, SchemaGenerator, JsonSchema, json_schema};
-#[cfg(feature = "schemars")]
 use alloc::borrow::Cow;
+#[cfg(feature = "schemars")]
+use schemars::{JsonSchema, Schema, SchemaGenerator, json_schema};
 
 /// Top level configuration structure
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]

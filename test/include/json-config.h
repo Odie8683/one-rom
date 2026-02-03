@@ -10,8 +10,8 @@
 #include <stdint.h>
 #include "config_base.h"
 
-#define NUM_DATA_LINES 8
-#define MAX_ADDR_LINES 16
+#define NUM_DATA_LINES 16
+#define MAX_ADDR_LINES 32
 #define MAX_FAMILY_LEN 16
 
 typedef struct {
@@ -33,6 +33,7 @@ typedef struct {
     uint8_t pin_23128;
     uint8_t pin_23256;
     uint8_t pin_23512;
+    uint8_t pin_231024;
     uint8_t pin_2716;
     uint8_t pin_2732;
     uint8_t pin_2764;

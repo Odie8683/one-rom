@@ -29,6 +29,7 @@
                 3,
                 4
             ],
+            "// addr": "Pin 8 = /OE, which is A16 for 231024.  We include 9 to ensure contiguity of address lines, so has 18 total.",
             "addr": [
                 25,
                 24,
@@ -45,12 +46,15 @@
                 17,
                 15,
                 10,
-                16
+                16,
+                8,
+                9
             ],
             "cs1": {
                 "23128": 9,
                 "23256": 9,
-                "23512": 9
+                "23512": 9,
+                "231024": 9
             },
             "cs2": {
                 "23128": 8,

@@ -210,12 +210,75 @@ impl SdrrInfo {
                 pin_to_addr_map[pins.ce as usize] = Some(11);
                 0x0FFF // 12-bit address
             }
-            // For 28 pin ROMs, CS is not part of the address space, so CS not
-            // dealt with here.
-            SdrrRomType::Rom2764 => 0x1FFF,
-            SdrrRomType::Rom23128 | SdrrRomType::Rom27128 => 0x3FFF,
-            SdrrRomType::Rom23256 | SdrrRomType::Rom27256 => 0x7FFF,
-            SdrrRomType::Rom23512 | SdrrRomType::Rom27512 => 0xFFFF,
+            SdrrRomType::Rom2764 => {
+                assert!(pins.oe < 18, "OE pin for 2764 must be less than 18");
+                assert!(pins.ce < 18, "CE pin for 2764 must be less than 18");
+                pin_to_addr_map[pins.oe as usize] = Some(16);
+                pin_to_addr_map[pins.ce as usize] = Some(17);
+                0x1FFF // 13-bit address
+            }
+            SdrrRomType::Rom23128 => {
+                assert!(pins.cs1 < 18, "CS1 pin for 23128 must be less than 18");
+                assert!(pins.cs2 < 18, "CS2 pin for 23128 must be less than 18");
+                assert!(pins.cs3 < 18, "CS3 pin for 23128 must be less than 18");
+                pin_to_addr_map[pins.cs1 as usize] = Some(16);
+                pin_to_addr_map[pins.cs2 as usize] = Some(17);
+                pin_to_addr_map[pins.cs3 as usize] = Some(14);
+                0x3FFF
+            }
+            SdrrRomType::Rom27128 => {
+                assert!(pins.oe < 18, "OE pin for 27128 must be less than 18");
+                assert!(pins.ce < 18, "CE pin for 27128 must be less than 18");
+                pin_to_addr_map[pins.oe as usize] = Some(16);
+                pin_to_addr_map[pins.ce as usize] = Some(17);
+                0x3FFF
+            }
+            SdrrRomType::Rom23256 => {
+                assert!(pins.cs1 < 18, "CS1 pin for 23256 must be less than 18");
+                assert!(pins.cs2 < 18, "CS2 pin for 23256 must be less than 18");
+                pin_to_addr_map[pins.cs1 as usize] = Some(16);
+                pin_to_addr_map[pins.cs2 as usize] = Some(17);
+                0x7FFF
+            }
+            SdrrRomType::Rom27256 => {
+                assert!(pins.oe < 18, "OE pin for 27256 must be less than 18");
+                assert!(pins.ce < 18, "CE pin for 27256 must be less than 18");
+                pin_to_addr_map[pins.oe as usize] = Some(16);
+                pin_to_addr_map[pins.ce as usize] = Some(17);
+                0x7FFF
+            }
+            SdrrRomType::Rom23512 => {
+                assert!(pins.cs1 < 18, "CS1 pin for 23512 must be less than 18");
+                assert!(pins.cs2 < 18, "CS2 pin for 23512 must be less than 18");
+                pin_to_addr_map[pins.cs1 as usize] = Some(16);
+                pin_to_addr_map[pins.cs2 as usize] = Some(17);
+                0xFFFF
+            }
+            SdrrRomType::Rom27512 => {
+                assert!(pins.oe < 18, "OE pin for 27512 must be less than 18");
+                assert!(pins.ce < 18, "CE pin for 27512 must be less than 18");
+                pin_to_addr_map[pins.oe as usize] = Some(16);
+                pin_to_addr_map[pins.ce as usize] = Some(17);
+                0xFFFF
+            }
+            SdrrRomType::Rom231024 => {
+                assert!(pins.cs1 < 18, "CS1 pin for 231024 must be less than 18");
+                pin_to_addr_map[pins.cs1 as usize] = Some(17);
+                0x1FFFF
+            }
+            SdrrRomType::Rom27C010 |
+            SdrrRomType::Rom27C020 |
+            SdrrRomType::Rom27C040 |
+            SdrrRomType::Rom27C080 |
+            SdrrRomType::Rom27C400 => {
+                return Err(format!(
+                    "ROM type {} not supported for address mangling",
+                    rom_type
+                ));
+            }
+            SdrrRomType::Ram6116 => {
+                return Err("RAM 6116 not supported for address mangling".into());
+            }
         };
 
         let overflow = addr & !addr_mask;

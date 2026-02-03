@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.1.11 - 2026-02-3
+
+- Add some keyboard shortcuts to One ROM Studio:
+  - r: Rescan devices
+  - f: Flash firmware
+- Added 231024 support.
+
 ## v0.1.9 - 2026-01-22
 
 ### Fixed
