@@ -69,11 +69,16 @@ Videos about One ROM, including demos, how-tos and technical deep-dives:
 
 ## Documentation
 
+The best place to started with One ROM is https://onerom.org/start/.
+
+Links to other documentation provided below.
+
 | Topic | Description |
 |-------|-------------|
 | [Getting Started](docs/GETTING-STARTED.md) | Detailed instructions for flashing your One ROM |
 | [Frequently Asked Questions](docs/FAQ.md) | Answers to common questions about One ROM. |
-| [Installation](INSTALL.md) | Installation of dependencies. |
+| [Building from source](ci/docker/README.md) | How to build the firmware from source using the provided Docker container. |
+| [Installation](INSTALL.md) | Manual installation of build system dependencies. |
 | [Programming](docs/PROGRAMMING.md) | How to program One ROM. |
 | [Available Configurations](config/README.md#available-configurations) | Various pre-collated ROM collection configurations. |
 | [MCU Selection](docs/MCU-SELECTION.md) | How to select the appropriate MCU for your application. |
