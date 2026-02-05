@@ -22,51 +22,50 @@ One ROM was formerly known as Software Defined Retro ROM (SDRR).
 
 See https://onerom.org/start/
 
+## Hardware
+
+These are the latest Fire 24 and 28 pin versions.  See [sdrr-pcb](sdrr-pcb/README.md) for all of the hardware designs and [current recommended revisions](sdrr-pcb/README.md#recommended-revisions).
+
+<div style="display: flex; justify-content: center; gap: 20px;">
+    <img src="docs/images/fire-24-e-soldered.jpg" alt="One ROM RP2350 24 pin rev A side on" width="400">
+    <img src="docs/images/fire-28-a2-s-iso.jpg" alt="One ROM RP2350 28 pin rev A side on" width="400">
+</div>
+
 ## Key Features
 
 💰 Based on sub-$2 microcontrollers.  **[Choose from Raspberry Pi (Fire 🔥) or STM (Ice ❄️) flavours](docs/MCU-SELECTION.md)**.
 
-⚡ **[Fast](docs/STM32-SELECTION.md)** enough for PETs, VIC-20s, C64s, 1541s, IEEE drives, etc. Support faster systems with higher end microcontroller.
+⚡ **[Fast](docs/STM32-SELECTION.md)** enough for PETs, VIC-20s, C64s, BBCs, Ataris, TI-99, Apple II, 1541s, IEEE drives, etc. Support faster systems with higher end microcontroller.
 
-📐 **[Same footprint](docs/images/sdrr-24-pin-side.png)** as original ROMs - doesn't overhang the socket like other solutions.
+📐 **[Same footprint](docs/images/sdrr-24-pin-side.png)** as original 24 and 28 pin ROMs - doesn't overhang the socket like other solutions.
 
-🔌 **[USB Version](https://onerom.org/prog/)** - no programmer required, program from your browser.
+🔌 **[USB Version](https://onerom.org/)** - no programmer required, program from your [browser](https://onerom.org/web) or [native desktop app](https://onerom.org/studio).
 
 🚀 **[Quick programming](docs/PROGRAMMING.md)** - build and flash in <10 seconds.
 
 🛠️ **[Reflash in situ](docs/PROGRAMMING.md)** - no need to remove the ROM from the host when reprogramming.
 
-⚙️ **[Software configurable](docs/CONFIGURATION.md)** chip select lines - no hardware jumpers required.
+⚙️ **[Software configurable](docs/CONFIGURATION.md)** chip select lines - no hardware jumpers required.  Useful for replacing 23xxx series ROMs.
 
 💾 Stores up to **[16 ROM images](docs/STM32-SELECTION.md)** of different sizes and chip select configurations.  Image selectable via jumpers.
 
-📦 **[Replace multiple ROMs with one ROM](docs/MULTI-ROM-SETS.md)** a single One ROM can replace up to 3 original ROMs e.g. all of C64 kernel, BASIC, character set.
+📦 **[Replace multiple ROMs with one ROM](docs/MULTI-ROM-SETS.md)** a single One ROM 24 can replace up to 3 original ROMs e.g. all of C64 kernel, BASIC, character set.
 
-🔀 **[Dynamic bank switching](docs/MULTI-ROM-SETS.md)** - switch between ROM images on the fly, e.g. different char ROMs.
+🔀 **[Dynamic bank switching](docs/MULTI-ROM-SETS.md)** - switch between ROM images on the fly, e.g. different char ROMs with One ROM 24.
 
 💻 **[Hackable at runtime](docs/RUNTIME-ACCESS.md)** - change the ROM images being served and access telemetry from the ROM at runtime using **[Airfrog](https://piers.rocks/u/airfrog)** or other SWD probes.
 
 🧩 **[Images combined automatically](docs/CONFIGURATION.md)** - no need to manually build up your own larger PROM image containing multiple retro ROMs.
 
-🏭 **[Two layer PCB](sdrr-pcb/README.md)**, component on single-side, limited BOM for low manufacturing cost/complexity.
-
-🎯 Supports multiple **[STM32F4xxR](docs/STM32-SELECTION.md)** variants: F401, F411, F405, F446 (others can be added).
+🏭 **[Two layer PCB](sdrr-pcb/README.md)**, component on single-side, limited BOM for low manufacturing cost/complexity.  Panelisable designs available for production quantities.
 
 🔓 **[Open source](LICENSE.md)** software and hardware.
 
-## Introduction
+## Videos
 
-The video below provides an introduction to One ROM:
+Videos about One ROM, including demos, how-tos and technical deep-dives:
 
-[![Video Title](https://img.youtube.com/vi/Jhe4LF5LrZ8/maxresdefault.jpg)](https://youtu.be/Jhe4LF5LrZ8)
-
-## Hardware
-
-This is the Fire 24-pin version, hardware revison A.  See [sdrr-pcb](sdrr-pcb/README.md) for the hardware designs and documentation.
-
-<div style="display: flex; justify-content: center; gap: 20px;">
-  <img src="docs/images/one-rom-24-pin-rp2350-rev-a-side.png" alt="One ROM RP2350 24 pin rev A side on" width="400">
-</div>
+[![Video Title](https://img.youtube.com/vi/Jhe4LF5LrZ8/maxresdefault.jpg)](https://www.youtube.com/playlist?list=PLXs34HaWLi12IR0gg25X8uovi9VFkOdlB)
 
 ## Documentation
 
