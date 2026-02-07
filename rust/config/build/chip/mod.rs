@@ -8,7 +8,7 @@ use std::path::Path;
 mod doc;
 mod validation;
 
-use validation::{ControlLineType, ChipType, ChipTypesConfig, ChipFunction};
+use validation::{ChipFunction, ChipType, ChipTypesConfig, ControlLineType};
 
 pub const CHIP_TYPES_JSON_FILENAME: &str = "json/chip-types.json";
 pub const CHIP_GENERATED_RS_FILENAME: &str = "chip/generated.rs";
@@ -630,7 +630,9 @@ fn generate_try_from_str(config: &ChipTypesConfig) -> String {
     code.push_str("    /// ```\n");
     code.push_str("    /// use onerom_config::chip::ChipType;\n");
     code.push_str("    ///\n");
-    code.push_str("    /// assert_eq!(ChipType::try_from_str(\"2364\"), Some(ChipType::Chip2364));\n");
+    code.push_str(
+        "    /// assert_eq!(ChipType::try_from_str(\"2364\"), Some(ChipType::Chip2364));\n",
+    );
     code.push_str(
         "    /// assert_eq!(ChipType::try_from_str(\"27128\"), Some(ChipType::Chip27128));\n",
     );
@@ -1159,10 +1161,16 @@ fn generate_programming_pins_method(config: &ChipTypesConfig) -> String {
                     }
                     code.push_str("            ]),\n");
                 } else {
-                    code.push_str(&format!("            ChipType::Chip{} => None,\n", type_name));
+                    code.push_str(&format!(
+                        "            ChipType::Chip{} => None,\n",
+                        type_name
+                    ));
                 }
             } else {
-                code.push_str(&format!("            ChipType::Chip{} => None,\n", type_name));
+                code.push_str(&format!(
+                    "            ChipType::Chip{} => None,\n",
+                    type_name
+                ));
             }
         }
     }

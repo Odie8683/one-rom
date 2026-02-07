@@ -204,7 +204,7 @@ impl Device {
     fn probes_updated(&mut self) {
         // Check if selected probe is still connected
         if let Some(old_probe) = &self.selected_probe {
-            if !self.probes.contains(&old_probe) {
+            if !self.probes.contains(old_probe) {
                 info!("Selected probe has been disconnected {old_probe}");
                 self.selected_probe = None;
             } else {
@@ -232,7 +232,7 @@ impl Device {
     fn usb_devices_updated(&mut self) {
         // Check if selected USB device is still connected
         if let Some(old_device) = &self.selected_usb_device {
-            if !self.usb_devices.contains(&old_device) {
+            if !self.usb_devices.contains(old_device) {
                 info!("Selected USB device has been disconnected: {old_device}");
                 self.selected_usb_device = None;
             } else {
@@ -347,6 +347,7 @@ impl Device {
 /// A type of a device.  Used to abstract between debug probe and USB
 /// devices for read/flash operations.
 #[derive(Debug, Default, Clone, PartialEq)]
+#[allow(clippy::large_enum_variant)]
 pub enum DeviceType {
     /// None
     #[default]

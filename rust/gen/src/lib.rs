@@ -4,7 +4,7 @@
 
 //! Generates firmware artifacts for One ROM.
 
-#![no_std]
+//#![no_std]
 
 extern crate alloc;
 
@@ -22,6 +22,8 @@ use alloc::string::String;
 use onerom_config::chip::ChipType;
 use onerom_config::fw::{FirmwareVersion, ServeAlg};
 use onerom_config::mcu::Family;
+
+pub use builder::MAX_SUPPORTED_FIRMWARE_VERSION;
 
 /// Version of metadata produced by this version of the crate
 pub const METADATA_VERSION: u32 = 1;
@@ -117,6 +119,11 @@ pub enum Error {
     FirmwareTooNew {
         version: FirmwareVersion,
         maximum: FirmwareVersion,
+    },
+    /// Some firmware versions are explicitly unsupported, due to known issues
+    /// with them.  For example 0.6.3.
+    FirmwareUnsupported {
+        version: FirmwareVersion,
     },
     WrongMcuFamily {
         actual: Family,

@@ -152,7 +152,6 @@ fn generate_roms_implementation_file(
         0,
     );
 
-
     writeln!(file, "#include \"sdrr_config.h\"")?;
     writeln!(file, "#include \"config_base.h\"")?;
     writeln!(file, "#include \"roms.h\"")?;

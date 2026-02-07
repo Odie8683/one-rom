@@ -15,9 +15,9 @@ use onerom_fw::get_rom_files_async;
 use onerom_fw::net::{Release, Releases};
 use onerom_gen::{Builder, FIRMWARE_SIZE, MAX_METADATA_LEN};
 
-use crate::ManifestType;
 use crate::analyse::Analyse;
 use crate::app::AppMessage;
+use crate::app::manifest::FirmwareBuildCompatibility;
 use crate::config::{
     Config, ConfigManifest, SelectedConfig, download_config_async, generate_built_config,
     load_config_file,
@@ -26,10 +26,27 @@ use crate::create::{Create, Message as CreateMessage};
 use crate::hw::HardwareInfo;
 use crate::log::Log;
 use crate::style::Style;
+use crate::{AppVersion, ManifestType};
 use crate::{app_manifest, internal_error, task_from_msg};
 
 const MANIFEST_RETRY_SHORT: Duration = Duration::from_secs(10);
 const MANIFEST_RETRY_LONG: Duration = Duration::from_secs(60);
+
+/// Maximum firmware versions this app version can build with.
+///
+/// Introduced in Studio v0.1.12.
+///
+/// Studio uses onerom_gen to generate firmware.  That has its own maximum
+/// version, which defaults to the current major version.  However, if, for
+/// some reason that is unacceptable, it can be overridden for specific
+/// Studio version here.  This is normally the result of a mistake in
+/// onerom-gen - it claiming it can build versions it cannot.  Probably
+/// because we introduced a non-backwards compatible firmware format change,
+/// incorrectly without bumping the major version.
+pub const MAX_BUILD_FW_VERSIONS: [FirmwareBuildCompatibility; 1] = [FirmwareBuildCompatibility {
+    app_version: AppVersion::new(0, 1, 12),
+    max_buildable_firmware_version: FirmwareVersion::new(0, 6, 4, 0),
+}];
 
 /// Messages for main window
 #[derive(Debug, Clone)]
@@ -127,7 +144,7 @@ impl StudioTab {
     /// Returns a row of buttons
     pub fn buttons(active: &StudioTab, serious_errors: bool) -> Element<'_, AppMessage> {
         let mut buttons = Vec::new();
-        for tab in vec![StudioTab::Analyse, StudioTab::Create, StudioTab::Log] {
+        for tab in [StudioTab::Analyse, StudioTab::Create, StudioTab::Log] {
             let active = *active == tab;
             let on_press = if active {
                 None
@@ -465,7 +482,7 @@ impl Studio {
                 Task::none()
             }
             Message::HardwareInfo(info) => {
-                self.runtime_info.set_hw_info(info.clone());
+                self.runtime_info.set_hw_info(info);
 
                 // Share with Create
                 task_from_msg!(CreateMessage::DetectedHardwareInfo)
@@ -615,6 +632,23 @@ impl Studio {
             ))
             .into();
         };
+
+        // Check firmware build compatibility
+        let manifest = app_manifest();
+        let max_buildable = manifest.max_buildable_firmware();
+        #[allow(clippy::collapsible_if)]
+        if let Some(max) = max_buildable {
+            if fw_ver > *max {
+                warn!(
+                    "Firmware version {fw_ver} is too new for this app version to build (max buildable: {max})"
+                );
+                return CreateMessage::BuildImageResult(Err(
+                    format!("Firmware version {fw_ver} is too new for this app version to build.\nMaximum buildable firmware version: {max}\n\nUpdate the app to build with newer firmware versions.")
+                ))
+                .into();
+            }
+        }
+
         let mcu_fam = if let Some(mcu) = hw_info.mcu_variant {
             mcu.family()
         } else {
@@ -629,12 +663,9 @@ impl Studio {
             Ok(b) => b,
             Err(e) => {
                 warn!("Failed to create image builder from config: {e:?}");
-                return CreateMessage::BuildImageResult(
-                    Err(format!(
-                        "Failed to create image builder from config:\n  - {e:?}"
-                    ))
-                    .into(),
-                )
+                return CreateMessage::BuildImageResult(Err(format!(
+                    "Failed to create image builder from config:\n  - {e:?}"
+                )))
                 .into();
             }
         };
@@ -665,7 +696,7 @@ impl Studio {
         };
 
         // Build the firmware properties
-        let props = match hw_info.firmware_properties(&fw) {
+        let props = match hw_info.firmware_properties(fw) {
             Some(p) => p,
             None => {
                 warn!("Cannot get firmware properties, cannot build image");
@@ -771,8 +802,8 @@ impl Studio {
                 internal_error!("SelectLocalFile should be handled before Studio");
                 return Task::none();
             }
-            Config::BuildConfig => {
-                internal_error!("BuildConfig should be handled before Studio");
+            Config::Build => {
+                internal_error!("Build should be handled before Studio");
                 return Task::none();
             }
             Config::Built { .. } => Task::done(generate_built_config(config.clone())),
@@ -819,7 +850,7 @@ impl Studio {
     }
 
     pub fn top_level_buttons(&self, serious_errors: bool) -> iced::Element<'_, AppMessage> {
-        StudioTab::buttons(&self.active_tab(), serious_errors)
+        StudioTab::buttons(self.active_tab(), serious_errors)
     }
 
     pub fn subscription(&self) -> Subscription<Message> {

@@ -20,6 +20,25 @@ use crate::{Error, FIRMWARE_SIZE, MAX_METADATA_LEN, MIN_FIRMWARE_OVERRIDES_VERSI
 
 pub const MAX_SUPPORTED_FIRMWARE_VERSION: FirmwareVersion = FirmwareVersion::new(0, 6, 999, 0);
 
+const UNSUPPORTED_FIRMWARE_VERSIONS: [FirmwareVersion; 1] = [FirmwareVersion::new(0, 6, 3, 0)];
+
+pub const SUPPORTED_CHIP_TYPES: &[ChipType; 14] = &[
+    ChipType::Chip2316,
+    ChipType::Chip2716,
+    ChipType::Chip6116,
+    ChipType::Chip2332,
+    ChipType::Chip2732,
+    ChipType::Chip2364,
+    ChipType::Chip2764,
+    ChipType::Chip23128,
+    ChipType::Chip27128,
+    ChipType::Chip23256,
+    ChipType::Chip27256,
+    ChipType::Chip23512,
+    ChipType::Chip27512,
+    ChipType::Chip231024,
+];
+
 pub(crate) use crate::firmware::*;
 
 /// Main Builder object
@@ -165,6 +184,28 @@ impl Builder {
             });
         }
 
+        // Check the firmware release is not one we explicitly do not support.
+        for unsupported_version in UNSUPPORTED_FIRMWARE_VERSIONS.iter() {
+            if unsupported_version.matches_release(version) {
+                return Err(Error::FirmwareUnsupported { version: *version });
+            }
+        }
+
+        /// Check firmware supports this ROM type
+        const MIN_FW_CHIP_TYPE_231024: FirmwareVersion = FirmwareVersion::new(0, 6, 3, 0);
+        if *version < MIN_FW_CHIP_TYPE_231024 {
+            for set in config.chip_sets.iter() {
+                for chip in set.chips.iter() {
+                    if matches!(chip.chip_type, ChipType::Chip231024) {
+                        return Err(Error::FirmwareTooOld {
+                            version: *version,
+                            minimum: MIN_FW_CHIP_TYPE_231024,
+                        });
+                    }
+                }
+            }
+        }
+
         // Validate each rom set has roms
         let mut chip_num = 0;
         for set in config.chip_sets.iter() {
@@ -208,6 +249,13 @@ impl Builder {
 
             for chip in set.chips.iter() {
                 let chip0 = &set.chips[0];
+
+                // Check chip_type is supported
+                if !SUPPORTED_CHIP_TYPES.contains(&chip.chip_type) {
+                    return Err(Error::UnsupportedChipType {
+                        chip_type: chip.chip_type,
+                    });
+                }
 
                 // Check filename specified for ROMs
                 if chip.file.is_empty() && chip.chip_type.chip_function() != ChipFunction::Ram {

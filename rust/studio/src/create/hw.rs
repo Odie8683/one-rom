@@ -64,17 +64,14 @@ pub fn detected_hardware_info(create: &mut Create, runtime_info: &RuntimeInfo) -
 pub fn flash_firmware(create: &mut Create, runtime_info: &RuntimeInfo) -> Task<AppMessage> {
     debug!("Flash firmware requested");
     if !create.is_busy() {
-        match runtime_info
-            .image()
-            .and_then(|imgs| Some(imgs.full_image()))
-        {
+        match runtime_info.image().map(|imgs| imgs.full_image()) {
             Some(fw) => {
                 create.state = State::Flashing;
                 create.set_display_content("Flashing firmware...");
                 Task::done(
                     DeviceMessage::FlashFirmware {
                         client: Client::Create,
-                        hw_info: create.selected_hw_info.clone(),
+                        hw_info: create.selected_hw_info,
                         data: fw,
                     }
                     .into(),
@@ -87,7 +84,7 @@ pub fn flash_firmware(create: &mut Create, runtime_info: &RuntimeInfo) -> Task<A
         }
     } else {
         warn!("Busy - skipping flash firmware");
-        return Task::none();
+        Task::none()
     }
 }
 

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "revision": 0,
-  "latest_app_version": "0.1.7",
+  "latest_app_version": "0.1.12",
   "link_urls": {
     "one_rom": "https://onerom.org",
     "piers_rocks": "https://piers.rocks",
@@ -26,5 +26,20 @@
   "paths": {
     "firmware_releases": "https://images.onerom.org/",
     "rom_configs": "https://images.onerom.org/"
-  }
+  },
+  "firmware_build_compatibility": [
+    {
+      "app_version": {
+        "major": 0,
+        "minor": 1,
+        "patch": 12
+      },
+      "max_buildable_firmware_version": {
+        "major": 0,
+        "minor": 6,
+        "patch": 4,
+        "build": 0
+      }
+    }
+  ]
 }

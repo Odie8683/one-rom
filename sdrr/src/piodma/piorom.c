@@ -934,9 +934,11 @@ static uint8_t get_lowest_data_gpio(
 // For 28 pin ROMs this include CS lines.
 static uint8_t get_lowest_addr_gpio(
     const sdrr_info_t *info,
+    uint32_t img_size,
     const uint8_t cs_base_pin
 ) {
     uint8_t lowest = MAX_USED_GPIOS;
+    uint8_t chip_pins = info->pins->chip_pins;
 
     for (int ii = 0; ii < 16; ii++) {
         if (info->pins->addr[ii] < lowest) {
@@ -944,16 +946,23 @@ static uint8_t get_lowest_addr_gpio(
         }
     }
 
-    if (info->pins->chip_pins != 24) {
-        // Consider addr2 pins
-        for (int ii = 0; ii < 8; ii++) {
-            if (info->pins->addr2[ii] < lowest) {
-                lowest = info->pins->addr2[ii];
+    if (chip_pins != 24) {
+        // For 28 pin ROMs, we check the image size to decide how many address
+        // pins to consider, not the ROM type.  This is because some version of
+        // Studio uses 256KB images for <231024 ROMS.  However, since 0.6.4,
+        // only a 231024 _needs_ a 256KB image.
+        if (img_size > (64*1024)) {
+            // Consider addr2 pins, but only when serving a > 64KB image, as
+            // for 28 pin ROMs, these are only used in this case.
+            for (int ii = 0; ii < 8; ii++) {
+                if (info->pins->addr2[ii] < lowest) {
+                    lowest = info->pins->addr2[ii];
+                }
             }
         }
     }
 
-    if (info->pins->chip_pins == 24) {
+    if (chip_pins == 24) {
         // Consider X pins
         if (info->pins->x1 < lowest) {
             lowest = info->pins->x1;
@@ -961,13 +970,20 @@ static uint8_t get_lowest_addr_gpio(
         if (info->pins->x2 < lowest) {
             lowest = info->pins->x2;
         }
-
     }
 
-    // Consider CS pins - only need to check the base as this will be the
-    // lowest
-    if (cs_base_pin < lowest) {
-        lowest = cs_base_pin;
+    if ((chip_pins == 24) ||
+        ((chip_pins == 28) && (img_size > (64*1024)))) {
+        // Consider CS pins - only need to check the base as this will be the
+        // lowest.
+        //
+        // 24 pin One ROMs always include CS pins.  However, 28 pins only
+        // include them if the image size is 256KB.  check_config() checks
+        // that image size is either 64KB or 256Kb so the > test here is
+        // sufficient.
+        if (cs_base_pin < lowest) {
+            lowest = cs_base_pin;
+        }
     }
 
     return lowest;
@@ -1291,7 +1307,8 @@ static void piorom_finish_config(
     }
 
     // Figure out base address pin from SDRR info
-    config->addr_base_pin = get_lowest_addr_gpio(info, config->cs_base_pin);
+    uint32_t img_size = set->size;
+    config->addr_base_pin = get_lowest_addr_gpio(info, img_size, config->cs_base_pin);
 
     // Figure out base data pin from SDRR info
     config->data_base_pin = get_lowest_data_gpio(info);
@@ -1302,8 +1319,16 @@ static void piorom_finish_config(
     // Set the number of address lines from ROM pins
     if (info->pins->chip_pins == 24) {
         config->num_addr_pins = 16;
-    } else {
-        config->num_addr_pins = 18; // Includes OE/CE (OE also A16 for 231024)
+    } else if (info->pins->chip_pins == 28) {
+        // For 28 pin ROMs, we check the image size to decide how many address
+        // pins to consider, not the ROM type.  This is because some version of
+        // Studio uses 256KB images for <231024 ROMS.  However, since 0.6.4,
+        // only a 231024 _needs_ a 256KB image.
+        if (img_size > (64*1024)) {
+            config->num_addr_pins = 18; // Includes OE/CE (OE also A16 for 231024)
+        } else {
+            config->num_addr_pins = 16; // Doesn't include OE/CE
+        }
     }
 
     // Final checks

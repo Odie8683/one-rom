@@ -10,6 +10,8 @@
 use arc_swap::ArcSwap;
 #[allow(unused_imports)]
 use log::{debug, error, info, trace, warn};
+use onerom_config::fw::FirmwareVersion;
+use onerom_gen::MAX_SUPPORTED_FIRMWARE_VERSION;
 use schemars::JsonSchema;
 use semver::Version;
 use serde::{Deserialize, Serialize};
@@ -19,6 +21,8 @@ use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
 
 use crate::AppMessage;
+use crate::AppVersion;
+use crate::studio::MAX_BUILD_FW_VERSIONS;
 
 // Global application manifest state to save threading throughout the
 // application.
@@ -55,19 +59,10 @@ pub enum ManifestStatus {
 }
 
 /// Used by the application to reference specific links in the manifest
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ManifestState {
     status: ManifestStatus,
     current: Manifest,
-}
-
-impl Default for ManifestState {
-    fn default() -> Self {
-        Self {
-            status: ManifestStatus::default(),
-            current: Manifest::default(),
-        }
-    }
 }
 
 impl ManifestState {
@@ -136,6 +131,7 @@ impl ManifestState {
         let file_path = Self::cache_file_path();
 
         // Create parent directory if it doesn't exist
+        #[allow(clippy::collapsible_if)]
         if let Some(parent) = file_path.parent() {
             if let Err(e) = fs::create_dir_all(parent) {
                 warn!("Failed to create cache directory {parent:?}: {e}");
@@ -247,6 +243,17 @@ impl ManifestState {
             }
         }
     }
+
+    /// Get the maximum firmware version this app can build
+    /// Returns None if no compatibility info exists for current app version
+    pub fn max_buildable_firmware(&self) -> Option<&FirmwareVersion> {
+        let current = AppVersion::default();
+        self.current
+            .firmware_build_compatibility
+            .iter()
+            .find(|c| c.app_version == current)
+            .map(|c| &c.max_buildable_firmware_version)
+    }
 }
 
 /// One ROM Studio application manifest
@@ -267,6 +274,11 @@ pub struct Manifest {
     pub schema_urls: Schemas,
     /// URL paths
     pub paths: PathUrls,
+    /// Firmware compatibility information.  Represents maximum firmware
+    /// version that this application version can build.
+    ///
+    /// Introduced in v0.1.12.
+    pub firmware_build_compatibility: Vec<FirmwareBuildCompatibility>,
 }
 
 impl Default for Manifest {
@@ -279,6 +291,27 @@ impl Default for Manifest {
             manifest_urls: ManifestUrls::default(),
             schema_urls: Schemas::default(),
             paths: PathUrls::default(),
+            firmware_build_compatibility: MAX_BUILD_FW_VERSIONS.to_vec(),
+        }
+    }
+}
+
+/// Firmware build compatibility information
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(default)]
+pub struct FirmwareBuildCompatibility {
+    /// App version (semver)
+    pub app_version: AppVersion,
+
+    /// Maximum firmware version this app can build (not flash - any version can be flashed)
+    pub max_buildable_firmware_version: FirmwareVersion,
+}
+
+impl Default for FirmwareBuildCompatibility {
+    fn default() -> Self {
+        Self {
+            app_version: AppVersion::default(),
+            max_buildable_firmware_version: MAX_SUPPORTED_FIRMWARE_VERSION,
         }
     }
 }

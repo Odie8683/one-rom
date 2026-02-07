@@ -2,7 +2,7 @@
 //
 // MIT License
 
-use super::validation::{ControlLineType, ChipType, ChipTypesConfig, ChipFunction};
+use super::validation::{ChipFunction, ChipType, ChipTypesConfig, ControlLineType};
 use std::collections::BTreeMap;
 
 /// Generate complete ROM types markdown documentation
@@ -80,11 +80,7 @@ There are also some other inconsistencies between types:
     }
 
     if let Some(rams) = families.get("ram_chips") {
-        doc.push_str(&generate_family_comparison_table(
-            "RAM Chips",
-            rams,
-            config,
-        ));
+        doc.push_str(&generate_family_comparison_table("RAM Chips", rams, config));
         doc.push('\n');
     }
 
@@ -129,7 +125,10 @@ fn group_by_family(config: &ChipTypesConfig) -> BTreeMap<&'static str, Vec<(&Str
             continue;
         };
 
-        families.entry(key).or_default().push((type_name, chip_type));
+        families
+            .entry(key)
+            .or_default()
+            .push((type_name, chip_type));
     }
 
     // Sort each family by size
@@ -262,7 +261,10 @@ fn generate_pin_comparison_table_28pin(config: &ChipTypesConfig) -> String {
 fn generate_detailed_pinout(type_name: &str, chip_type: &ChipType) -> String {
     let mut doc = String::new();
 
-    doc.push_str(&format!("### {} - {}\n\n", type_name, chip_type.description));
+    doc.push_str(&format!(
+        "### {} - {}\n\n",
+        type_name, chip_type.description
+    ));
     doc.push_str(&format!("**Package:** {}-pin DIP  \n", chip_type.pins));
     doc.push_str(&format!("**Capacity:** {} bytes  \n", chip_type.size));
 

@@ -155,7 +155,7 @@ pub fn config_selected(create: &mut Create, config: Config) -> Task<AppMessage> 
             // Open file dialog to select local config file
             Task::future(select_local_config_file())
         }
-        Config::BuildConfig => {
+        Config::Build => {
             // Get the selected rom pins from the selected hardware
             let rom_pins: u8 = create
                 .selected_hw_info

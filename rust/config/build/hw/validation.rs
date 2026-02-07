@@ -4,8 +4,8 @@
 
 #![allow(dead_code)]
 
-use serde::{Deserialize, Deserializer};
 use core::panic;
+use serde::{Deserialize, Deserializer};
 use std::collections::{HashMap, HashSet};
 
 include!("../../src/mcu.rs");
@@ -187,7 +187,7 @@ impl Chip {
     pub fn max_addr_pins(&self) -> u8 {
         match self.pins.quantity {
             24 => 16, // Includes CS and X pins
-            28 => 18, // Includes CS lines (to allow for 231024 which uses /OE as address line) 
+            28 => 18, // Includes CS lines (to allow for 231024 which uses /OE as address line)
             40 => 19, // Just addr pins
             _ => panic!(
                 "Unsupported ROM type {}, expected 24, 28, or 40-pin ROM",
@@ -320,14 +320,26 @@ pub fn validate_config(name: &str, config: &HwConfigJson) {
     }
 
     // Validate pins consistent within pin arrays
-    let max_data_pins= if config.chip.bit_modes.contains(&BitMode::Bit16) {
+    let max_data_pins = if config.chip.bit_modes.contains(&BitMode::Bit16) {
         16
     } else {
         8
     };
-    validate_pin_array(&config.mcu, &config.mcu.pins.data, "data", name, max_data_pins);
+    validate_pin_array(
+        &config.mcu,
+        &config.mcu.pins.data,
+        "data",
+        name,
+        max_data_pins,
+    );
     let max_addr_pins = config.chip.max_addr_pins();
-    validate_pin_array(&config.mcu, &config.mcu.pins.addr, "addr", name, max_addr_pins);
+    validate_pin_array(
+        &config.mcu,
+        &config.mcu.pins.addr,
+        "addr",
+        name,
+        max_addr_pins,
+    );
     validate_pin_array(&config.mcu, &config.mcu.pins.sel, "sel", name, 7);
 
     // Validate values in pin arrays are within valid ranges
@@ -379,11 +391,7 @@ pub fn validate_config(name: &str, config: &HwConfigJson) {
             );
         }
 
-        let data_pins_windows = if has16 {
-            16
-        } else {
-            8
-        };
+        let data_pins_windows = if has16 { 16 } else { 8 };
         if max_data_pin >= min_data_pin + data_pins_windows {
             panic!(
                 "{}: data pins must be within {}-bit window, got range {}-{}",

@@ -135,7 +135,11 @@ impl fmt::Display for ValidationError {
             ValidationError::JsonParseError(msg) => {
                 write!(f, "JSON parse error: {}", msg)
             }
-            ValidationError::InvalidPinNumber { chip_type, pin, max } => {
+            ValidationError::InvalidPinNumber {
+                chip_type,
+                pin,
+                max,
+            } => {
                 write!(
                     f,
                     "ROM type '{}': pin {} is out of range (valid: {}-{})",

@@ -46,7 +46,7 @@ pub fn view<'a>(
         select_fw_source(),
         buttons,
         Style::horiz_line(),
-        fw_content_heading(&analyse, hw_info),
+        fw_content_heading(analyse, hw_info),
     ]
     .spacing(20);
 
@@ -146,7 +146,7 @@ fn fw_content_heading<'a>(
 
     if let Some(hw_info) = hw_info {
         // Add hardware information as we have some
-        let version = analyse.fw_info.as_ref().and_then(|info| Some(info.version));
+        let version = analyse.fw_info.as_ref().map(|info| info.version);
         let metadata = analyse
             .fw_info
             .as_ref()
@@ -171,11 +171,7 @@ fn fw_content_heading<'a>(
 // Flash firmware button
 fn flash_file_button<'a>(analyse: &'a Analyse, device: &'a Device) -> Button<'a, AppMessage> {
     // Only highlight if ready to flash
-    let highlighted = if analyse.state.is_idle() && device.is_ready() && analyse.fw_info.is_some() {
-        true
-    } else {
-        false
-    };
+    let highlighted = analyse.state.is_idle() && device.is_ready() && analyse.fw_info.is_some();
 
     // Figure out whether the button will do anything (based on highlighted
     // state)
@@ -202,11 +198,7 @@ fn fw_source_device_control<'a>(
     device: &'a Device,
 ) -> Button<'a, AppMessage> {
     // Only highlight if ready to detect
-    let highlighted = if analyse.state.is_idle() && device.is_ready() {
-        true
-    } else {
-        false
-    };
+    let highlighted = analyse.state.is_idle() && device.is_ready();
 
     // Figure out whether the button will do anything (based on highlighted
     // state)

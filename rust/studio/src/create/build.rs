@@ -55,7 +55,7 @@ pub fn build_image(create: &mut Create, runtime_info: &RuntimeInfo) -> Task<AppM
     create.set_display_content(format!("Building image: {} ...", selected.name()));
 
     // Send build image message to Studio
-    Task::done(StudioMessage::BuildImage(create.selected_hw_info.clone()).into())
+    Task::done(StudioMessage::BuildImage(create.selected_hw_info).into())
 }
 
 /// Handle the result of a build image operation
@@ -140,7 +140,7 @@ pub fn select_cs_active(create: &mut Create, index: usize, active: Active) -> Ta
         cs[index] = Some(active);
         create.state = State::UserBuilding {
             valid_rom_types: valid_rom_types.clone(),
-            rom_type: rom_type.clone(),
+            rom_type: *rom_type,
             cs,
             data: data.clone(),
         };
@@ -160,7 +160,7 @@ pub fn select_data_vec(create: &mut Create, data: Vec<u8>) -> Task<AppMessage> {
                 } => valid_rom_types.clone(),
                 _ => vec![],
             },
-            rom_type: rom_type.clone(),
+            rom_type: *rom_type,
             cs: cs.clone(),
             data: Some(hex::encode(&data)),
         };
@@ -209,7 +209,7 @@ pub fn build_json_config_from_state(create: &mut Create) -> Task<AppMessage> {
         };
 
         task_from_msg!(StudioMessage::LoadConfig(Config::Built {
-            rom_type: rom_type.clone(),
+            rom_type: *rom_type,
             chip_select: cs_states,
             data: data_vec,
         }))

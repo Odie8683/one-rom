@@ -74,7 +74,13 @@ impl ConfigManifest {
             .map(|url| {
                 // Unwraps are safe here as split() and next() always return
                 // Some() the first time around
-                let name = url.split('/').last().unwrap().split('.').next().unwrap();
+                let name = url
+                    .split('/')
+                    .next_back()
+                    .unwrap()
+                    .split('.')
+                    .next()
+                    .unwrap();
                 (url.clone(), name.to_string())
             })
             .collect::<Vec<_>>();
@@ -142,9 +148,9 @@ impl ConfigManifest {
     }
 
     fn add_special(&mut self) {
-        // Add the SelectLocalFile and BuildConfig entries at the start
+        // Add the SelectLocalFile and Build entries at the start
         self.internal_configs.insert(0, Config::SelectLocalFile);
-        //self.internal_configs.insert(0, Config::BuildConfig);
+        //self.internal_configs.insert(0, Config::Build);
     }
 
     /// Return names of the configs
@@ -185,7 +191,7 @@ impl ConfigManifest {
 }
 
 /// Fetch config file from URL
-pub async fn get_config_from_partial_url(url: &String) -> Result<Vec<u8>, String> {
+pub async fn get_config_from_partial_url(url: &str) -> Result<Vec<u8>, String> {
     // Build the full URL
     let full_url = ConfigManifest::config_url(url);
 
@@ -223,7 +229,7 @@ pub enum Config {
     SelectLocalFile,
 
     /// Dummy entry in the picklist to allow the user to build their own config
-    BuildConfig,
+    Build,
 
     /// Config from the network manifest
     Network { url: String, name: String },
@@ -242,7 +248,7 @@ impl std::fmt::Display for Config {
             Config::SelectLocalFile => {
                 write!(f, "Select Local File...")
             }
-            Config::BuildConfig => {
+            Config::Build => {
                 write!(f, "Build Config in Studio...")
             }
             Config::Network { name, .. } => {
@@ -278,7 +284,7 @@ impl Config {
     }
 
     pub fn is_special(&self) -> bool {
-        matches!(self, Config::SelectLocalFile | Config::BuildConfig)
+        matches!(self, Config::SelectLocalFile | Config::Build)
     }
 
     /// Get URL if network config
@@ -310,7 +316,7 @@ impl Config {
                 .to_string_lossy()
                 .to_string(),
             Config::SelectLocalFile => "none".to_string(),
-            Config::BuildConfig => "none".to_string(),
+            Config::Build => "none".to_string(),
             Config::Network { name, .. } => {
                 // Strip off file extension if present
                 let name = name.split('.').next().unwrap_or(name);
@@ -333,8 +339,8 @@ impl Config {
                 internal_error!("Save filename requested for SelectLocalFile config.");
                 "unknown".to_string()
             }
-            Config::BuildConfig => {
-                internal_error!("Save filename requested for BuildConfig config.");
+            Config::Build => {
+                internal_error!("Save filename requested for Build config.");
                 "unknown".to_string()
             }
             Config::Network { .. } => self.name(),
@@ -390,7 +396,7 @@ pub fn generate_built_config(config: Config) -> AppMessage {
     };
 
     let rom_type_json = rom_type.name();
-    let data_json = hex::encode(&data);
+    let data_json = hex::encode(data);
     let chip_select_json = if chip_select.is_empty() {
         "".to_string()
     } else {

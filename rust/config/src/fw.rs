@@ -4,6 +4,8 @@
 
 //! One ROM Firmware objects
 
+use core::fmt::Display;
+
 use crate::Error;
 use crate::hw::Board;
 use crate::mcu::Variant as McuVariant;
@@ -12,11 +14,26 @@ use crate::mcu::Variant as McuVariant;
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct FirmwareVersion {
     major: u16,
     minor: u16,
     patch: u16,
     build: u16,
+}
+
+impl Display for FirmwareVersion {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        if f.alternate() {
+            write!(
+                f,
+                "v{}.{}.{}.{}",
+                self.major, self.minor, self.patch, self.build
+            )
+        } else {
+            write!(f, "{}.{}.{}", self.major, self.minor, self.patch,)
+        }
+    }
 }
 
 impl FirmwareVersion {
@@ -28,6 +45,11 @@ impl FirmwareVersion {
             patch,
             build,
         }
+    }
+
+    /// Whether this version matches another version, ignoring build number.
+    pub fn matches_release(&self, other: &Self) -> bool {
+        self.major == other.major && self.minor == other.minor && self.patch == other.patch
     }
 
     /// Get the major version

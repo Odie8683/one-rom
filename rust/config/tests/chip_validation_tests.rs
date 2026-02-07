@@ -161,7 +161,6 @@ mod tests {
         let config = ChipTypesConfig::from_json(&String::from_utf8_lossy(json))
             .expect("Failed to parse JSON config");
 
-
         let chip_2364 = config.chip_types.get("2364").unwrap();
         assert_eq!(chip_2364.pins, 24);
         assert_eq!(chip_2364.size, 8192);

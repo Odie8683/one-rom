@@ -266,11 +266,11 @@ impl SdrrInfo {
                 pin_to_addr_map[pins.cs1 as usize] = Some(17);
                 0x1FFFF
             }
-            SdrrRomType::Rom27C010 |
-            SdrrRomType::Rom27C020 |
-            SdrrRomType::Rom27C040 |
-            SdrrRomType::Rom27C080 |
-            SdrrRomType::Rom27C400 => {
+            SdrrRomType::Rom27C010
+            | SdrrRomType::Rom27C020
+            | SdrrRomType::Rom27C040
+            | SdrrRomType::Rom27C080
+            | SdrrRomType::Rom27C400 => {
                 return Err(format!(
                     "ROM type {} not supported for address mangling",
                     rom_type

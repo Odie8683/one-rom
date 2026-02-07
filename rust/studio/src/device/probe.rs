@@ -52,9 +52,9 @@ impl std::fmt::Display for ProbeType {
     }
 }
 
-impl Into<ProbeType> for DebugProbeInfo {
-    fn into(self) -> ProbeType {
-        ProbeType(self)
+impl From<DebugProbeInfo> for ProbeType {
+    fn from(info: DebugProbeInfo) -> Self {
+        ProbeType(info)
     }
 }
 
@@ -214,7 +214,7 @@ fn probe_flash(
     let mut loader = session.target().flash_loader();
     trace!("Add data to flash loader at address {load_address:#X}");
     loader
-        .add_data(load_address as u64, &data)
+        .add_data(load_address as u64, data)
         .map_err(|e| e.to_string())?;
 
     trace!("Commit flash loader");

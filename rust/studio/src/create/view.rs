@@ -67,7 +67,7 @@ pub fn view<'a>(
         };
 
         // Add a ROM type picklist row
-        let pick_list = Style::pick_list_small(rom_types.as_slice(), rom_type.clone(), |rt| {
+        let pick_list = Style::pick_list_small(rom_types.as_slice(), *rom_type, |rt| {
             Message::BuildingSelectChipType(rt).into()
         });
 
@@ -215,16 +215,9 @@ fn firmware_row<'a>(
                 Some(r)
             } else {
                 // Only display latest if it supports the selected hardware
-                match releases.release_from_string(latest) {
-                    Some(r) => {
-                        if r.supports_hw(&board, &variant) {
-                            Some(r)
-                        } else {
-                            None
-                        }
-                    }
-                    None => None,
-                }
+                releases
+                    .release_from_string(latest)
+                    .filter(|&r| r.supports_hw(&board, &variant))
             };
 
             // Create release pick list

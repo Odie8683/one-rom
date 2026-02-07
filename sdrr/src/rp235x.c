@@ -873,6 +873,13 @@ void check_config(
             failed = 1;
         }
 
+        // Check that image size is either 64KB or 256KB
+        uint32_t img_size = set->size;
+        if ((img_size != 64 * 1024) && (img_size != 256 * 1024)) {
+            ERR("28-pin ROM image incorrect size 0x%08X", img_size);
+            failed = 1;
+        }
+
         // Other checking we could do includes that all CS/CE/OE and address
         // pins are contiguous
     } else {

@@ -4,10 +4,32 @@
   "description": "One ROM Studio application manifest",
   "type": "object",
   "properties": {
+    "firmware_build_compatibility": {
+      "description": "Firmware compatibility information.  Represents maximum firmware\nversion that this application version can build.\n\nIntroduced in v0.1.12.",
+      "type": "array",
+      "default": [
+        {
+          "app_version": {
+            "major": 0,
+            "minor": 1,
+            "patch": 12
+          },
+          "max_buildable_firmware_version": {
+            "build": 0,
+            "major": 0,
+            "minor": 6,
+            "patch": 4
+          }
+        }
+      ],
+      "items": {
+        "$ref": "#/$defs/FirmwareBuildCompatibility"
+      }
+    },
     "latest_app_version": {
       "description": "Latest application version available",
       "type": "string",
-      "default": "0.1.7"
+      "default": "0.1.12"
     },
     "link_urls": {
       "description": "Links used by the application within the UI",
@@ -66,6 +88,67 @@
     }
   },
   "$defs": {
+    "FirmwareBuildCompatibility": {
+      "description": "Firmware build compatibility information",
+      "type": "object",
+      "properties": {
+        "app_version": {
+          "description": "App version (semver)",
+          "$ref": "#/$defs/Version",
+          "default": {
+            "major": 0,
+            "minor": 1,
+            "patch": 12
+          }
+        },
+        "max_buildable_firmware_version": {
+          "description": "Maximum firmware version this app can build (not flash - any version can be flashed)",
+          "$ref": "#/$defs/FirmwareVersion",
+          "default": {
+            "build": 0,
+            "major": 0,
+            "minor": 6,
+            "patch": 999
+          }
+        }
+      }
+    },
+    "FirmwareVersion": {
+      "description": "Represents a One ROM Firmware Version",
+      "type": "object",
+      "properties": {
+        "build": {
+          "type": "integer",
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "major": {
+          "type": "integer",
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "minor": {
+          "type": "integer",
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "patch": {
+          "type": "integer",
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        }
+      },
+      "required": [
+        "major",
+        "minor",
+        "patch",
+        "build"
+      ]
+    },
     "LinkUrls": {
       "description": "Links used within the application",
       "type": "object",
@@ -172,6 +255,33 @@
           "description": "JSON schema for ROM configuration files",
           "type": "string",
           "default": "https://images.onerom.org/configs/schema.json"
+        }
+      }
+    },
+    "Version": {
+      "description": "Studio version information",
+      "type": "object",
+      "properties": {
+        "major": {
+          "type": "integer",
+          "format": "uint16",
+          "default": 0,
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "minor": {
+          "type": "integer",
+          "format": "uint16",
+          "default": 1,
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "patch": {
+          "type": "integer",
+          "format": "uint16",
+          "default": 12,
+          "maximum": 65535,
+          "minimum": 0
         }
       }
     }

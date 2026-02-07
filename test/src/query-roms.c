@@ -168,22 +168,53 @@ void create_address_mangler(const json_config_t* config, const sdrr_rom_type_t r
         }
     } else {
 #if defined(RP235X)
-        // RP235X: CS pins ARE part of address space for 28 pin ROMs
+        // RP235X: CS pins ARE part of address space for 28 pin ROMs for
+        // 231024, but not for other 28 pin chip types.
+
         // Find the minimum across address AND CS pins
         uint8_t min_pin = 255;
+        uint8_t max_pins;
+
+        // <231024 have 16 pins, 231024 has 18 pins
+        if (rom_type == CHIP_TYPE_231024) {
+            max_pins = 18;
+        } else {
+            max_pins = 16;
+        }
+
         for (int ii = 0; ii < MAX_ADDR_LINES; ii++) {
-            if (address_mangler.addr_pins[ii] < min_pin) {
-                min_pin = address_mangler.addr_pins[ii];
+            if (ii < max_pins) {
+                if (address_mangler.addr_pins[ii] < min_pin) {
+                    min_pin = address_mangler.addr_pins[ii];
+                }
+            } else {
+                // Ensure any pins above max are set to 255 so mangler
+                // doesn't try to use them
+                address_mangler.addr_pins[ii] = 255;
             }
         }
-        if (address_mangler.cs1_pin != 255 && address_mangler.cs1_pin < min_pin) {
-            min_pin = address_mangler.cs1_pin;
-        }
-        if (address_mangler.cs2_pin != 255 && address_mangler.cs2_pin < min_pin) {
-            min_pin = address_mangler.cs2_pin;
-        }
-        if (address_mangler.cs3_pin != 255 && address_mangler.cs3_pin < min_pin) {
-            min_pin = address_mangler.cs3_pin;
+
+        if (rom_type == CHIP_TYPE_231024) {
+            if (address_mangler.cs1_pin != 255 && address_mangler.cs1_pin < min_pin) {
+                min_pin = address_mangler.cs1_pin;
+            }
+            if (address_mangler.cs2_pin != 255 && address_mangler.cs2_pin < min_pin) {
+                min_pin = address_mangler.cs2_pin;
+            }
+            if (address_mangler.cs3_pin != 255 && address_mangler.cs3_pin < min_pin) {
+                min_pin = address_mangler.cs3_pin;
+            }
+
+            // Subtract minimum from all CS pins
+            if (address_mangler.cs1_pin != 255) {
+                address_mangler.cs1_pin -= min_pin;
+            }
+            if (address_mangler.cs2_pin != 255) {
+                address_mangler.cs2_pin -= min_pin;
+            }
+            if (address_mangler.cs3_pin != 255) {
+                address_mangler.cs3_pin -= min_pin;
+            }
         }
 
         // Subtract minimum from all address pins
@@ -193,16 +224,6 @@ void create_address_mangler(const json_config_t* config, const sdrr_rom_type_t r
             }
         }
         
-        // Subtract minimum from all CS pins
-        if (address_mangler.cs1_pin != 255) {
-            address_mangler.cs1_pin -= min_pin;
-        }
-        if (address_mangler.cs2_pin != 255) {
-            address_mangler.cs2_pin -= min_pin;
-        }
-        if (address_mangler.cs3_pin != 255) {
-            address_mangler.cs3_pin -= min_pin;
-        }
 #endif // RP235X
 #if defined(STM32F4)
         // STM32F4: CS pins are NOT part of address space for 28 pin ROMs

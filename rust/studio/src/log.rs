@@ -93,9 +93,9 @@ impl From<log::Level> for Level {
 }
 
 // Conversion from our Level to log::LevelFilter
-impl Into<log::LevelFilter> for Level {
-    fn into(self) -> log::LevelFilter {
-        match self {
+impl From<Level> for log::LevelFilter {
+    fn from(level: Level) -> Self {
+        match level {
             Level::Trace => log::LevelFilter::Trace,
             Level::Debug => log::LevelFilter::Debug,
             Level::Info => log::LevelFilter::Info,
@@ -248,6 +248,12 @@ pub struct Log {
 
     // Stored log entries as a list, from oldest to newest
     entries: Vec<LogEntry>,
+}
+
+impl Default for Log {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Log {

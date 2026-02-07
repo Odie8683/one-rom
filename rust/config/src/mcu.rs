@@ -142,15 +142,15 @@ pub const MCU_VARIANTS: &[Variant] = &[
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum Variant {
-    F446RC, // STM32F446RC (6 or 7), 64-pins, 128KB SRAM, 256KB Flash
-    F446RE, // STM32F446RE (6 or 7), 64-pins, 128KB SRAM, 512KB Flash
-    F411RC, // STM32F411RC (6 or 7), 64-pins, 128KB SRAM, 256KB Flash
-    F411RE, // STM32F411RE (6 or 7), 64-pins, 128KB SRAM, 512KB Flash
-    F405RG, // STM32F405RE (6 or 7), 64-pins, 128KB SRAM, 1024KB Flash (+ 64KB CCM RAM)
-    F401RE, // STM32F401RE (6 or 7), 64-pins, 96KB SRAM, 512KB Flash
-    F401RB, // STM32F401RB (6 or 7), 64-pins, 64KB SRAM, 128KB Flash
-    F401RC, // STM32F401RC (6 or 7), 64-pins, 96KB SRAM, 256KB Flash
-    RP2350, // RP2350A, 60-pin, 2MB flash
+    F446RC,  // STM32F446RC (6 or 7), 64-pins, 128KB SRAM, 256KB Flash
+    F446RE,  // STM32F446RE (6 or 7), 64-pins, 128KB SRAM, 512KB Flash
+    F411RC,  // STM32F411RC (6 or 7), 64-pins, 128KB SRAM, 256KB Flash
+    F411RE,  // STM32F411RE (6 or 7), 64-pins, 128KB SRAM, 512KB Flash
+    F405RG,  // STM32F405RE (6 or 7), 64-pins, 128KB SRAM, 1024KB Flash (+ 64KB CCM RAM)
+    F401RE,  // STM32F401RE (6 or 7), 64-pins, 96KB SRAM, 512KB Flash
+    F401RB,  // STM32F401RB (6 or 7), 64-pins, 64KB SRAM, 128KB Flash
+    F401RC,  // STM32F401RC (6 or 7), 64-pins, 96KB SRAM, 256KB Flash
+    RP2350,  // RP2350A, 60-pin, 2MB flash
     RP2350B, // RP2350B, 80-pin, 2MB flash
 }
 

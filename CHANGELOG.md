@@ -2,6 +2,13 @@
 
 All notables changes between versions are documented in this file.
 
+## v0.6.4 - 2026-02-07
+
+- Fixed [#133](https://github.com/piersfinlayson/one-rom/issues/133), a complex issue where Studio v0.10 and earlier fail to build 28 pin v0.6.3 firmware images correctly.  This stemmed from 0.6.3 incorrectly including a non-backwards compatible change in order to support 231024 ROM types. As part of this:
+  - v0.6.4 reverts that non-backwards compatible change, but retains 231024 support.  Specifically non-231204 ROM images use 64KB on flash, with only 231024 requiring 256KB.
+  - v0.6.4 also introduces checking that the ROM image type is as expected and enters limp mode if not - rather than pretending to be OK and serving garbage.
+  - Studio has been enhanced so it can be configured at runtime (via the manifest) with a maximum firmware version it can support - which overrides onerom-gen's maximum version, if the version Studio is allowed to build is lower.  Had this been in place earlier it could have been used to prevent pre-v0.1.11 version of Studio building bugged v0.6.3 firmwares, when #133 was found.
+
 ## v0.6.3 - 2026-02-03
 
 - Added 231024 mask programmed ROM support.  Used by BBC Master and Apple IIgs.  (Only tested on BBC Master.)

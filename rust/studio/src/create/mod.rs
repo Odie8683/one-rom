@@ -63,12 +63,23 @@ impl State {
 }
 
 /// Create tab state
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct Create {
     selected_hw_info: HardwareInfo,
     mcu_variants: Option<Vec<McuVariant>>,
     display_content: String,
     state: State,
+}
+
+impl Default for Create {
+    fn default() -> Self {
+        Self {
+            selected_hw_info: HardwareInfo::default(),
+            mcu_variants: None,
+            display_content: Self::default_display_content(),
+            state: State::Idle,
+        }
+    }
 }
 
 impl Create {
@@ -84,9 +95,7 @@ impl Create {
 
     /// Instantiation method
     pub fn new() -> Self {
-        let mut create = Self::default();
-        create.display_content = Self::default_display_content();
-        create
+        Self::default()
     }
 
     /// Is the create tab ready for operations?

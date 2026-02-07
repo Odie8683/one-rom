@@ -18,7 +18,8 @@ pub mod style;
 
 pub use app::manifest::{Link as AppLink, ManifestType, PathType, Schema};
 pub use app::manifest::{manifest_read as app_manifest, update_manifest as update_app_manifest};
-pub use app::{App, AppMessage};
+pub use app::{App, AppMessage, Version as AppVersion};
+pub use studio::MAX_BUILD_FW_VERSIONS;
 
 /// Helper macro to turn a message into a Task<AppMessage>.
 /// This allows you to call task_from_msg!(any message type) or
@@ -41,7 +42,8 @@ macro_rules! task_from_msg {
 /// - Arrays like [msg1, msg2] where each can be a message or Option<message>
 /// - Option<Vec<any message type>>
 /// - None
-/// and get a Task<AppMessage> back.
+///
+/// Then get a Task<AppMessage> back.
 #[macro_export]
 macro_rules! task_from_msgs {
     ($msgs:expr) => {

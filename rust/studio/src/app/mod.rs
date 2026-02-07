@@ -9,6 +9,9 @@ use iced::widget::{Space, Stack, column, row};
 use iced::{Element, Length, Subscription, Task};
 #[allow(unused_imports)]
 use log::{debug, error, info, trace, warn};
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+use std::env;
 use std::time::Duration;
 
 use crate::analyse::{Analyse, Message as AnalyseMessage};
@@ -44,7 +47,6 @@ pub fn startup_task() -> Task<AppMessage> {
         Task::done(AppMessage::UpdateManifest(true)),
         Task::run(get_devices_startup(), |msg| msg),
     ])
-    .into()
 }
 
 /// Top level Message enum - container for all sub-module messages
@@ -111,6 +113,12 @@ pub struct App<'a> {
     help: bool,
 }
 
+impl<'a> Default for App<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'a> App<'a> {
     pub fn new() -> Self {
         Self {
@@ -137,18 +145,13 @@ impl<'a> App<'a> {
             m => trace!("{m}"),
         }
         match message {
-            AppMessage::Analyse(fw_msg) => {
-                self.analyse.update(&runtime_info, fw_msg).map(|m| m.into())
+            AppMessage::Analyse(fw_msg) => self.analyse.update(&runtime_info, fw_msg),
+            AppMessage::Device(dev_msg) => self.device.update(&runtime_info, dev_msg),
+            AppMessage::Create(prog_msg) => {
+                self.create.update(&runtime_info, &self.device, prog_msg)
             }
-            AppMessage::Device(dev_msg) => {
-                self.device.update(&runtime_info, dev_msg).map(|m| m.into())
-            }
-            AppMessage::Create(prog_msg) => self
-                .create
-                .update(&runtime_info, &self.device, prog_msg)
-                .map(|m| m.into()),
-            AppMessage::Studio(studio_msg) => self.studio.update(studio_msg).map(|m| m.into()),
-            AppMessage::Log(log_msg) => self.log.update(&runtime_info, log_msg).map(|m| m.into()),
+            AppMessage::Studio(studio_msg) => self.studio.update(studio_msg),
+            AppMessage::Log(log_msg) => self.log.update(&runtime_info, log_msg),
             AppMessage::Style(style_msg) => self.style.update(style_msg).map(|m| m.into()),
             AppMessage::Help(flag) => {
                 self.help = flag;
@@ -224,18 +227,10 @@ impl<'a> App<'a> {
 
         Subscription::batch(vec![
             manifest_reread,
-            self.studio
-                .subscription()
-                .map(|msg| AppMessage::Studio(msg)),
-            self.analyse
-                .subscription()
-                .map(|msg| AppMessage::Analyse(msg)),
-            self.create
-                .subscription()
-                .map(|msg| AppMessage::Create(msg)),
-            self.device
-                .subscription()
-                .map(|msg| AppMessage::Device(msg)),
+            self.studio.subscription().map(AppMessage::Studio),
+            self.analyse.subscription().map(AppMessage::Analyse),
+            self.create.subscription().map(AppMessage::Create),
+            self.device.subscription().map(AppMessage::Device),
             self.log.subscription(),
         ])
     }
@@ -311,5 +306,34 @@ impl From<StyleMessage> for Option<AppMessage> {
 impl From<LogMessage> for Option<AppMessage> {
     fn from(msg: LogMessage) -> Self {
         Some(AppMessage::Log(msg))
+    }
+}
+
+/// Studio version information
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(default)]
+pub struct Version {
+    pub major: u16,
+    pub minor: u16,
+    pub patch: u16,
+}
+
+impl Default for Version {
+    fn default() -> Self {
+        Self {
+            major: env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap_or(0),
+            minor: env!("CARGO_PKG_VERSION_MINOR").parse().unwrap_or(0),
+            patch: env!("CARGO_PKG_VERSION_PATCH").parse().unwrap_or(0),
+        }
+    }
+}
+
+impl Version {
+    pub const fn new(major: u16, minor: u16, patch: u16) -> Self {
+        Self {
+            major,
+            minor,
+            patch,
+        }
     }
 }

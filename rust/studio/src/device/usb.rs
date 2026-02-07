@@ -37,8 +37,7 @@ async fn get_ice_list_async() -> Option<Vec<UsbDeviceType>> {
             // Turn into UsbDeviceType
             let devices = devices
                 .into_iter()
-                .map(UsbDeviceType::from_dfu)
-                .filter_map(|d| d)
+                .filter_map(UsbDeviceType::from_dfu)
                 .collect();
             Some(devices)
         }
@@ -154,7 +153,7 @@ pub async fn read_async(
                     d.info(),
                 );
                 warn!("{log}");
-                return Message::ReadFailed(client, log).into();
+                Message::ReadFailed(client, log).into()
             }
         },
         UsbDeviceType::Fire(mut p) => match p.flash_read(address, (words * 4) as u32).await {
@@ -165,7 +164,7 @@ pub async fn read_async(
                     p.info(),
                 );
                 warn!("{log}");
-                return Message::ReadFailed(client, log).into();
+                Message::ReadFailed(client, log).into()
             }
         },
     }
@@ -209,7 +208,7 @@ async fn flash_ice_async(dfu_device: DfuDevice, client: Client, data: Vec<u8>) -
                 dfu_device.info()
             );
             warn!("{log}");
-            return Message::FlashFirmwareResult(client, Err(log)).into();
+            Message::FlashFirmwareResult(client, Err(log)).into()
         }
     }
 }
@@ -233,7 +232,7 @@ async fn flash_fire_async(mut picoboot: Picoboot, client: Client, data: Vec<u8>)
                 picoboot.info()
             );
             warn!("{log}");
-            return Message::FlashFirmwareResult(client, Err(log)).into();
+            Message::FlashFirmwareResult(client, Err(log)).into()
         }
     }
 }

@@ -33,7 +33,7 @@ int validate_all_rom_sets(json_config_t *json_config, loaded_rom_t *loaded_roms,
         const sdrr_rom_type_t rom_type = rom->rom_type;
         const uint8_t num_cs = get_num_cs(rom_type);
         uint8_t *cs_combos;
-        const uint8_t num_cs_combos = cs_combinations(rom_type, &cs_combos);
+        uint8_t num_cs_combos = cs_combinations(rom_type, &cs_combos);
         const uint8_t cs_active_level[] = {
             rom->cs1_state == CS_ACTIVE_HIGH ? 1 : 0,
             rom->cs2_state == CS_ACTIVE_HIGH ? 1 : 0,
@@ -119,9 +119,15 @@ int validate_all_rom_sets(json_config_t *json_config, loaded_rom_t *loaded_roms,
                     }
                 }
             } else {
-                // 28 pin ROMs - single 0.6.3 for Fire boards, CS lines _are_ in the address space.
 #if defined(RP235X)
-                // 28-pin RP235X: CS in address space, test all CS combinations
+                // 28 pin ROMs.  0.6.4 only 231024 has CS lines in address space.
+                if (rom_type != CHIP_TYPE_231024) {
+                    // Hard code a single CS combo.  Note that strictly this
+                    // isn't always CS active, e.g. for 23xxx, but we don't
+                    // care about that in this test - we assume active/inactive
+                    // both get the right byte.
+                    num_cs_combos = 1;
+                }
                 size_t orig_rom_size = get_expected_rom_size(rom_type);
                 for (uint32_t original_addr = 0; original_addr < orig_rom_size; original_addr++) {
                     uint8_t (*cs_combos_2d)[3] = (uint8_t (*)[3])cs_combos;
@@ -131,6 +137,7 @@ int validate_all_rom_sets(json_config_t *json_config, loaded_rom_t *loaded_roms,
                         uint8_t cs3 = cs_combos_2d[combo_idx][2];
 
                         // Determine if this CS combination activates the ROM
+                        // Unused.  We expect the same data whether active or not.
                         int cs_active = 1;
                         if (num_cs >= 1) {
                             if (cs1 != cs_active_level[0]) cs_active = 0;

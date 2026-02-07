@@ -759,11 +759,16 @@ impl ChipSet {
             }
             (28, McuFamily::Rp2350) => {
                 if *fw_version < MIN_FW_VER_FIRE_28_18_ADDR_PINS {
-                    assert!(num_addr_pins == 16);
                     2_usize.pow(16) // 64KB
                 } else {
+                    // This firmware supports 18 address pins, but only the
+                    // first 16 are used for chip types other than 231024.
                     assert!(num_addr_pins == 18);
-                    2_usize.pow(18) // 256KB
+                    let chip = &self.chips[0];
+                    match chip.chip_type() {
+                        ChipType::Chip231024 => 2_usize.pow(18), // 256KB
+                        _ => 2_usize.pow(16),                    // 64KB
+                    }
                 }
             }
             (40, McuFamily::Rp2350) => {
@@ -1257,28 +1262,34 @@ impl ChipSet {
 // Handle Chip Types which do not have a standard address layout.  Currently,
 // the only know Chip type needing special handling is the 2732, which has
 // swapped A11 and A12 lines.
+//
+// Also, now using this function to handle 28 pin chips that aren't the
+// 231024.  In this case, we want to throw away the first two address lines,
+// as these are CS lines, which aren't used as address lines, except for the
+// 231024.
 fn handle_snowflake_chip_types(
     phys_pin_to_addr_map: &[Option<usize>],
     chip_type: &ChipType,
 ) -> Vec<Option<usize>> {
     let mut modified_map = phys_pin_to_addr_map.to_vec();
-    match chip_type {
-        ChipType::Chip2732 => {
-            // Swap A11 and A12
-            let a11_index = modified_map.iter().position(|&x| x == Some(11));
-            let a12_index = modified_map.iter().position(|&x| x == Some(12));
-            if let (Some(i11), Some(i12)) = (a11_index, a12_index) {
-                modified_map[i11] = Some(12);
-                modified_map[i12] = Some(11);
-            } else {
-                // Address lines not found as expected.  Panic, as this is an
-                // internal error and implies a board has been added supporting
-                // the 2732 but without pins A11 and/or A12.
-            }
+    if *chip_type == ChipType::Chip2732 {
+        // Swap A11 and A12
+        let a11_index = modified_map.iter().position(|&x| x == Some(11));
+        let a12_index = modified_map.iter().position(|&x| x == Some(12));
+        if let (Some(i11), Some(i12)) = (a11_index, a12_index) {
+            modified_map[i11] = Some(12);
+            modified_map[i12] = Some(11);
+        } else {
+            // Address lines not found as expected.  Panic, as this is an
+            // internal error and implies a board has been added supporting
+            // the 2732 but without pins A11 and/or A12.
         }
-        _ => {
-            // No special handling needed
-        }
+    } else if chip_type.chip_pins() == 28 && *chip_type != ChipType::Chip231024 {
+        // Remove first two entries, and add two Nones on the end.
+        modified_map.remove(0);
+        modified_map.remove(0);
+        modified_map.push(None);
+        modified_map.push(None);
     }
     modified_map
 }

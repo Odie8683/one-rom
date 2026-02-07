@@ -1,6 +1,6 @@
 // config/tests/generated_tests.rs
 
-use onerom_config::chip::{ControlLineType, ProgrammingPinState, ChipType};
+use onerom_config::chip::{ChipType, ControlLineType, ProgrammingPinState};
 
 #[test]
 fn test_chip_2316_specs() {

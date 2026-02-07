@@ -143,14 +143,9 @@ fn probe_button<'a>(device: &'a Device) -> Button<'a, AppMessage> {
     let highlight_probe_button = device.selected().probe().is_some();
     let on_press_probe = if device.is_idle()
         && device.selected().probe().is_none()
-        && device.selected_probe.is_some()
+        && let Some(probe) = device.selected_probe.as_ref()
     {
-        Some(
-            Message::SelectDevice(DeviceType::from_probe(
-                device.selected_probe.as_ref().unwrap().clone(),
-            ))
-            .into(),
-        )
+        Some(Message::SelectDevice(DeviceType::from_probe(probe.clone())).into())
     } else {
         None
     };
@@ -162,14 +157,9 @@ fn usb_button<'a>(device: &'a Device) -> Button<'a, AppMessage> {
     let highlight_usb_button = device.selected().usb_device().is_some();
     let on_press_usb = if device.is_idle()
         && device.selected().usb_device().is_none()
-        && device.selected_usb_device.is_some()
+        && let Some(usb_device) = device.selected_usb_device.as_ref()
     {
-        Some(
-            Message::SelectDevice(DeviceType::from_usb(
-                device.selected_usb_device.as_ref().unwrap().clone(),
-            ))
-            .into(),
-        )
+        Some(Message::SelectDevice(DeviceType::from_usb(usb_device.clone())).into())
     } else {
         None
     };

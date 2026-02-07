@@ -71,7 +71,7 @@ impl DetectState {
         match self {
             DetectState::Ice => Some(McuVariant::F411RE),
             DetectState::Fire => Some(McuVariant::RP2350),
-            DetectState::Reread(mcu, _) => Some(mcu.clone()),
+            DetectState::Reread(mcu, _) => Some(*mcu),
             DetectState::Done => None,
         }
     }
@@ -194,7 +194,7 @@ pub fn flash_firmware(analyse: &mut Analyse) -> Task<AppMessage> {
             .into(),
         )
     } else {
-        analyse.analysis_content = format!("Cannot flash - no file loaded\n");
+        analyse.analysis_content = "Cannot flash - no file loaded\n".to_string();
         Task::none()
     }
 }
@@ -301,7 +301,7 @@ pub fn reread_device(
         fw_version.minor(),
         fw_version.patch()
     );
-    analyse.state = AnalyseState::Detecting(DetectState::Reread(mcu.clone(), fw_version.clone()));
+    analyse.state = AnalyseState::Detecting(DetectState::Reread(mcu, fw_version));
 
     // Build the message re-read the flash (and re-parse).  We now have the
     // MCU variant, so can get the full flash size - this is what we need to
