@@ -1,58 +1,25 @@
 # PANELISING PCBs
 
-WORK IN PROGRESS - DO NOT USE
+One ROM can be panelised for efficient manufacturing at scale.  At the time of writing. 150 `fire-28-a` (RP2354A variant) One ROMs can be manufactured and assembled just under £3 ($4) per unit, including all shipping and taxes to the UK.
 
-## Setup
+If panelising you are recommended to choose USB-C variants, as these lend themselves better to panelised for easily.  Micro-USB variants require a cut-out in the panel for the connector to overhang the edge of the PCB, which is complicated to achieve, at least in an automated fashion.
 
-Install kikit into the KiCad python environment:
+It is possible to build the gerbers for the panel yourself, either manually, or using a tool like kikit.  However, with USB-C variants, JLC's panelising service is the least effort.
 
-```zsh
-/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3 -m pip install kikit
-```
+To panelise using JLC:
+- Upload the gerbers for a single piece (found the in `fab` folder of the design you are using) to JLC as normal
+- Choose yor PCB colour
+- Under PCB quantity, select the number of **panels** you want (e.g. 5)
+- Under panlisation select "Panel by JLCPCB" or similar.  Then select
+    - The number of columns (e.g. 5)
+    - The number of rows (e.g. 4)
+    - Edge rails (recommend left and right)
+    As part of this check that the lines between the PCBs are marked "V-CUT".
+- This example would give 100 One ROMs (5 columns x 4 rows x 5 panels = 100)
+- Select assembly as normal
+- When asked whether your BOM is for a single PCB or all PCBs, select "single piece pls help me duplicate" or similar.  JLC then multiply the part quantities in your BOM by the number of One ROMs.
+- Ensure all parts are selected as usual.
+- Ensure the parts placement and rotation is correct for the single PCB - JLC will then duplicate the placement for all PCBs in the panel.
+- Place your order.
 
-add to .zshrc
-```
-alias kikit='/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3 -m kikit.ui'
-```
-
-```zsh
-source ~/.zshrc
-```
-
-## Usage
-
-1. Generate the panel using kikit:
-
-    ```zsh
-    mkdir -p panels/fire-24-d-5x4-panel
-    kikit panelize -p support/fire-24-d-5x4-panel-config.json verified/fire-24-d/kicad/fire-24-d.kicad_pcb panels/fire-24-d-5x4-panel/fire-24-d-5x4-panel.kicad_pcb
-    ```
-
-2. Manually add "CNC" on Edge Cuts in spaces that should be milled out.
-
-3. Export gerbers (do not refill zones) and drill files.  It's best to export to a sub-directory.  Create a zip file of the contents of that directory for submission.
-
-4. Upload the gerbers.
-
-5. Select colour.
-
-6. Select Panel by Customer and the number of columns/rows.
-
-7. Ensure Remove Mark selected.
-
-8. Select Confirm Production file.
-
-9. Select PCB Assembly.
-
-10. Select Standard (not Economic, as this includes V-CUT).
-
-11. Select Edge Rails/Fiducials Added by Customer.
-
-12. When adding BOM, ensure "Single Piece, pls help me repeat the data" is selected.
-
-13. Ensure all parts selected.
-
-
-
-
-Use the standard bom and pos files.
+When the panels arrive, separate the panels into individual PCBs by snapping them apart along the V-CUT lines, program, test and enjoy!
