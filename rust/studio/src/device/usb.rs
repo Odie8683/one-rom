@@ -215,6 +215,11 @@ async fn flash_ice_async(dfu_device: DfuDevice, client: Client, data: Vec<u8>) -
 
 async fn flash_fire_async(mut picoboot: Picoboot, client: Client, data: Vec<u8>) -> AppMessage {
     debug!("Flash firmware to Fire USB");
+    // Set a timeout to 10s in case a very large flash erase takes a very long time
+    picoboot.set_timeouts(picoboot::usb::Timeouts {
+        endpoint: Duration::from_secs(10),
+        ..picoboot::usb::Timeouts::default()
+    });
     match picoboot
         .flash_erase_and_write(picoboot.target().flash_start(), &data)
         .await

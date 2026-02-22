@@ -1,6 +1,6 @@
 [package]
 name = "onerom-studio"
-version = "0.1.13"
+version = "0.1.14"
 edition = "2024"
 authors = ["Piers Finlayson <piers@piers.rocks>"]
 license = "MIT"
@@ -66,7 +66,7 @@ onerom-fw = { version = "0.1.14" }
 onerom-gen = { version = "0.5.2" }
 sdrr-fw-parser = { version = "0.6.5" }
 dfu-rs = { git = "https://github.com/piersfinlayson/dfu-rs.git", version = "0.2.0" }
-picoboot = { git = "https://github.com/piersfinlayson/picoboot.git", version = "0.1.1" }
+picoboot = { version = "0.1.2" }
 
 arc-swap = "1.7"
 chrono = "0.4"
