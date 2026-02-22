@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.1.14 2026-??-??
+## v0.1.14 2026-02-22
 
 - Fixed #152 (Studio fails to flash large images to One ROM 40 ROMs)
 
