@@ -1,11 +1,13 @@
 # Workspace configuration for the Rust elements of the One ROM project
 [workspace]
 members = [
+    "cli",
     "config",
     "database",
     "fw",
     "gen",
     "lab",
+    "lab-new",
     "protocol",
     "schema-gen",
     "sdrr-check",
@@ -15,6 +17,7 @@ members = [
     "studio"
 ]
 default-members = [
+    "cli",
     "config",
     "fw",
     "gen",

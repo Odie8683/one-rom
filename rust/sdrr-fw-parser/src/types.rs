@@ -22,7 +22,7 @@ pub enum Source {
 
 /// STM32F4 product line options
 ///
-/// Relflects `stm_line_t` from `sdrr/include/config_base.h`
+/// Reflects `stm_line_t` from `sdrr/include/config_base.h`
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, DekuRead, DekuWrite, serde::Serialize, serde::Deserialize,
 )]
@@ -290,6 +290,22 @@ pub enum SdrrRomType {
     // 27C301
     #[deku(id = "21")]
     Rom27C301,
+
+    // System Plugin
+    #[deku(id = "22")]
+    SystemPlugin,
+
+    // User Plugin
+    #[deku(id = "23")]
+    UserPlugin,
+
+    // PIO Plugin
+    #[deku(id = "24")]
+    PioPlugin,
+
+    // SST39SF040
+    #[deku(id = "25")]
+    RomSst39sf040,
 }
 
 impl fmt::Display for SdrrRomType {
@@ -317,6 +333,10 @@ impl fmt::Display for SdrrRomType {
             SdrrRomType::Rom27C400 => write!(f, "27C400"),
             SdrrRomType::Ram6116 => write!(f, "6116 (RAM)"),
             SdrrRomType::Rom27C301 => write!(f, "27C301"),
+            SdrrRomType::SystemPlugin => write!(f, "System Plugin"),
+            SdrrRomType::UserPlugin => write!(f, "User Plugin"),
+            SdrrRomType::PioPlugin => write!(f, "PIO Plugin"),
+            SdrrRomType::RomSst39sf040 => write!(f, "SST39SF040"),
         }
     }
 }
@@ -355,6 +375,10 @@ impl SdrrRomType {
             SdrrRomType::Rom27C400 => 512,
             SdrrRomType::Ram6116 => 2,
             SdrrRomType::Rom27C301 => 128,
+            SdrrRomType::SystemPlugin => 64,
+            SdrrRomType::UserPlugin => 64,
+            SdrrRomType::PioPlugin => 64,
+            SdrrRomType::RomSst39sf040 => 512,
         }
     }
 
@@ -383,6 +407,10 @@ impl SdrrRomType {
             SdrrRomType::Rom27C400 => 40,
             SdrrRomType::Ram6116 => 24,
             SdrrRomType::Rom27C301 => 32,
+            SdrrRomType::SystemPlugin => 0,
+            SdrrRomType::UserPlugin => 0,
+            SdrrRomType::PioPlugin => 0,
+            SdrrRomType::RomSst39sf040 => 512,
         }
     }
 
@@ -416,6 +444,10 @@ impl SdrrRomType {
             SdrrRomType::Rom27C400 => false,
             SdrrRomType::Ram6116 => false,
             SdrrRomType::Rom27C301 => false,
+            SdrrRomType::SystemPlugin => false,
+            SdrrRomType::UserPlugin => false,
+            SdrrRomType::PioPlugin => false,
+            SdrrRomType::RomSst39sf040 => false,
         }
     }
 
@@ -444,6 +476,10 @@ impl SdrrRomType {
             SdrrRomType::Rom27C400 => false,
             SdrrRomType::Ram6116 => false,
             SdrrRomType::Rom27C301 => false,
+            SdrrRomType::SystemPlugin => false,
+            SdrrRomType::UserPlugin => false,
+            SdrrRomType::PioPlugin => false,
+            SdrrRomType::RomSst39sf040 => false,
         }
     }
 }
@@ -718,4 +754,118 @@ impl fmt::Display for SdrrAddress {
             }
         }
     }
+}
+
+#[repr(u8)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, DekuRead, DekuWrite,
+)]
+#[deku(id_type = "u8")]
+pub enum FireVreg {
+    #[deku(id = "0x00")]
+    V0_55 = 0x00,
+    #[deku(id = "0x01")]
+    V0_60 = 0x01,
+    #[deku(id = "0x02")]
+    V0_65 = 0x02,
+    #[deku(id = "0x03")]
+    V0_70 = 0x03,
+    #[deku(id = "0x04")]
+    V0_75 = 0x04,
+    #[deku(id = "0x05")]
+    V0_80 = 0x05,
+    #[deku(id = "0x06")]
+    V0_85 = 0x06,
+    #[deku(id = "0x07")]
+    V0_90 = 0x07,
+    #[deku(id = "0x08")]
+    V0_95 = 0x08,
+    #[deku(id = "0x09")]
+    V1_00 = 0x09,
+    #[deku(id = "0x0A")]
+    V1_05 = 0x0A,
+    #[deku(id = "0x0B")]
+    V1_10 = 0x0B,
+    #[deku(id = "0x0C")]
+    V1_15 = 0x0C,
+    #[deku(id = "0x0D")]
+    V1_20 = 0x0D,
+    #[deku(id = "0x0E")]
+    V1_25 = 0x0E,
+    #[deku(id = "0x0F")]
+    V1_30 = 0x0F,
+    #[deku(id = "0x10")]
+    V1_35 = 0x10,
+    #[deku(id = "0x11")]
+    V1_40 = 0x11,
+    #[deku(id = "0x12")]
+    V1_50 = 0x12,
+    #[deku(id = "0x13")]
+    V1_60 = 0x13,
+    #[deku(id = "0x14")]
+    V1_65 = 0x14,
+    #[deku(id = "0x15")]
+    V1_70 = 0x15,
+    #[deku(id = "0x16")]
+    V1_80 = 0x16,
+    #[deku(id = "0x17")]
+    V1_90 = 0x17,
+    #[deku(id = "0x18")]
+    V2_00 = 0x18,
+    #[deku(id = "0x19")]
+    V2_35 = 0x19,
+    #[deku(id = "0x1A")]
+    V2_50 = 0x1A,
+    #[deku(id = "0x1B")]
+    V2_65 = 0x1B,
+    #[deku(id = "0x1C")]
+    V2_80 = 0x1C,
+    #[deku(id = "0x1D")]
+    V3_00 = 0x1D,
+    #[deku(id = "0x1E")]
+    V3_15 = 0x1E,
+    #[deku(id = "0x1F")]
+    V3_30 = 0x1F,
+    #[deku(id = "0xFE")]
+    None = 0xFE,
+    #[deku(id = "0xFF")]
+    Stock = 0xFF,
+}
+
+/// Data bus width mode
+#[repr(u8)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq, DekuRead, DekuWrite)]
+#[deku(id_type = "u8")]
+pub enum BitMode {
+    #[deku(id = "0x01")]
+    Mode8  = 0x01,
+    #[deku(id = "0x02")]
+    Mode16 = 0x02,
+}
+
+/// Whether the RP2350 serves using the CPU or PIO
+#[repr(u8)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq, DekuRead, DekuWrite)]
+#[deku(id_type = "u8")]
+pub enum FireServeMode {
+    #[deku(id = "0x00")]
+    Cpu = 0x00,
+    #[deku(id = "0x01")]
+    Pio = 0x01,
+}
+
+
+/// Limp mode pattern
+#[repr(u8)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq, DekuRead, DekuWrite)]
+#[deku(id_type = "u8")]
+pub enum LimpMode {
+    #[deku(id = "0x00")]
+    None = 0x00,
+    #[deku(id = "0x01")]
+    NoRoms = 0x01,
+    #[deku(id = "0x02")]
+    InvalidConfig = 0x02,
+    #[deku(id = "0x03")]
+    InvalidBuild = 0x03,
 }

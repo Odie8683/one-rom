@@ -15,6 +15,7 @@ pub enum Error {
         details: String,
     },
     Read {
+        file: String,
         error: std::io::Error,
     },
     Parse {
@@ -30,9 +31,11 @@ pub enum Error {
         error: ConfigError,
     },
     Network {
+        url: String,
         error: ReqwestError,
     },
     Http {
+        url: String,
         status: u16,
     },
     Json {
@@ -45,10 +48,12 @@ pub enum Error {
         max: usize,
     },
     FileWrite {
+        file: String,
         error: std::io::Error,
     },
     LicenseNotAccepted,
     Zip {
+        file: String,
         error: ZipError,
     },
 }
@@ -57,21 +62,21 @@ impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Error::Config { details } => write!(f, "Configuration error:\n  {}", details),
-            Error::Read { error } => write!(f, "I/O read error:\n  {}", error),
+            Error::Read { file, error } => write!(f, "Read error for file {}:\n  {}", file, error),
             Error::Parse { error } => write!(f, "Parsing error:\n  {:?}", error),
             Error::Build { error } => write!(f, "Build error:\n  {:?}", error),
             Error::License { error } => write!(f, "License acceptance error:\n  {:?}", error),
             Error::FirmwareVersion { error } => write!(f, "Firmware version error:\n  {:?}", error),
-            Error::Network { error } => write!(f, "Network error:\n  {}", error),
-            Error::Http { status } => write!(f, "HTTP error: Status code {}", status),
+            Error::Network { url, error } => write!(f, "Network error for URL {}:\n  {}", url, error),
+            Error::Http { url, status } => write!(f, "HTTP error for URL {}: Status code {}", url, status),
             Error::Json { error } => write!(f, "JSON parsing error:\n  {}", error),
             Error::ReleaseNotFound => write!(f, "Requested firmware release not found"),
             Error::TooLarge { portion, size, max } => {
                 write!(f, "{} size {} exceeds maximum of {}", portion, size, max)
             }
-            Error::FileWrite { error } => write!(f, "File write error:\n  {}", error),
+            Error::FileWrite { file, error } => write!(f, "File write error for file {}:\n  {}", file, error),
             Error::LicenseNotAccepted => write!(f, "License not accepted by user"),
-            Error::Zip { error } => write!(f, "Zip extraction error:\n  {}", error),
+            Error::Zip { file, error } => write!(f, "Zip extraction error for file {}:\n  {}", file, error),
         }
     }
 }
@@ -80,8 +85,8 @@ impl Error {
     pub fn config(details: String) -> Self {
         Self::Config { details }
     }
-    pub fn read(error: std::io::Error) -> Self {
-        Self::Read { error }
+    pub fn read(file: String, error: std::io::Error) -> Self {
+        Self::Read { file, error }
     }
     pub fn parse(error: GenError) -> Self {
         Self::Parse { error }
@@ -95,8 +100,8 @@ impl Error {
     pub fn firmware_version(error: ConfigError) -> Self {
         Self::FirmwareVersion { error }
     }
-    pub fn network(error: ReqwestError) -> Self {
-        Self::Network { error }
+    pub fn network(url: String, error: ReqwestError) -> Self {
+        Self::Network { url, error }
     }
     pub fn json(error: SerdeJsonError) -> Self {
         Self::Json { error }
@@ -107,13 +112,13 @@ impl Error {
     pub fn too_large(portion: String, size: usize, max: usize) -> Self {
         Self::TooLarge { portion, size, max }
     }
-    pub fn write(error: std::io::Error) -> Self {
-        Self::FileWrite { error }
+    pub fn write(file: String, error: std::io::Error) -> Self {
+        Self::FileWrite { file, error }
     }
     pub fn license_not_accepted() -> Self {
         Self::LicenseNotAccepted
     }
-    pub fn zip(error: ZipError) -> Self {
-        Self::Zip { error }
+    pub fn zip(file: String, error: ZipError) -> Self {
+        Self::Zip { file, error }
     }
 }

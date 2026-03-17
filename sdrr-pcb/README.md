@@ -19,6 +19,7 @@ The following table lists the recommended verified designs.  Each design has bee
 | Fire  | RP2354A | 24 | C | ✓ | 4 | 2 | [fire-24-e](./verified/fire-24-e/README.md) |
 | Ice   | STM32F4 | 24 | Micro-B | ✓ | 4 | 2 | [ice-24-j](./verified/ice-24-j/README.md) |
 | Fire  | RP2350A or RP2354A | 28 | C | ✓ | 2 | n/a | [fire-28-a3](./verified/fire-28-a3/README.md) |
+| Fire  | RP2350A or RP2354A | 28 | C (upright) | ✓ | 2 | n/a | [fire-28-b](./verified/fire-28-b/README.md) |
 | Fire  | RP2350B or RP2354B | 40 | C | ✓ | 4 | n/a | [fire-40-a](./verified/fire-40-a/README.md) |
 
 There may be later, unverified, revisions not in the list above.  These may have improvements over the recommended revisions, but they have not been verified to work.  If you want to use one of these later revisions, read the relevant README before ordering.

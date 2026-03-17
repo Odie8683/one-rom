@@ -79,7 +79,7 @@ PRODUCTVERSION {file_version}
       VALUE "FileDescription", "One ROM Studio - Manage One ROMs"
       VALUE "ProductVersion", "{version}"
       VALUE "OriginalFilename", "onerom-studio.exe"
-      VALUE "LegalCopyright", "2025 Piers Finlayson"
+      VALUE "LegalCopyright", "2026 Piers Finlayson"
       VALUE "CompanyName", "piers.rocks"
     }}
   }}

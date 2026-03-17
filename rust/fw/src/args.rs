@@ -250,7 +250,7 @@ fn mcu_values() -> String {
 
 async fn load_firmware_metadata(path: &str) -> Result<(FirmwareVersion, Board, McuVariant), Error> {
     // Load the binary file
-    let data = std::fs::read(path).map_err(Error::read)?;
+    let data = std::fs::read(path).map_err(|e| Error::read(path.to_string(), e))?;
 
     // Create a memory reader and parser (0x0800_0000 is the base address
     // for STM32F4 flash - but the reader will cope with RP2350 images as well)

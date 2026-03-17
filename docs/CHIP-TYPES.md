@@ -27,50 +27,50 @@ There are also some other inconsistencies between types:
 
 ## 24-pin Mask ROM Family (23xx)
 
-| Chip Type | Size | Address Lines | Control Lines | Programming |
-|----------|------|---------------|---------------|-------------|
-| 2316 | 2KB | 11 (A0-A10) | CS1 (pin 20), CS2 (pin 18), CS3 (pin 21) | None |
-| 2332 | 4KB | 12 (A0-A11) | CS1 (pin 20), CS2 (pin 21) | None |
-| 2364 | 8KB | 13 (A0-A12) | CS1 (pin 20) | None |
+| Chip Type | Aliases | Size | Address Lines | Control Lines | Programming | Supported |
+|-----------|---------|------|---------------|---------------|-------------|-----------|
+| 2316 | 9316 | 2KB | 11 (A0-A10) | CS1 (pin 20), CS2 (pin 18), CS3 (pin 21) | None | ✓ |
+| 2332 | 9332, 4732 | 4KB | 12 (A0-A11) | CS1 (pin 20), CS2 (pin 21) | None | ✓ |
+| 2364 | 4764 | 8KB | 13 (A0-A12) | CS1 (pin 20) | None | ✓ |
 
 ## 28-pin Mask ROM Family (23xx)
 
-| Chip Type | Size | Address Lines | Control Lines | Programming |
-|----------|------|---------------|---------------|-------------|
-| 23128 | 16KB | 14 (A0-A13) | CS1 (pin 20), CS2 (pin 22), CS3 (pin 27) | None |
-| 23256 | 32KB | 15 (A0-A14) | CS1 (pin 20), CS2 (pin 22) | None |
-| 23512 | 64KB | 16 (A0-A15) | CS1 (pin 20), CS2 (pin 22) | None |
-| 231024 | 128KB | 17 (A0-A16) | CS1 (pin 20) | None |
+| Chip Type | Aliases | Size | Address Lines | Control Lines | Programming | Supported |
+|-----------|---------|------|---------------|---------------|-------------|-----------|
+| 23128 |  | 16KB | 14 (A0-A13) | CS1 (pin 20), CS2 (pin 22), CS3 (pin 27) | None | ✓ |
+| 23256 |  | 32KB | 15 (A0-A14) | CS1 (pin 20), CS2 (pin 22) | None | ✓ |
+| 23512 |  | 64KB | 16 (A0-A15) | CS1 (pin 20), CS2 (pin 22) | None | ✓ |
+| 231024 | TC531000 | 128KB | 17 (A0-A16) | CS1 (pin 20) | None | ✓ |
 
 ## 24-pin EPROM Family (27xx)
 
-| Chip Type | Size | Address Lines | Control Lines | Programming |
-|----------|------|---------------|---------------|-------------|
-| 2704 | 512B | 9 (A0-A8) | /CE (pin 18), /OE (pin 20) | VPP: pin 18 (Low during read) |
-| 2708 | 1KB | 10 (A0-A9) | /CE (pin 18), /OE (pin 20) | VPP: pin 18 (Low during read) |
-| 2716 | 2KB | 11 (A0-A10) | /CE (pin 18), /OE (pin 20) | VPP: pin 21 (VCC during read) |
-| 2732 | 4KB | 12 (A0-A11) | /CE (pin 18), /OE (pin 20) | VPP: pin 20 (Acts as /OE) |
+| Chip Type | Aliases | Size | Address Lines | Control Lines | Programming | Supported |
+|-----------|---------|------|---------------|---------------|-------------|-----------|
+| 2704 |  | 512B | 9 (A0-A8) | /CE (pin 18), /OE (pin 20) | VPP: pin 18 (Low during read) | ✓ |
+| 2708 |  | 1KB | 10 (A0-A9) | /CE (pin 18), /OE (pin 20) | VPP: pin 18 (Low during read) | ✓ |
+| 2716 |  | 2KB | 11 (A0-A10) | /CE (pin 18), /OE (pin 20) | VPP: pin 21 (VCC during read) | ✓ |
+| 2732 | 27C32 | 4KB | 12 (A0-A11) | /CE (pin 18), /OE (pin 20) | VPP: pin 20 (Acts as /OE) | ✓ |
 
 ## 28-pin EPROM Family (27xx)
 
-| Chip Type | Size | Address Lines | Control Lines | Programming |
-|----------|------|---------------|---------------|-------------|
-| 2764 | 8KB | 13 (A0-A12) | /CE (pin 20), /OE (pin 22) | VPP: pin 1 (VCC during read); /PGM: pin 27 (High during read) |
-| 27128 | 16KB | 14 (A0-A13) | /CE (pin 20), /OE (pin 22) | VPP: pin 1 (VCC during read); /PGM: pin 27 (High during read) |
-| 27256 | 32KB | 15 (A0-A14) | /CE (pin 20), /OE (pin 22) | VPP: pin 1 (VCC during read) |
-| 27512 | 64KB | 16 (A0-A15) | /CE (pin 20), /OE (pin 22) | VPP: pin 22 (VCC during read) |
-| 27C010 | 128KB | 17 (A0-A16) | /CE (pin 22), /OE (pin 24) | VPP: pin 1 (x); /PGM: pin 31 (x) |
-| 27C301 | 128KB | 17 (A0-A16) | /CE (pin 22), /OE (pin 2) | VPP: pin 1 (x); /PGM: pin 31 (x) |
-| 27C020 | 256KB | 18 (A0-A17) | /CE (pin 22), /OE (pin 24) | VPP: pin 1 (x); /PGM: pin 31 (x) |
-| 27C040 | 512KB | 19 (A0-A18) | /CE (pin 22), /OE (pin 24) | VPP: pin 1 (x); /PGM: pin 22 (Acts as /OE) |
-| 27C400 | 512KB | 19 (A0-A18) | /BYTE (pin 31), /CE (pin 10), /OE (pin 12) | VPP: pin 31 (word_size); /PGM: pin 10 (Acts as /OE) |
-| 27C080 | 1024KB | 20 (A0-A19) | /CE (pin 22), /OE (pin 24) | VPP: pin 24 (Acts as /OE); /PGM: pin 22 (Acts as /OE) |
+| Chip Type | Aliases | Size | Address Lines | Control Lines | Programming | Supported |
+|-----------|---------|------|---------------|---------------|-------------|-----------|
+| 2764 | 27C64, 27LC64 | 8KB | 13 (A0-A12) | /CE (pin 20), /OE (pin 22) | VPP: pin 1 (VCC during read); /PGM: pin 27 (High during read) | ✓ |
+| 27128 | 27C128, 27LC128 | 16KB | 14 (A0-A13) | /CE (pin 20), /OE (pin 22) | VPP: pin 1 (VCC during read); /PGM: pin 27 (High during read) | ✓ |
+| 27256 | 27C256, 27LC256, 27SF256 | 32KB | 15 (A0-A14) | /CE (pin 20), /OE (pin 22) | VPP: pin 1 (VCC during read) | ✓ |
+| 27512 | 27C512, 27LC512, 27SF512 | 64KB | 16 (A0-A15) | /CE (pin 20), /OE (pin 22) | VPP: pin 22 (VCC during read) | ✓ |
+| 27C010 | 27C1001, SST39SF010 | 128KB | 17 (A0-A16) | /CE (pin 22), /OE (pin 24) | VPP: pin 1 (x); /PGM: pin 31 (x) | ✓ |
+| 27C301 | 27C1000 | 128KB | 17 (A0-A16) | /CE (pin 22), /OE (pin 2) | VPP: pin 1 (x); /PGM: pin 31 (x) | ✓ |
+| 27C020 | 27C2001, SST39SF020 | 256KB | 18 (A0-A17) | /CE (pin 22), /OE (pin 24) | VPP: pin 1 (x); /PGM: pin 31 (x) | ✓ |
+| 27C040 | 27C4001 | 512KB | 19 (A0-A18) | /CE (pin 22), /OE (pin 24) | VPP: pin 1 (x); /PGM: pin 22 (Acts as /OE) | ✓ |
+| 27C400 |  | 512KB | 19 (A0-A18) | /BYTE (pin 31), /CE (pin 10), /OE (pin 12) | VPP: pin 31 (word_size); /PGM: pin 10 (Acts as /OE) | ✓ |
+| 27C080 | 27C801 | 1024KB | 20 (A0-A19) | /CE (pin 22), /OE (pin 24) | VPP: pin 24 (Acts as /OE); /PGM: pin 22 (Acts as /OE) | ✗ |
 
 ## RAM Chips
 
-| Chip Type | Size | Address Lines | Control Lines | Programming |
-|----------|------|---------------|---------------|-------------|
-| 6116 | 2KB | 11 (A0-A10) | /CE (pin 18), /OE (pin 20), /WRITE (pin 21) | None |
+| Chip Type | Aliases | Size | Address Lines | Control Lines | Programming | Supported |
+|-----------|---------|------|---------------|---------------|-------------|-----------|
+| 6116 | 2016 | 2KB | 11 (A0-A10) | /CE (pin 18), /OE (pin 20), /WRITE (pin 21) | None | ✓ |
 
 ## Pin Function Comparison
 
@@ -131,10 +131,64 @@ There are also some other inconsistencies between types:
 | 22 | CS2 | CS2 | CS2 | A16 | /OE | /OE | /OE+PE | /OE+VPP |
 | 23 | A11 | A11 | A11 | A11 | A11 | A11 | A11 | A11 |
 | 24 | A9 | A9 | A9 | A9 | A9 | A9 | A9 | A9 |
-| 25 | A8 | A8 | A8 | A8 | A8 | A8 | A8 | A8 |
-| 26 | A13 | A13 | A13 | A13 | NC | A13 | A13 | A13 |
-| 27 | CS3 | A14 | A14 | A14 | /PGM | /PGM | A14 | A14 |
-| 28 | VCC | VCC | VCC | VCC | VCC | VCC | VCC | VCC |
+
+### 32-pin Package
+
+| Pin | 27C010 | 27C301 | 27C020 | 27C040 | SST39SF040 | 27C080 |
+|-----|------|------|------|------|------|------|
+| 1 | VPP | VPP | VPP | VPP | A18 | A19 |
+| 2 | A16 | /OE | A16 | A16 | A16 | A16 |
+| 3 | A15 | A15 | A15 | A15 | A15 | A15 |
+| 4 | A12 | A12 | A12 | A12 | A12 | A12 |
+| 5 | A7 | A7 | A7 | A7 | A7 | A7 |
+| 6 | A6 | A6 | A6 | A6 | A6 | A6 |
+| 7 | A5 | A5 | A5 | A5 | A5 | A5 |
+| 8 | A4 | A4 | A4 | A4 | A4 | A4 |
+| 9 | A3 | A3 | A3 | A3 | A3 | A3 |
+| 10 | A2 | A2 | A2 | A2 | A2 | A2 |
+| 11 | A1 | A1 | A1 | A1 | A1 | A1 |
+| 12 | A0 | A0 | A0 | A0 | A0 | A0 |
+| 13 | D0 | D0 | D0 | D0 | D0 | D0 |
+| 14 | D1 | D1 | D1 | D1 | D1 | D1 |
+| 15 | D2 | D2 | D2 | D2 | D2 | D2 |
+| 16 | GND | GND | GND | GND | GND | GND |
+| 17 | D3 | D3 | D3 | D3 | D3 | D3 |
+| 18 | D4 | D4 | D4 | D4 | D4 | D4 |
+| 19 | D5 | D5 | D5 | D5 | D5 | D5 |
+| 20 | D6 | D6 | D6 | D6 | D6 | D6 |
+| 21 | D7 | D7 | D7 | D7 | D7 | D7 |
+| 22 | /CE | /CE | /CE | /CE+/PGM | /CE | /CE+/PGM |
+| 23 | A10 | A10 | A10 | A10 | A10 | A10 |
+| 24 | /OE | A16 | /OE | /OE | /OE | /OE+VPP |
+
+### 40-pin Package
+
+| Pin | 27C400 |
+|-----|------|
+| 1 | A18 |
+| 2 | A8 |
+| 3 | A7 |
+| 4 | A6 |
+| 5 | A5 |
+| 6 | A4 |
+| 7 | A3 |
+| 8 | A2 |
+| 9 | A1 |
+| 10 | /CE+/PGM |
+| 11 | GND |
+| 12 | /OE |
+| 13 | D0 |
+| 14 | D8 |
+| 15 | D1 |
+| 16 | D9 |
+| 17 | D2 |
+| 18 | D10 |
+| 19 | D3 |
+| 20 | D11 |
+| 21 | VCC |
+| 22 | D4 |
+| 23 | D12 |
+| 24 | D5 |
 
 ## Detailed Pinouts
 
@@ -486,6 +540,22 @@ There are also some other inconsistencies between types:
 | VCC | 21 | +5V |
 | GND | 11 | 0V |
 | GND | 30 | 0V |
+
+### SST39SF040 - 512KB flash with fixed active-low CE/OE and different pinout to 27C040
+
+**Package:** 32-pin DIP  
+**Capacity:** 524288 bytes  
+**Control:** /CE, /OE, /WRITE  
+
+| Function | Pins | Notes |
+|----------|------|-------|
+| Address (A0-A18) | 12,11,10,9,8,7,6,5,27,26,23,25,4,28,29,3,2,30,1 | 19 address lines |
+| Data (D0-D7) | 13,14,15,17,18,19,20,21 | 8 data lines |
+| CE | 22 | Active low |
+| OE | 24 | Active low |
+| WRITE | 31 | Active low |
+| VCC | 32 | +5V |
+| GND | 16 | 0V |
 
 ### 27C080 - 1MB EPROM with fixed active-low CE/OE
 

@@ -576,6 +576,17 @@ impl<'a> Style<'a> {
         Some(button.into())
     }
 
+    pub fn reload_icon(&self, msg: AppMessage) -> Element<'a, AppMessage> {
+        tooltip(
+            button(Image::new(self.images.icon_refresh()))
+                .padding(0)
+                .style(|_, _| Self::link_button_style())
+                .on_press(msg),
+            Self::text_extra_small("Reload").color(Self::COLOUR_TEXT_DIM),
+            tooltip::Position::Top,
+        ).into()
+    }
+
     fn footer_1_left() -> Element<'a, AppMessage> {
         Self::link("One ROM", Self::FONT_SIZE_BODY, AppLink::OneRom).into()
     }

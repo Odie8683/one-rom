@@ -53,6 +53,7 @@ pub enum Message {
     // ROM config has been selected via pick list
     ConfigSelected(Config),
     ConfigLoaded(Result<(), String>),
+    ReloadConfig,
 
     // Build image
     BuildImage,
@@ -139,6 +140,16 @@ pub fn message(
         // ROM config has been selected via pick list
         Message::ConfigSelected(config) => config_selected(create, config),
         Message::ConfigLoaded(result) => config_loaded(create, runtime_info, result),
+        Message::ReloadConfig => {
+            debug!("Reloading configuration");
+            let config = runtime_info.selected_config();
+            if let Some(config) = config {
+                config_selected(create, config.config.clone())
+            } else {
+                debug!("Reload config requested but no config selected");
+                Task::none()
+            }
+        }
 
         // Build image
         Message::BuildImage => build_image(create, runtime_info),
@@ -218,6 +229,7 @@ impl std::fmt::Display for Message {
                 Ok(()) => write!(f, "ConfigLoaded(Ok)"),
                 Err(e) => write!(f, "ConfigLoaded(Err({e}))"),
             },
+            Message::ReloadConfig => write!(f, "ReloadConfig"),
 
             Message::BuildImage => write!(f, "BuildImage"),
             Message::BuildImageResult(result) => {

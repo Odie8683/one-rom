@@ -175,12 +175,20 @@ void __attribute__((noinline)) do_log(const char* msg, ...) {
     va_end(args);
 }
 
-void __attribute__((noinline)) err_log(const char* msg, ...) {
+void do_err_log_prefix() {
     SEGGER_RTT_printf(0, "ERROR: ");
+}
+
+void __attribute__((noinline)) err_log(const char* msg, ...) {
+    do_err_log_prefix();
     va_list args;
     va_start(args, msg);
     do_log_v(msg, args);
     va_end(args);
+}
+
+void do_debug_log_prefix() {
+    SEGGER_RTT_printf(0, "DBG: ");
 }
 #endif // BOOT_LOGGING && !(TEST_BUILD)
 

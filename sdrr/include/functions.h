@@ -27,8 +27,13 @@ extern uint32_t check_sel_pins(uint32_t *sel_mask);
 #if defined(BOOT_LOGGING)
 extern void log_init();
 extern void log_roms(const onerom_metadata_header_t *metadata);
+extern void do_log_v(const char* msg, va_list args);
 extern void do_log(const char *, ...);
+extern void do_err_log_prefix();
 extern void err_log(const char *, ...);
+#if defined(DEBUG_LOGGING)
+extern void do_debug_log_prefix();
+#endif // DEBUG_LOGGING
 #endif // BOOT_LOGGING
 #if defined(MAIN_LOOP_LOGGING) || defined(DEBUG_LOGGING)
 typedef void (*ram_log_fn)(const char*, ...);
@@ -66,6 +71,12 @@ extern void platform_logging(void);
 #if defined(STM32F4)
 void dfu(void);
 #endif // STM32F4
+#if defined(RP235X)
+void setup_usb_controller(void);
+void setup_usb_pll(void);
+void setup_adc(void);
+uint8_t initial_plugin_parse(uint8_t *disable_vbus_det);
+#endif // RP235X
 
 // pio.c
 extern int pio(
@@ -87,6 +98,15 @@ extern int pioram(
     sdrr_runtime_info_t *runtime,
     uint32_t rom_table_addr
 );
+// plugin.c
+extern uint8_t check_plugin_valid(
+    const ora_plugin_header_t *header,
+    const ora_plugin_type_t expected_type,
+    uint8_t index
+);
+extern void ora_launch_plugins(const sdrr_info_t *info);
+extern void irq_handler_timer0_irq_0(void);
+extern void irq_handler_usbctrl_irq(void);
 #endif // RP235X
 
 // rom_impl.c
@@ -96,7 +116,7 @@ extern void main_loop(
     sdrr_runtime_info_t *runtime,
     const sdrr_rom_set_t *set
 );
-extern uint8_t get_rom_set_index(uint32_t sel_pins, uint32_t sel_mask);
+extern uint8_t get_rom_set_index(uint32_t sel_pins, uint32_t sel_mask, uint8_t plugins);
 extern void* preload_rom_image(const sdrr_runtime_info_t *runtime_info, const sdrr_rom_set_t *set);
 #endif // !TIMER_TEST && !TOGGLE_PA4
 

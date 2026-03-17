@@ -355,7 +355,7 @@ fn generate_rust_code(configs: &[HwConfigData]) -> String {
     code.push_str("// MIT License\n\n");
     code.push_str("#![allow(dead_code)]\n\n");
 
-    code.push_str("use crate::chip::ChipType;\n");
+    code.push_str("use crate::chip::{ChipType, chip_type_names_for_pins};\n");
     code.push_str("use crate::mcu::{Port, Family};\n\n");
 
     // Generate models
@@ -478,8 +478,12 @@ fn generate_hw_config_impl(configs: &[HwConfigData]) -> String {
     code.push_str("\n\n");
 
     code.push_str(&generate_alt_pins(configs));
-    code.push_str("\n\n}\n");
+    code.push_str("\n\n");
 
+    code.push_str(&generate_supported_chip_type_names_method(configs));
+    code.push_str("\n\n");
+
+    code.push_str("}\n");
     code
 }
 
@@ -1273,10 +1277,14 @@ fn generate_supports_chip_type_method(_configs: &[HwConfigData]) -> String {
     let mut code = String::new();
 
     code.push_str("    /// Check if this board supports a given Chip type\n");
+    code.push_str("    /// All boards support plugin types\n");
     code.push_str("    pub const fn supports_chip_type(&self, chip_type: ChipType) -> bool {\n");
+    code.push_str("        if chip_type.is_plugin() {\n");
+    code.push_str("            return true;\n");
+    code.push_str("        }\n");
     code.push_str("        let board_pins = self.chip_pins();\n");
     code.push_str("        let chip_pins = chip_type.chip_pins();\n");
-    code.push_str("        chip_pins == board_pins\n");
+    code.push_str("        chip_type.is_supported() && (chip_pins == board_pins)\n");
     code.push_str("    }");
 
     code
@@ -1434,5 +1442,23 @@ fn generate_hw_models(configs: &[HwConfigData]) -> String {
     code.push_str("    }\n");
 
     code.push('}');
+    code
+}
+
+fn generate_supported_chip_type_names_method(_configs: &[HwConfigData]) -> String {
+    let mut code = String::new();
+
+    code.push_str("    /// Get all chip type names and aliases supported by this board,\n");
+    code.push_str("    /// alphabetically sorted.\n");
+    code.push_str("    ///\n");
+    code.push_str("    /// Returns an empty slice if no chip types are defined for this\n");
+    code.push_str("    /// board's pin count.\n");
+    code.push_str("    pub const fn supported_chip_type_names(&self) -> &'static [&'static str] {\n");
+    code.push_str("        match chip_type_names_for_pins(self.chip_pins()) {\n");
+    code.push_str("            Some(names) => names,\n");
+    code.push_str("            None => &[],\n");
+    code.push_str("        }\n");
+    code.push_str("    }");
+
     code
 }

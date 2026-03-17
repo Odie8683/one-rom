@@ -45,7 +45,8 @@ SIZE := $(TOOLCHAIN)/arm-none-eabi-size
 # Source files
 SRCS := src/constants.c src/main.c src/rom_impl.c src/test.c src/utils.c \
 		src/vector.c src/stm32f4.c src/rp235x.c src/piodma/pio.c \
-		src/piodma/piorom.c src/piodma/pioram.c src/piodma/dma.c
+		src/piodma/piorom.c src/piodma/pioram.c src/piodma/dma.c \
+		src/plugin.c
 OBJS := $(patsubst src/%,$(BUILD_DIR)/%,$(SRCS:.c=.o))
 SEGGER_SRCS := segger-rtt/RTT/SEGGER_RTT.c segger-rtt/RTT/SEGGER_RTT_printf.c
 SEGGER_OBJS := $(BUILD_DIR)/SEGGER_RTT.o $(BUILD_DIR)/SEGGER_RTT_printf.o
@@ -80,10 +81,10 @@ endif
 
 endif # End of variables set only if not cleaning
 
-SEGGER_RTT_FLAGS := -DBUFFER_SIZE_UP=4096
+SEGGER_RTT_FLAGS := -DBUFFER_SIZE_UP=3584
 CFLAGS := $(EXTRA_C_FLAGS) $(COMMON_FLAGS) $(SEGGER_RTT_FLAGS) -Werror \
           -I include -I $(OUTPUT_DIR) -I segger-rtt/RTT -I segger-rtt/Config \
-		  -I apio/include -I epio/include \
+		  -I apio/include -I epio/include -I ora \
 		  -g -nostdlib -O3 -ffunction-sections -fomit-frame-pointer -fdata-sections \
 		  -Wall -Wextra -MMD -MP
 LDFLAGS := $(COMMON_FLAGS) -Werror -Llink -L$(OUTPUT_DIR) -nostdlib -specs=nosys.specs -specs=nano.specs -Wl,--no-gc-sections -Wl,--fatal-warnings -Wl,-Map=$(MAP)

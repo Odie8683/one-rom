@@ -31,6 +31,10 @@ typedef enum {
     CHIP_TYPE_27C400 = 19,
     CHIP_TYPE_6116 = 20,
     CHIP_TYPE_27C301 = 21,
+    CHIP_TYPE_SYSTEM_PLUGIN = 22,
+    CHIP_TYPE_USER_PLUGIN = 23,
+    CHIP_TYPE_PIO_PLUGIN = 24,
+    CHIP_TYPE_SST39SF040 = 25,      // Not supported
     NUM_CHIP_TYPES,
     INVALID_CHIP_TYPE = 0xFF
 } sdrr_rom_type_t;
@@ -59,7 +63,8 @@ const char * const chip_type_strings[NUM_CHIP_TYPES] = {
     "27C040",
     "27C080",
     "27C400",
-    "6116"
+    "6116",
+    "Plugin"
 };
 _Static_assert(sizeof(chip_type_strings)/sizeof(chip_type_strings[0]) == NUM_CHIP_TYPES,
                "chip_type_strings size doesn't match NUM_CHIP_TYPES");

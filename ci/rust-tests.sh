@@ -24,3 +24,6 @@ cargo test -p schema-gen
 
 echo "Testing sdrr-fw-parser..."
 cargo test -p sdrr-fw-parser
+
+echo "Testing cli..."
+cargo test -p onerom-cli

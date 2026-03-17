@@ -52,8 +52,8 @@ async fn sub_main() -> Result<(), Error> {
     let rom_config_filename = args.rom.as_ref();
 
     // Get firmware releases
-    let firmware_data = if let Some(image) = args.fw_image {
-        std::fs::read(image).map_err(Error::read)?
+    let firmware_data = if let Some(image) = args.fw_image.as_ref() {
+        std::fs::read(image).map_err(|e| Error::read(image.to_string(), e))?
     } else {
         let releases = Releases::from_network()?;
         if releases.release(&version).is_none() {
@@ -145,11 +145,11 @@ fn propose_license(license: &License) -> Result<(), Error> {
 
     // Prompt user
     print!("Do you accept this license? (y/N): ");
-    std::io::stdout().flush().map_err(Error::write)?;
+    std::io::stdout().flush().map_err(|e| Error::write("stdout".to_string(), e))?;
     let mut input = String::new();
     std::io::stdin()
         .read_line(&mut input)
-        .map_err(Error::read)?;
+        .map_err(|e| Error::read("stdin".to_string(), e))?;
     let input = input.trim().to_lowercase();
     if input == "y" || input == "yes" {
         Ok(())

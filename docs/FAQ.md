@@ -139,7 +139,9 @@ There are other pre-collated collections of ROMs available in the [`old-config/`
 
 A: Yes! You can flash in-situ with the system powered on. The system may crash during flashing but will work normally after completion.
 
-**Never** externally power One ROM when installed in a retro system.
+You can plug in USB to a USB One ROM while it is powered on, as there are diodes protecting each 5V source from backfeeding the other.
+
+**Never** externally power an older, **non-USB**, One ROM when installed in a retro system.
 
 **Q: What if I have flashing problems?**
 

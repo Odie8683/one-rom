@@ -79,3 +79,16 @@ jobs:
       run: |
         export TOOLCHAIN=/usr/bin
         ci/build.sh ci
+
+    - name: Build plugins
+      run: |
+        export TOOLCHAIN=/usr/bin
+        make clean
+        HW_REV=fire-24-e MCU=rp2350 ROM_CONFIGS= EXCLUDE_METADATA=1 make
+        make -C plugins/system/usb
+        make -C sdrr/ora/examples
+
+    - name: Build tools
+      run: |
+        export TOOLCHAIN=/usr/bin
+        ci/rust-tools.sh

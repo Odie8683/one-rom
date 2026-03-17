@@ -24,3 +24,6 @@ cargo doc -p schema-gen
 
 echo "Generating documentation for sdrr-fw-parser..."
 cargo doc -p sdrr-fw-parser
+
+echo "Generating documentation for onerom-cli..."
+cargo doc -p onerom-cli

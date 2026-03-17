@@ -832,9 +832,9 @@ impl Studio {
                 trace!("Release {fw_ver:?} does not exist for {board} {mcu}");
                 return Message::ReleaseDoesntExist.into();
             }
-            Err(onerom_fw::Error::Http { status }) => {
+            Err(onerom_fw::Error::Http { url, status }) => {
                 info!(
-                    "Failed to download release {fw_ver:?} for {board} {mcu}: HTTP error {status}"
+                    "Failed to download release {fw_ver:?} for {board} {mcu} from {url}: HTTP error {status}"
                 );
                 return Message::ReleaseDoesntExist.into();
             }

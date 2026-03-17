@@ -36,6 +36,19 @@ pub enum Error {
     InvalidFirmwareVersion,
 }
 
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Error::InvalidMcuVariant { variant } => {
+                write!(f, "Invalid MCU variant: {}", variant)
+            }
+            Error::InvalidFirmwareVersion => {
+                write!(f, "Invalid firmware version")
+            }
+        }
+    }
+}
+
 pub fn crate_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }

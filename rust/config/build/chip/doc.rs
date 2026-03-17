@@ -86,15 +86,22 @@ There are also some other inconsistencies between types:
 
     // Pin comparison tables
     doc.push_str("## Pin Function Comparison\n\n");
-    doc.push_str(&generate_pin_comparison_table_24pin(config));
+    doc.push_str(&generate_pin_comparison_table(config, 24));
     doc.push('\n');
-    doc.push_str(&generate_pin_comparison_table_28pin(config));
+    doc.push_str(&generate_pin_comparison_table(config, 28));
+    doc.push('\n');
+    doc.push_str(&generate_pin_comparison_table(config, 32));
+    doc.push('\n');
+    doc.push_str(&generate_pin_comparison_table(config, 40));
     doc.push('\n');
 
     // Detailed pinout tables
     doc.push_str("## Detailed Pinouts\n\n");
     let sorted_roms = get_sorted_chip_types(config);
     for (type_name, chip_type) in sorted_roms {
+        if chip_type.function.is_plugin() {
+            continue; // Skip plugins for now - they don't fit into the standard categories
+        }
         doc.push_str(&generate_detailed_pinout(type_name, chip_type));
         doc.push('\n');
     }
@@ -148,8 +155,8 @@ fn generate_family_comparison_table(
     let mut table = String::new();
 
     table.push_str(&format!("## {}\n\n", title));
-    table.push_str("| Chip Type | Size | Address Lines | Control Lines | Programming |\n");
-    table.push_str("|----------|------|---------------|---------------|-------------|\n");
+    table.push_str("| Chip Type | Aliases | Size | Address Lines | Control Lines | Programming | Supported |\n");
+    table.push_str("|-----------|---------|------|---------------|---------------|-------------|-----------|\n");
 
     for (type_name, chip_type) in roms {
         let size_str = format_size(chip_type.size);
@@ -162,41 +169,46 @@ fn generate_family_comparison_table(
         let control_str = format_control_lines(chip_type);
         let prog_str = format_programming_pins(chip_type);
 
+        let aliases_str = chip_type.aliases
+            .as_ref()
+            .map(|a| a.join(", "))
+            .unwrap_or_default();
+        let supported_str = if chip_type.supported { "✓" } else { "✗" };
         table.push_str(&format!(
-            "| {} | {} | {} | {} | {} |\n",
-            type_name, size_str, addr_lines, control_str, prog_str
+            "| {} | {} | {} | {} | {} | {} | {} |\n",
+            type_name, aliases_str, size_str, addr_lines, control_str, prog_str, supported_str
         ));
     }
 
     table
 }
 
-/// Generate 24-pin package pin comparison table
-fn generate_pin_comparison_table_24pin(config: &ChipTypesConfig) -> String {
+/// Generate pin comparison table for a given package size
+fn generate_pin_comparison_table(config: &ChipTypesConfig, pin_count: u8) -> String {
     let mut table = String::new();
 
-    // Get all 24-pin ROMs sorted by size
-    let mut roms_24pin: Vec<_> = config
+    // Get all ROMs with the specified pin count sorted by size
+    let mut roms: Vec<_> = config
         .chip_types
         .iter()
-        .filter(|(_, rom)| rom.pins == 24)
+        .filter(|(_, rom)| rom.pins == pin_count)
         .collect();
-    roms_24pin.sort_by_key(|(name, rom)| {
+    roms.sort_by_key(|(name, rom)| {
         let family = if name.starts_with("23") { 0 } else { 1 };
         (family, rom.size, *name)
     });
 
-    if roms_24pin.is_empty() {
+    if roms.is_empty() {
         return table;
     }
 
-    table.push_str("### 24-pin Package\n\n");
+    table.push_str(&format!("### {pin_count}-pin Package\n\n"));
     table.push_str("| Pin |");
-    for (type_name, _) in &roms_24pin {
+    for (type_name, _) in &roms {
         table.push_str(&format!(" {} |", type_name));
     }
     table.push_str("\n|-----|");
-    for _ in &roms_24pin {
+    for _ in &roms {
         table.push_str("------|");
     }
     table.push('\n');
@@ -204,50 +216,7 @@ fn generate_pin_comparison_table_24pin(config: &ChipTypesConfig) -> String {
     // Generate row for each pin
     for pin in 1..=24 {
         table.push_str(&format!("| {} |", pin));
-        for (_, chip_type) in &roms_24pin {
-            let function = get_pin_function(pin, chip_type);
-            table.push_str(&format!(" {} |", function));
-        }
-        table.push('\n');
-    }
-
-    table
-}
-
-/// Generate 28-pin package pin comparison table
-fn generate_pin_comparison_table_28pin(config: &ChipTypesConfig) -> String {
-    let mut table = String::new();
-
-    // Get all 28-pin ROMs sorted by size
-    let mut roms_28pin: Vec<_> = config
-        .chip_types
-        .iter()
-        .filter(|(_, rom)| rom.pins == 28)
-        .collect();
-    roms_28pin.sort_by_key(|(name, rom)| {
-        let family = if name.starts_with("23") { 0 } else { 1 };
-        (family, rom.size, *name)
-    });
-
-    if roms_28pin.is_empty() {
-        return table;
-    }
-
-    table.push_str("### 28-pin Package\n\n");
-    table.push_str("| Pin |");
-    for (type_name, _) in &roms_28pin {
-        table.push_str(&format!(" {} |", type_name));
-    }
-    table.push_str("\n|-----|");
-    for _ in &roms_28pin {
-        table.push_str("------|");
-    }
-    table.push('\n');
-
-    // Generate row for each pin
-    for pin in 1..=28 {
-        table.push_str(&format!("| {} |", pin));
-        for (_, chip_type) in &roms_28pin {
+        for (_, chip_type) in &roms {
             let function = get_pin_function(pin, chip_type);
             table.push_str(&format!(" {} |", function));
         }

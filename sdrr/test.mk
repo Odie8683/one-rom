@@ -24,6 +24,7 @@ endif
 SRCS := src/constants.c src/main.c src/rom_impl.c src/test.c src/utils.c \
         src/vector.c src/stm32f4.c src/rp235x.c src/piodma/pio.c \
         src/piodma/piorom.c src/piodma/pioram.c src/piodma/dma.c \
+        src/plugin.c \
         test/stub_rp235x.c test/test_main.c test/test_log.c \
         test/test_image.c test/test_gpio.c
 OBJS := $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(filter src/%,$(SRCS)))
@@ -42,7 +43,7 @@ GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 # - fshort-enums to ensure enums the same size as in firmware
 CFLAGS := -DAPIO_EMULATION=1 -DTEST_BUILD=1 \
 			$(EXTRA_C_FLAGS) -I include -I $(OUTPUT_DIR) -I include/test \
-			-I apio/include -I epio/include \
+			-I apio/include -I epio/include -I ora \
 			-DSDRR_VERSION_MAJOR=$(VERSION_MAJOR) -DSDRR_VERSION_MINOR=$(VERSION_MINOR) \
 			-DSDRR_VERSION_PATCH=$(VERSION_PATCH) -DSDRR_BUILD_NUMBER=$(BUILD_NUMBER) \
 			-DSDRR_GIT_COMMIT=\"$(GIT_COMMIT)\" \

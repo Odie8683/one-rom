@@ -51,7 +51,12 @@ sdrr_runtime_info_t sdrr_runtime_info SECTION_SDRR_RUNTIME_INFO = {
 #else // !FORCE_16_BIT
     .force_16_bit = 0,
 #endif // FORCE_16_BIT
-    .reserved = 0
+    .peri_en = 0,
+    .system_plugin_context = NULL,
+    .user_plugin_context = NULL,
+    .timer0_irq_0_handler = NULL,
+    .usbctrl_irq_handler = NULL,
+    .limp_mode = LIMP_MODE_NONE,
 };
 
 // This function checks the state of the image select pins, and returns an
@@ -164,6 +169,8 @@ uint8_t metadata_present(const sdrr_info_t *info) {
 #if !defined(TEST_BUILD)
 void limp_mode(limp_mode_pattern_t pattern) {
     LOG("Limp mode %d", pattern);
+
+    sdrr_runtime_info.limp_mode = pattern;
 
     uint32_t on_time, off_time;
 
@@ -283,11 +290,24 @@ int firmware_main(void) {
         LOG_INIT();
     }
 
+    uint8_t disable_vbus_det = 0;
+    uint8_t plugins = 0;
+#if defined(RP235X)
+    // Do initial plugin parsing.  The system plugin can potentially override
+    // USB DFU support, which is why we do it now.
+    DEBUG("Initial plugin parse");
+    plugins = initial_plugin_parse(&disable_vbus_det);
+#endif // RP235X
+
     // Set up VBUS detect interrupt.  Done next, so we can enter DFU mode as 
     // soon as USB plugged in
     if (sdrr_info.extra->usb_dfu) {
-        DEBUG("Init VBUS det");
-        setup_vbus_interrupt();
+        if (!disable_vbus_det) {
+            DEBUG("Init VBUS det");
+            setup_vbus_interrupt();
+        } else {
+            LOG("Plugin disabled VBUS detect");
+        }
     }
 
     // Read image select pin values - we need this to check whether to enter
@@ -310,7 +330,9 @@ int firmware_main(void) {
         log_roms(sdrr_info.metadata_header);
     }
 #endif
-    if (md && (sdrr_info.metadata_header->rom_set_count > 0)) {
+    uint8_t num_plugins = plugins & 1 ? 1 : 0;
+    num_plugins += plugins & 2 ? 1 : 0;
+    if (md && (sdrr_info.metadata_header->rom_set_count > num_plugins)) {
         // Find out if extra_info is set to 1 on the first set.  If it is, the
         // set structures are 0.6.0+ and are the size of sdrr_rom_set_t (64
         // bytes), otherwise they are pre 0.6.0 (probably created by an old
@@ -326,7 +348,7 @@ int firmware_main(void) {
         size_t stride = (extra_info == 1) ? sizeof(sdrr_rom_set_t) : 16;
 
         // Figure out what ROM set to use
-        sdrr_runtime_info.rom_set_index = get_rom_set_index(sel_pins, sel_mask);
+        sdrr_runtime_info.rom_set_index = get_rom_set_index(sel_pins, sel_mask, plugins);
 
         // Get pointer to the selected ROM set
         set = (const sdrr_rom_set_t *)(base + (stride * sdrr_runtime_info.rom_set_index));

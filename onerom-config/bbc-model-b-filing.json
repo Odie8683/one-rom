@@ -1,0 +1,52 @@
+{
+    "$schema": "https://images.onerom.org/configs/schema.json",
+    "version": 1,
+    "name": "BBC Model B Filing System ROMs",
+    "description": "BBC MICRO MODEL B Filing System ROMs - 8271 DNFS - 1770 DFS - NFS 3.62 - ADFS 1.30", 
+    "rom_sets": [
+        {
+            "type": "single",
+            "roms": [
+                {
+                    "description": "8271 DNFSv1.22",
+                    "file": "https://mdfs.net/System/ROMs/Filing/DNFS/DNFS302",
+                    "type": "27128"
+                }
+            ]
+        },
+        {
+            "type": "single",
+            "roms": [
+                {
+                    "description": "1770 DFS2.26",
+                    "file": "https://tobylobster.github.io/rom_library/media/156/Acorn%20DFS%20v2.26%20%5Bvariant%201%5D%20%5B1770%5D.rom",
+                    "type": "27128" 
+
+                }
+            ]
+        },
+        {
+            "type": "single",
+            "roms": [
+                {
+                    "description": "NFS3.62",
+                    "file": "https://tobylobster.github.io/rom_library/media/379/Acorn%20NFS%20v3.62.rom",
+                    "type": "2764" 
+
+                }
+            ]
+        },
+        {
+            "type": "single",
+            "roms": [
+                {
+                    "description": "ADFS1.30",
+                    "file": "https://mdfs.net/System/ROMs/Filing/ADFS/Acorn/ADFS130",
+                    "type": "27128" 
+
+                }
+            ]
+        }
+    ]
+}
+

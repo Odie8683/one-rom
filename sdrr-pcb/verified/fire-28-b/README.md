@@ -1,6 +1,6 @@
 # One ROM Fire 28 pin
 
-**Unverified**
+**Verified**
 
 Based on fire-28-a4, this design swaps out the horizontal USB-C connector for vertical one (i.e. that sticks up out of One ROM), to help when there is too little space at the bottom of a connector to plug in a cable.
 

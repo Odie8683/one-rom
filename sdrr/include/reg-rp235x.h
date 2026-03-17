@@ -29,6 +29,7 @@
 #define SYSINFO_BASE        0x40000000
 #define SYSCFG_BASE         0x40008000
 #define CLOCKS_BASE         0x40010000
+#define PSM_BASE            0x40018000
 #define RESETS_BASE         0x40020000
 #define IO_BANK0_BASE       0x40028000
 #define PADS_BANK0_BASE     0x40038000
@@ -37,9 +38,11 @@
 #define PLL_USB_BASE        0x40058000
 #define BUSCTRL_BASE        0x40068000
 #define ADC_BASE            0x400a0000
+#define TIMER0_BASE         0x400b0000
 #define XIP_CTRL_BASE       0x400c8000
 #define XIP_QMI_BASE        0x400d0000
 #define POWMAN_BASE         0x40100000
+#define TICKS_BASE          0x40108000
 #define OTP_BASE            0x40120000
 #define USBCTRL_REGS_BASE   0x50110000
 #define SIO_BASE            0xD0000000
@@ -65,10 +68,12 @@
 #define CLOCK_CLK_GPOUT0_DIV    (*((volatile uint32_t *)(CLOCKS_BASE + 0x04)))
 #define CLOCK_CLK_GPOUT0_SEL    (*((volatile uint32_t *)(CLOCKS_BASE + 0x08)))
 #define CLOCK_REF_CTRL          (*((volatile uint32_t *)(CLOCKS_BASE + 0x30)))
+#define CLOCK_REF_DIV           (*((volatile uint32_t *)(CLOCKS_BASE + 0x34)))
 #define CLOCK_REF_SELECTED      (*((volatile uint32_t *)(CLOCKS_BASE + 0x38)))
 #define CLOCK_SYS_CTRL          (*((volatile uint32_t *)(CLOCKS_BASE + 0x3C)))
 #define CLOCK_SYS_SELECTED      (*((volatile uint32_t *)(CLOCKS_BASE + 0x44)))
 #define CLOCK_ADC_CTRL          (*((volatile uint32_t *)(CLOCKS_BASE + 0x6C)))
+#define CLOCK_CLK_USB_CTRL      (*((volatile uint32_t *)(CLOCKS_BASE + 0x60)))
 
 #define CLOCK_REF_SRC_XOSC      0x02
 #define CLOCK_REF_SRC_SEL_MASK  0b1111
@@ -79,6 +84,15 @@
 
 #define CLOCK_ADC_ENABLE    (1 << 11)
 #define CLOCK_ADC_ENABLED   (1 << 28)
+
+#define CLOCK_USB_CTRL_ENABLE     (1 << 11)
+#define CLOCK_USB_CTRL_AUXSRC_PLL_USB (0x0 << 5)
+
+// PSM Registers
+#define PSM_FRCE_OFF        (*((volatile uint32_t *)(PSM_BASE + 0x004)))
+#define PSM_FRCE_OFF_SET    (*((volatile uint32_t *)(PSM_BASE + 0x004 + 0x2000)))
+#define PSM_FRCE_OFF_CLR    (*((volatile uint32_t *)(PSM_BASE + 0x004 + 0x3000)))
+#define PSM_PROC1_BIT       (1u << 24)
 
 // Reset registers
 #define RESET_RESET     (*((volatile uint32_t *)(RESETS_BASE + 0x00)))
@@ -97,6 +111,8 @@
 #define RESET_PLL_USB       (1 << 15)
 #define RESET_SYSCFG        (1 << 20)
 #define RESET_SYSINFO       (1 << 21)
+#define RESET_TIMER0        (1 << 23)
+#define RESET_USBCTRL       (1 << 28)
 
 // GPIO registers
 #define GPIO_STATUS_OFFSET  0x000
@@ -236,6 +252,12 @@
 #define ADC_CS_TS_EN        (1 << 1)
 #define ADC_CS_EN           (1 << 0)
 
+// TIMER0 Registers
+#define TIMER0_TIMELR       (*((volatile uint32_t *)(TIMER0_BASE + 0x0C)))
+#define TIMER0_ALARM0       (*((volatile uint32_t *)(TIMER0_BASE + 0x10)))
+#define TIMER0_INTE         (*((volatile uint32_t *)(TIMER0_BASE + 0x40)))
+#define TIMER0_INTR         (*((volatile uint32_t *)(TIMER0_BASE + 0x3C)))
+
 // XIP_CTRL Registers
 #define XIP_CTRL_CTRL       (*((volatile uint32_t *)(XIP_CTRL_BASE + 0x00)))
 #define XIP_CTRL_STATUS     (*((volatile uint32_t *)(XIP_CTRL_BASE + 0x08)))
@@ -283,6 +305,10 @@
 #define POWMAN_VREG_VOLTAGE(X)   (((X) & VREG_MASK) << VREG_SHIFT)
 #define POWMAN_VREG_UPDATE (1 << 15)
 
+// TICKS Registers
+#define TICKS_TIMER0_CTRL   (*((volatile uint32_t *)(TICKS_BASE + 0x18)))
+#define TICKS_TIMER0_CYCLES (*((volatile uint32_t *)(TICKS_BASE + 0x1C)))
+
 // USB Registers
 #define SIE_STATUS         (*((volatile uint32_t *)(USBCTRL_REGS_BASE + 0x50)))
 
@@ -305,6 +331,9 @@
 #define SIO_GPIO_HI_OE_SET  (*((volatile uint32_t *)(SIO_BASE + 0x3C)))
 #define SIO_GPIO_OE_CLR     (*((volatile uint32_t *)(SIO_BASE + 0x40)))
 #define SIO_GPIO_HI_OE_CLR  (*((volatile uint32_t *)(SIO_BASE + 0x44)))
+#define SIO_FIFO_ST         (*((volatile uint32_t *)(SIO_BASE + 0x50)))
+#define SIO_FIFO_WR         (*((volatile uint32_t *)(SIO_BASE + 0x54)))
+#define SIO_FIFO_RD         (*((volatile uint32_t *)(SIO_BASE + 0x58)))
 
 #define SIO_GPIO_READ(pin)  ((pin < 32) ? \
                             (((*(volatile uint32_t*)(SIO_BASE + 0x004)) >> pin) & 1) : \
@@ -325,9 +354,14 @@
 
 // PPB Registers
 #define NVIC_ISER0          (*((volatile uint32_t *)(PBB_BASE + 0x0E100)))
+#define NVIC_ISER1          (*((volatile uint32_t *)(PBB_BASE + 0x0E104)))
+#define NVIC_ICER0          (*((volatile uint32_t *)(PBB_BASE + 0x0E180)))
+#define NVIC_ICER1          (*((volatile uint32_t *)(PBB_BASE + 0x0E184)))
+#define IRQ_USBCTRL      14
 #define IO_IRQ_BANK0        21
 
 // SCB Registers
+#define SCB_VTOR            (*((volatile uint32_t *)(SCB_BASE + 0x08)))
 #define SCB_CPACR           (*((volatile uint32_t *)(SCB_BASE + 0x88)))
 #define SCB_CPACR_CP0_FULL  (0b11 << 0)
 

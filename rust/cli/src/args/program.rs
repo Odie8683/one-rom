@@ -1,0 +1,180 @@
+// Copyright (C) 2026 Piers Finlayson <piers@piers.rocks>
+//
+// MIT License
+
+//! Argument definitions for `onerom program`.
+
+use crate::args::CommandTrait;
+use clap::Args;
+use onerom_cli::usb::RebootArgs;
+
+// See Commands::Program in args/mod.rs for the top-level documentation of
+// this command and examples.
+#[derive(Debug, Args)]
+pub struct ProgramArgs {
+    /// ROM configuration JSON file. Mutually exclusive with --slot,
+    /// --config-name, --config-description, --save-config, --no-config,
+    /// and --firmware.
+    #[arg(
+        long,
+        short='j',
+        visible_aliases = ["config-json", "config", "json"],
+        value_name = "FILE",
+        conflicts_with_all = ["slot", "config_name", "config_description", "save_config", "no_config", "firmware"]
+    )]
+    pub config_file: Option<String>,
+
+    /// ROM slot specification. May be repeated for multiple slots.
+    ///
+    /// Format: file=<path_or_url>,type=<romtype>[,cs1=<logic>][,cs2=<logic>][,cs3=<logic>][,size_handling=<handling>]
+    ///
+    /// CS logic values: active_low (or 0), active_high (or 1).
+    ///
+    /// Required CS lines depend on chip type (e.g. 2332 requires cs1 and cs2).
+    ///
+    /// Size handling values: none, duplicate (or dup), truncate (or trunc), pad.
+    ///
+    /// Examples:
+    ///
+    ///   --slot file=kernal.bin,type=2364,cs1=active_low
+    ///
+    ///   --slot file=chargen.bin,type=2332,cs1=active_low,cs2=active_high
+    ///
+    ///   --slot file=https://example.com/basic.bin,type=2716
+    ///
+    ///   --slot file=small.bin,type=2364,cs1=active_low,size_handling=duplicate
+    ///
+    /// Mutually exclusive with --config-file, --no-config, and --firmware.
+    #[arg(
+        long,
+        value_name = "SPEC",
+        visible_alias = "rom",
+        conflicts_with_all = ["config_file", "no_config", "firmware"]
+    )]
+    pub slot: Vec<String>,
+
+    /// Name for the generated ROM configuration.
+    ///
+    /// Mutually exclusive with --config-file.
+    #[arg(
+        long,
+        value_name = "NAME",
+        visible_alias = "name",
+        conflicts_with = "config_file"
+    )]
+    pub config_name: Option<String>,
+
+    /// Description for the generated ROM configuration. Defaults to
+    /// "Created by the One ROM CLI" if not specified.
+    ///
+    /// Mutually exclusive with --config-file.
+    #[arg(long, value_name = "DESC", visible_aliases=["desc", "description"], conflicts_with = "config_file")]
+    pub config_description: Option<String>,
+
+    /// Save the generated ROM configuration to a JSON file.
+    ///
+    /// Only valid with --slot or --no-config. Mutually exclusive with
+    /// --config-file.
+    #[arg(long, value_name = "FILE", conflicts_with = "config_file")]
+    pub save_config: Option<String>,
+
+    /// Flash a pre-built complete firmware binary directly.
+    ///
+    /// Mutually exclusive with --config-file, --slot, --base-firmware,
+    /// and --version.
+    #[arg(
+        long,
+        value_name = "FILE",
+        conflicts_with_all = ["config_file", "slot", "base_firmware", "version"]
+    )]
+    pub firmware: Option<String>,
+
+    /// Use a local minimal firmware binary instead of downloading from the
+    /// release server.
+    ///
+    /// When used with --slot, the ROM images are built into this firmware.
+    /// When used alone, requires --no-config to confirm flashing without
+    /// ROM images.
+    ///
+    /// Must be built with EXCLUDE_METADATA=1 and ROM_CONFIGS= in order to
+    /// be suitable.
+    #[arg(
+        long,
+        value_name = "FILE",
+        conflicts_with_all = ["firmware", "version"]
+    )]
+    pub base_firmware: Option<String>,
+
+    /// Confirm flashing a base firmware with no ROM configuration.
+    ///
+    /// Only valid with --config-name and/or --config-description.
+    /// Mutually exclusive with --config-file, --slot, and --firmware.
+    #[arg(
+        long,
+        conflicts_with_all = ["config_file", "slot", "firmware"]
+    )]
+    pub no_config: bool,
+
+    /// Target board type (e.g. fire-24-e). Inferred from connected device
+    /// if not specified.
+    #[arg(long, short, value_name = "BOARD")]
+    pub board: Option<String>,
+
+    /// Firmware version to build against. Defaults to the latest release.
+    #[arg(
+        long,
+        value_name = "VERSION",
+        conflicts_with_all = ["firmware", "base_firmware"]
+    )]
+    pub version: Option<String>,
+
+    /// Write the built firmware to this file in addition to flashing it.
+    #[arg(long, short, visible_alias = "out", value_name = "FILE")]
+    pub output: Option<String>,
+
+    /// After flashing, reboot the device into stopped mode instead of running.
+    #[arg(long, short = 'p', conflicts_with = "running")]
+    pub stopped: bool,
+
+    /// After flashing, reboot the device into running mode (the default).
+    #[arg(long, short = 'r', conflicts_with = "stopped")]
+    pub running: bool,
+
+    /// Do not reboot the device after flashing.
+    #[arg(long, conflicts_with = "stopped")]
+    pub no_reboot: bool,
+
+    /// Verify flash contents after programming by reading back. (Not yet supported.)
+    #[arg(long)]
+    pub verify: bool,
+
+    /// Continue even if the assembled firmware has parse errors.
+    #[arg(long, short)]
+    pub force: bool,
+
+    /// Mount mass storage device when rebooting into stopped mode.
+    #[arg(long, short = 'm')]
+    pub msd: bool,
+
+    /// Don't pause after final reboot for the device to re-enumerate.
+    #[arg(long, conflicts_with = "no_reboot")]
+    pub fast: bool,
+}
+
+impl CommandTrait for ProgramArgs {
+    fn requires_device(&self) -> bool {
+        true
+    }
+}
+
+impl From<&ProgramArgs> for RebootArgs {
+    fn from(args: &ProgramArgs) -> Self {
+        if args.no_reboot {
+            RebootArgs::none()
+        } else if args.stopped {
+            RebootArgs::stopped(args.msd, args.fast)
+        } else {
+            RebootArgs::running(args.fast)
+        }
+    }
+}

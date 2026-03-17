@@ -81,6 +81,6 @@ pub fn init_rtt() {
     rtt_target::rtt_init_log!(
         log::LevelFilter::Debug,
         rtt_target::ChannelMode::NoBlockSkip,
-        2048
+        8192
     );
 }

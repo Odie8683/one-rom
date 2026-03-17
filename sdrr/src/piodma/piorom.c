@@ -746,7 +746,7 @@ static void piorom_load_programs(piorom_config_t *config) {
 
     // Jump to start and log
     APIO_SM_JMP_TO_START();
-    APIO_LOG_SM("Address Reader");
+    //APIO_LOG_SM("Address Reader");
 
 #if 0
     // Currently unused as I can't figure out how to make this work.
@@ -972,7 +972,7 @@ static void piorom_load_programs(piorom_config_t *config) {
 
     // Jump to start and log
     APIO_SM_JMP_TO_START();
-    APIO_LOG_SM("CS Handler");
+    //APIO_LOG_SM("CS Handler");
 
     // PIO2 SM1 - Data output
     //
@@ -1075,7 +1075,7 @@ static void piorom_load_programs(piorom_config_t *config) {
 
     // Jump to start and log
     APIO_SM_JMP_TO_START();
-    APIO_LOG_SM("Data Byte Output lower");
+    //APIO_LOG_SM("Data Byte Output lower");
 
     //
     // PIO 2 - End of block
@@ -2136,6 +2136,11 @@ int piorom(
         // Low power wait for (VBUS) interrupt.  Avoids any potential SRAM or
         // peripheral access that might introduce jitter on the PIO/DMA
         // serving.
+#if !defined(TEST_BUILD)
+        // Launch any plugins.  Returns if a plugin isn't launched on this
+        // core.
+        ora_launch_plugins(info);
+#endif // !TEST_BUILD
         APIO_ASM_WFI();
 #endif // !DEBUG_BUILD
         }

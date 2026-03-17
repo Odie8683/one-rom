@@ -1,0 +1,19 @@
+[build]
+target = "thumbv8m.main-none-eabihf"
+
+[target.thumbv8m.main-none-eabihf]
+# `runner.sh` is created dynamically by build.rs based on the chosen chip ID
+runner = ["probe-rs", "run", "--chip", "RP235x", "--no-location"]
+
+[profile.dev]
+opt-level = "s"
+
+[profile.release]
+opt-level = 3
+debug = 2
+lto = "fat"
+codegen-units = 1
+strip = false
+panic = "abort"
+
+[env]

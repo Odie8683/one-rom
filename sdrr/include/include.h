@@ -82,6 +82,11 @@
 #include "types.h"
 #include "constants.h"
 #include "registers.h"
+
+#if defined(RP235X)
+#include "plugin.h"
+#endif // RP235X
+
 #include "functions.h"
 
 // Main SDRR info struct, defined in sdrr_config.c

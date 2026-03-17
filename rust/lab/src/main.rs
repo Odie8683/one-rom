@@ -175,7 +175,7 @@ async fn main(_spawner: Spawner) {
                 Err(_) => (),
             }
             #[cfg(not(feature = "usb"))]
-            embassy_time::Timer::after_secs(5).await;
+            embassy_time::Timer::after_secs(1).await;
             info!("Reading ROM...");
         }
     }

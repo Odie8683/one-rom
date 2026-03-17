@@ -13,6 +13,10 @@ To be precise, these config files are used to generate the __metadata__ that is 
 
 A config file following this format can be used with [One ROM Studio](https://onerom.org/studio) to generate a complete One ROM image and flash it to your One ROM.
 
+## Local File Names
+
+Where ROM images are on the local filesystem, it is safest to use full file paths.  On Windows, use double backslashes in the file path (e.g. "C:\\Users\\piers\\local-chargen-custom.bin").
+
 ## Minimal Config
 
 This is a minimal config:

@@ -2,9 +2,59 @@
 
 All notables changes between versions are documented in this file.
 
-## v0.6.7 - ????-??-??
+## v0.6.7 - 2026-??-??
 
-Introduced fire-24-eadb01 as a possibly temporary workaround for a single fire-24-e board.  Do not rely on this hardware version, as it may be removed without warning in future.
+!!! Test other 32 pin ROM types see below
+
+The three headlines in this release are **prototype** support for:
+
+- One ROM CLI - a command line tool for interacting with new and old One ROM Fire devices over USB
+- a USB stack running the picoboot protocol live while the One ROM is serving ROM bytes
+- One ROM plugins, used to extend One ROM's core functionality (and is how the new USB support is implemented)
+
+### USB Stack
+
+This release adds USB support **while One ROM is serving bytes**.  It no longer drops into BOOTSEL/programming mode when USB is connected.  The USB stack primarily exposes a vendor class interface, implementing Raspberry Pi's PICOBOOT protocol, the same protocol used by picotool to manage and control an RP2350 in BOOTSEL mode.
+
+This allows you to use the following tools to perform RAM and flash operations on One ROM while One ROM is serving bytes:
+
+- `picotool` - Raspberry Pi's command line tool for managing RP2350 devices in BOOTSEL mode.  It can be used to read and write flash and RAM, and to reset the device.
+
+- [pico⚡flash](https://picoflash.org) - a WebUSB PICOBOOT implementation offering the same primary primitives as picotool.
+
+Some notes on this support:
+
+- There is no guarantee that the USB interface will be stable or remain the same in future releases.  In fact, the USB stack, as a plugin, may have its own versioning and release train, may change VID/PID, etc.
+
+- SRAM is directly available via PICOBOOT at 0x2000_0000.  The ROM image being served is located at this address.  However, both address bytes and data bits are mangled for ROM serving.  A "logical" image of the ROM being served is available for reading **and writing** live at 0x9000_0000.  For example, for an 8KB 2364 ROM, the actualy ROM image byte 0 is available at 0x9000_0000, byte 1 at 0x9000_0001, etc.  This allows reading **and changing** the ROM image almost instantly at runtime.  Bytes are updated in the ROM image being served in the order they come in over the PICOBOOT protocol.
+
+  - `picotool` has a limitation that it does not support reading/writing addresses that it thinks are invalid, such as 0x9000_0000.  You will probably need to use picoflash for the time being.  A custom One ROM CLI tool is coming soon.
+
+- Flash erase is **not** supported in this release.  While the ROM byte serving is entirely autonomous, erasing the flash that the plugins execute from would cause the MCU cores to fault, and break the USB stack.  Some thought needs to be applied before implementing live flash erase (and hence flash write).
+
+- The USB stack includes a CDC interface, which is currently unused, but may be used in the future for debugging, logging and other purposes.
+
+- More USB functionality is expected in future releases - including live flash erase/writing, controling the image select pins (for example, to drive external devices).
+
+### Plugins
+
+This release adds **prototype** support for One ROM plugins, which are custom binary modules, separately built and then added to One ROM's configuration.  One ROM executes the plugins once ROM serving has been started.
+
+Plugins can provide a massive variety of functionality and are hugely flexible - as they are effectively full microprocessor firmware in their own right.
+
+While the RAM available to plugins varies between copious and extremely limited depending on the One ROM model, a plugin gets a full RP2350 core at its disposal, clocked at the current RP2350 clock speed, and full hardware access.  With great power comes great responsibility, and plugins can interfere with ROM serving if they do not avoid operations that might conflict - in particularly PIO/DMA operations and GPIO usage.
+
+There is **no** guarantee of the [One ROM plugin API](sdrr/ora/api.h) remaining backwards compatible in any future One ROM release.  However, the general plugin concept is expected to be here to stay.
+
+In this release, only system plugins are first class citizens - there is no user plugin RAM allocation (including no .data or .bss) and the dynamic RAM allocation API always returns NULL.  Limited stack space is available - each core is allocated 1KB of stack, including the stack used to launch the plugin.  There is no policing of the stack, nor any other sandboxes of plugins.
+
+The only supported IRQs for plugins in this release are TIMER0_IRQ_0 and USBCTRL_IRQ, both of which are used by the USB system plugin.
+
+### Other Changes
+
+- A new version of [One ROM Lab](rust/lab-new/README.md) has been started and is used to test One ROM Fire 40 boards prior to shipping.  This is expected to replace other testers soon, and completely supercede the old version of One ROM Lab over time.
+
+- Introduced fire-24-eadb01 as a possibly temporary workaround for a single fire-24-e board.  Do not rely on this hardware version, as it may be removed without warning in future.
 
 ## v0.6.6 - 2026-02-25
 

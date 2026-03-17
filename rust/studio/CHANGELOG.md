@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.1.16 - 2026-??-??
+
+- Pulls in new boards and chip types (including chip type alias support)
+- Adds a "reload" button next to selected config, to streamline config update workflow
+- Inherits new, more robust picoboot crate 0.2.0
+- Does _not_ support live managing devices running new USB stack, place these into "stopped" mode using the CLI before using Studio to program.
+
 ## v0.1.15 - 2026-02-25
 
 - Added 2704/2708 ROM support.

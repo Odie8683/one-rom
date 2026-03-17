@@ -16,6 +16,7 @@ const NETWORK_ERROR_SVG: &str = include_str!("../assets/network_error.svg");
 const HELP_SVG: &str = include_str!("../assets/help.svg");
 const UPDATE_AVAILABLE_SVG: &str = include_str!("../assets/update_available.svg");
 const DEV_VERSION_SVG: &str = include_str!("../assets/dev_version.svg");
+const REFRESH_SVG: &str = include_str!("../assets/refresh.svg");
 
 /// Stored image (pictures/icons) resources
 pub struct Images {
@@ -24,6 +25,7 @@ pub struct Images {
     help: Handle,
     update_available: Handle,
     dev_version: Handle,
+    refresh: Handle,
 }
 
 impl Images {
@@ -34,6 +36,7 @@ impl Images {
         let help = Self::svg_to_image(HELP_SVG, 24, 24);
         let update_available = Self::svg_to_image(UPDATE_AVAILABLE_SVG, 24, 24);
         let dev_version = Self::svg_to_image(DEV_VERSION_SVG, 24, 24);
+        let refresh = Self::svg_to_image(REFRESH_SVG, 24, 24);
 
         Self {
             network_ok,
@@ -41,6 +44,7 @@ impl Images {
             help,
             update_available,
             dev_version,
+            refresh,
         }
     }
 
@@ -67,6 +71,11 @@ impl Images {
     /// Get the development version icon
     pub fn icon_dev_version(&self) -> &Handle {
         &self.dev_version
+    }
+
+    /// Get the refresh icon
+    pub fn icon_refresh(&self) -> &Handle {
+        &self.refresh
     }
 
     // Convert an SVG string to an iced image handle

@@ -105,6 +105,8 @@ SECTIONS
     /* BSS section - RAM to be zeroed on startup */
     INCLUDE "ram_bss.ld"
 
+    ASSERT(. <= 0x20081000, "Error: RAM data/bss overlaps system plugin data region")
+
     /* Stack section */
     INCLUDE "stack.ld"
 

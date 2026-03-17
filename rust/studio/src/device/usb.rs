@@ -156,7 +156,7 @@ pub async fn read_async(
                 Message::ReadFailed(client, log).into()
             }
         },
-        UsbDeviceType::Fire(mut p) => match p.flash_read(address, (words * 4) as u32).await {
+        UsbDeviceType::Fire(mut p) => match p.read(address, (words * 4) as u32).await {
             Ok(data) => Message::DeviceData(client, data).into(),
             Err(e) => {
                 let log = format!(

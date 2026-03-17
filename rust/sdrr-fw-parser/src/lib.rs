@@ -283,7 +283,7 @@ impl<'a, R: Reader> Parser<'a, R> {
         let flash = match self.parse_flash().await {
             Ok(f) => Some(f),
             Err(e) => {
-                warn!("Failed to parse flash: {}", e);
+                debug!("Failed to parse flash: {}", e);
                 None
             }
         };
@@ -297,7 +297,7 @@ impl<'a, R: Reader> Parser<'a, R> {
         let ram = match ram {
             Ok(r) => Some(r),
             Err(e) => {
-                warn!("Failed to parse RAM: {}", e);
+                debug!("Failed to parse RAM: {}", e);
                 None
             }
         };
@@ -586,6 +586,20 @@ impl<'a, R: Reader> Parser<'a, R> {
                 + SdrrRuntimeInfoHeader::access_count_offset() as u32,
             rom_table_address: runtime_info.rom_table_ptr,
             rom_table_size: runtime_info.rom_table_size,
+            overclock_enabled: None,
+            status_led_enabled: None,
+            swd_enabled: None,
+            fire_vreg: None,
+            ice_freq_mhz: None,
+            fire_freq_mhz: None,
+            sysclk_mhz: None,
+            fire_serve_mode: None,
+            bit_mode: None,
+            rom_dma_copy: None,
+            num_data_pins: None,
+            force_16_bit: None,
+            peri_en: None,
+            limp_mode: None,
         })
     }
 

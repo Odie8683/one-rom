@@ -37,8 +37,8 @@
                     "cs2": "active_high"
                 },
                 {
-                    "file": "local-chargen-custom.bin",
-                    "description": "Custom character set",
+                    "file": "C:\\Users\\piers\\local-chargen-custom.bin",
+                    "description": "Custom character set, local files need double backslashes on Windows",
                     "type": "2332",
                     "cs1": "active_low",
                     "cs2": "active_high",

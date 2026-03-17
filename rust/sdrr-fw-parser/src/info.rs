@@ -18,6 +18,7 @@ use crate::{
     SdrrServe,
 };
 use crate::{ParseError, Parser, Reader};
+use crate::types::{BitMode, FireVreg, FireServeMode, LimpMode};
 
 #[cfg(not(feature = "std"))]
 use alloc::{format, string::String, vec, vec::Vec};
@@ -42,6 +43,20 @@ pub struct SdrrRuntimeInfo {
     pub account_count_address: u32,
     pub rom_table_address: u32,
     pub rom_table_size: u32,
+    pub overclock_enabled: Option<bool>,
+    pub status_led_enabled: Option<bool>,
+    pub swd_enabled: Option<bool>,
+    pub fire_vreg: Option<FireVreg>,
+    pub ice_freq_mhz: Option<u16>,
+    pub fire_freq_mhz: Option<u16>,
+    pub sysclk_mhz: Option<u16>,
+    pub fire_serve_mode: Option<FireServeMode>,
+    pub bit_mode: Option<BitMode>,
+    pub rom_dma_copy: Option<bool>,
+    pub num_data_pins: Option<u8>,
+    pub force_16_bit: Option<bool>,
+    pub peri_en: Option<u8>,
+    pub limp_mode: Option<LimpMode>,
 }
 
 /// Main SDRR firmware information data structure.  Contains all data parsed
@@ -266,7 +281,11 @@ impl SdrrInfo {
                 pin_to_addr_map[pins.cs1 as usize] = Some(17);
                 0x1FFFF
             }
-            SdrrRomType::Rom27C010
+            SdrrRomType::RomSst39sf040
+            | SdrrRomType::SystemPlugin
+            | SdrrRomType::UserPlugin
+            | SdrrRomType::PioPlugin
+            | SdrrRomType::Rom27C010
             | SdrrRomType::Rom27C020
             | SdrrRomType::Rom27C040
             | SdrrRomType::Rom27C080

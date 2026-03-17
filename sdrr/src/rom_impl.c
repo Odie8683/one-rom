@@ -702,7 +702,7 @@ void SECTION_MAIN_LOOP main_loop(
 // Get the index of the selected ROM by from the image select jumper values
 //
 // Returns the index
-uint8_t get_rom_set_index(uint32_t sel_pins, uint32_t sel_mask) {
+uint8_t get_rom_set_index(uint32_t sel_pins, uint32_t sel_mask, uint8_t plugins) {
     uint8_t rom_sel, rom_index;
 
     // Shift the sel pins to read from 0.  Do this by shifting each present
@@ -718,10 +718,42 @@ uint8_t get_rom_set_index(uint32_t sel_pins, uint32_t sel_mask) {
         }
     }
 
+    // See what plugins we have
+    uint8_t num_plugins = plugins & 1 ? 1 : 0;
+    num_plugins += plugins & 2 ? 1 : 0;
+
+    // Get the rom set count
+    uint8_t rom_set_count = sdrr_info.metadata_header->rom_set_count;
+    if (rom_set_count <= num_plugins) {
+        ERR("No ROM sets");
+        limp_mode(LIMP_MODE_INVALID_CONFIG);
+        return 0;
+    }
+
     // Calculate the ROM image index based on the selection bits and number of
     // images installed in this firmware.  For example, if image 4 was selected
     // but there are only 3 images, it will select image 1.
-    rom_index = rom_sel % sdrr_info.metadata_header->rom_set_count;
+    rom_index = rom_sel % (rom_set_count - num_plugins);
+
+    // Now, if rom_index is 0, make it 1 to skip the system plug if we have it
+    if (plugins & 1) {
+        if (rom_index == 0) {
+            rom_index++;
+        }
+    }
+
+    // Now skip the user pluging if we have one of those
+    if (plugins & 2) {
+        if (rom_index == 1) {
+            rom_index++;
+        }
+    }
+
+    if (rom_index >= rom_set_count) {
+        ERR("ROM set cal error: %d", rom_index);
+        limp_mode(LIMP_MODE_INVALID_CONFIG);
+        return 0;
+    }
 
     LOG("ROM sel/index %d/%d", rom_sel, rom_index);
 

@@ -12,6 +12,7 @@ use onerom_gen::firmware::{FirmwareConfig, ServeAlgParams};
 use static_assertions::const_assert_eq;
 
 use crate::Reader;
+use crate::types::{BitMode, FireVreg, FireServeMode, LimpMode};
 use crate::{MAX_VERSION_MAJOR, MAX_VERSION_MINOR, MAX_VERSION_PATCH};
 use crate::{McuLine, McuStorage, SdrrCsState, SdrrRomType, SdrrServe};
 use crate::{SdrrExtraInfo, SdrrMcuPort, SdrrPins, SdrrRomInfo, SdrrRomSet};
@@ -37,6 +38,60 @@ pub(crate) struct SdrrRuntimeInfoHeader {
     pub rom_table_ptr: u32,
     #[deku(endian = "little")]
     pub rom_table_size: u32,
+}
+
+#[derive(Debug, DekuRead, DekuWrite)]
+#[deku(endian = "little")]
+// Used internally to construct [`SdrrRuntimeInfo`]
+pub(crate) struct SdrrRuntimeInfoHeaderVunknown {
+    #[deku(endian = "little")]
+    pub stm32_bootloader_entry: u32,
+}
+
+#[derive(Debug, DekuRead, DekuWrite)]
+// Used internally to construct [`SdrrRuntimeInfo`]
+pub(crate) struct SdrrRuntimeInfoHeaderV0_6_0 {
+    pub overclock_enabled: u8,
+    pub status_led_enabeled: u8,
+    pub swd_enabled: u8,
+    pub fire_vreg: FireVreg,
+    #[deku(endian = "little")]
+    pub ice_freq: u16,
+    #[deku(endian = "little")]
+    pub fire_freq: u16,
+    #[deku(endian = "little")]
+    pub sysclk_mhz: u16,
+}
+
+#[derive(Debug, DekuRead, DekuWrite)]
+// Used internally to construct [`SdrrRuntimeInfo`]
+pub(crate) struct SdrrRuntimeInfoHeaderV0_6_2 {
+    pub fire_serve_mode: FireServeMode,
+    pub bit_mode: BitMode,
+}
+
+#[derive(Debug, DekuRead, DekuWrite)]
+#[deku(endian = "little")]
+// Used internally to construct [`SdrrRuntimeInfo`]
+pub(crate) struct SdrrRuntimeInfoHeaderV0_6_3 {
+    pub rom_dma_copy: u8,
+    pub num_data_pins: u8,
+    pub force_16_bit: u8,
+}
+
+#[derive(Debug, DekuRead, DekuWrite)]
+// Used internally to construct [`SdrrRuntimeInfo`]
+pub(crate) struct SdrrRuntimeInfoHeaderV0_6_7 {
+    pub peri_en: u8,
+    #[deku(endian = "little")]
+    pub system_plugin_context_ptr: u32,
+    #[deku(endian = "little")]
+    pub user_plugin_context_ptr: u32,
+    #[deku(endian = "little")]
+    pub timer0_irq_0_handler_ptr: u32,
+    #[deku(endian = "little")]
+    pub usbctrl_irq_handler_ptr: u32,
+    pub limp_mode: LimpMode,
 }
 
 impl SdrrRuntimeInfoHeader {

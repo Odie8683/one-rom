@@ -158,6 +158,9 @@ fn rom_config_row<'a>(
     {
         // Show if config has been loaded/downloaded
         if let Some(config_len) = runtime_info.selected_config_len() {
+            let reload = style.reload_icon(Message::ReloadConfig.into());
+            row = row.push(reload);
+
             // split into three rows, with number of bytes gold
             let downloaded_row = row![
                 Style::text_small("(loaded: "),

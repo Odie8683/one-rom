@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Piers Finlayson <piers@piers.rocks>
+// Copyright (C) 2026 Piers Finlayson <piers@piers.rocks>
 //
 // MIT License
 
@@ -62,6 +62,14 @@ pub fn build(manifest_path: &Path) {
     eprintln!("Documentation generated at {}", docs_path.display());
 }
 
+fn variant_name(type_name: &str, chip_type: &ChipType) -> String {
+    if chip_type.function.is_plugin() {
+        type_name.to_string()
+    } else {
+        format!("Chip{}", type_name)
+    }
+}
+
 fn get_sorted_chip_types(config: &ChipTypesConfig) -> Vec<(&String, &ChipType)> {
     let mut types: Vec<_> = config.chip_types.iter().collect();
     // Sort by: pin count, then size, then name (for determinism)
@@ -116,20 +124,15 @@ fn generate_lib_rs(config: &ChipTypesConfig) -> String {
 
     for (type_name, _chip_type) in get_sorted_chip_types(config) {
         if let Some(chip_type) = config.chip_types.get(type_name) {
-            let entry = format!(
+            let mut entry = format!(
                 "//! - **{}**: {} ({})\n",
                 type_name,
-                chip_type
-                    .description
-                    .split(" with ")
-                    .next()
-                    .unwrap_or(&chip_type.description),
-                chip_type
-                    .description
-                    .split(" with ")
-                    .nth(1)
-                    .unwrap_or("see datasheet")
+                chip_type.description.split(" with ").next().unwrap_or(&chip_type.description),
+                chip_type.description.split(" with ").nth(1).unwrap_or("see datasheet")
             );
+            if let Some(aliases) = &chip_type.aliases && !aliases.is_empty() {
+                entry.push_str(&format!("//!   Aliases: {}\n", aliases.join(", ")));
+            }
 
             if type_name.starts_with("23") && chip_type.function == ChipFunction::Rom {
                 if chip_type.pins == 24 {
@@ -146,7 +149,7 @@ fn generate_lib_rs(config: &ChipTypesConfig) -> String {
                         chip_type.pins, type_name
                     );
                 }
-            } else if type_name.starts_with("27") && chip_type.function == ChipFunction::Rom {
+            } else if (type_name.starts_with("27") || type_name.starts_with("SST39SF")) && chip_type.function == ChipFunction::Rom {
                 if chip_type.pins == 24 {
                     eprom_24pin.push(entry);
                 } else if chip_type.pins == 28 {
@@ -163,6 +166,8 @@ fn generate_lib_rs(config: &ChipTypesConfig) -> String {
                 }
             } else if chip_type.function == ChipFunction::Ram {
                 ram_chips.push(entry);
+            } else if chip_type.function.is_plugin() {
+                // Skip plugins for now - they don't fit into the standard categories
             } else {
                 panic!("Unsupported chip type {} - needs adding", type_name);
             }
@@ -336,6 +341,9 @@ fn generate_rust_code(config: &ChipTypesConfig) -> String {
     // Generate ChipType implementation
     code.push_str(&generate_chip_type_impl(config));
 
+    // Generate lists of ChipType variants per pin counts
+    code.push_str(&generate_chip_type_names(config));
+
     code
 }
 
@@ -353,7 +361,18 @@ pub enum ChipFunction {
     /// Random-Access Memory (RAM) chip
     #[serde(rename = "RAM")]
     Ram,
-}"#
+
+    /// One ROM Plugin (not a chip)
+    Plugin,
+}
+    
+impl ChipFunction {
+    /// Check if this ChipFunction is a plugin type
+    pub const fn is_plugin(&self) -> bool {
+        matches!(self, ChipFunction::Plugin)
+    }
+}
+"#
 }
 
 fn generate_control_line_type_enum() -> &'static str {
@@ -478,14 +497,33 @@ fn generate_chip_type_enum(config: &ChipTypesConfig) -> String {
 
     for (type_name, _chip_type) in get_sorted_chip_types(config) {
         if let Some(chip_type) = config.chip_types.get(type_name.as_str()) {
+            let vname = variant_name(type_name, chip_type);
             code.push_str(&format!(
                 "    /// {} - {} bytes, {}-pin package\n",
                 chip_type.description, chip_type.size, chip_type.pins
             ));
-            code.push_str(&format!(
-                "    #[cfg_attr(feature = \"schemars\", schemars(rename = \"{type_name}\"))]\n"
-            ));
-            code.push_str(&format!("    Chip{},\n", type_name));
+            if !chip_type.function.is_plugin() {
+                code.push_str(&format!(
+                    "    #[cfg_attr(feature = \"schemars\", schemars(rename = \"{type_name}\"))]\n"
+                ));
+            } else {
+                let snake_name = type_name
+                    .chars()
+                    .fold(String::new(), |mut acc, c| {
+                        if c.is_uppercase() && !acc.is_empty() {
+                            acc.push('_');
+                        }
+                        acc.push(c.to_ascii_lowercase());
+                        acc
+                    });
+                code.push_str(&format!(
+                    "    #[cfg_attr(feature = \"schemars\", schemars(rename = \"{snake_name}\"))]\n"
+                ));
+                code.push_str(&format!(
+                    "    #[serde(rename = \"{snake_name}\")]\n"
+                ));
+            }
+            code.push_str(&format!("    {},\n", vname));
         }
     }
 
@@ -500,11 +538,40 @@ fn generate_chip_type_enum(config: &ChipTypesConfig) -> String {
     code.push_str("        match s {\n");
 
     for (type_name, _chip_type) in get_sorted_chip_types(config) {
-        if config.chip_types.contains_key(type_name.as_str()) {
-            code.push_str(&format!(
-                "            \"Chip{}\" | \"{}\" => Ok(ChipType::Chip{}),\n",
-                type_name, type_name, type_name
-            ));
+        if let Some(chip_type) = config.chip_types.get(type_name.as_str()) {
+            let vname = variant_name(type_name, chip_type);
+            if vname == *type_name {
+                // Plugin: also accept snake_case form
+                let snake_name = type_name
+                    .chars()
+                    .fold(String::new(), |mut acc, c| {
+                        if c.is_uppercase() && !acc.is_empty() {
+                            acc.push('_');
+                        }
+                        acc.push(c.to_ascii_lowercase());
+                        acc
+                    });
+                code.push_str(&format!(
+                    "            \"{}\" | \"{}\" => Ok(ChipType::{}),\n",
+                    type_name, snake_name, vname
+                ));
+            } else {
+                // Non-plugin: accept "Chip2364", "2364", and all aliases
+                let mut patterns = vec![format!("\"{}\"", vname), format!("\"{}\"", type_name)];
+                if let Some(aliases) = &chip_type.aliases {
+                    for alias in aliases {
+                        let aliased = format!("\"{}\"", alias);
+                        if !patterns.contains(&aliased) {
+                            patterns.push(aliased);
+                        }
+                    }
+                }
+                code.push_str(&format!(
+                    "            {} => Ok(ChipType::{}),\n",
+                    patterns.join(" | "),
+                    vname
+                ));
+            }
         }
     }
 
@@ -533,8 +600,11 @@ fn generate_chip_type_enum(config: &ChipTypesConfig) -> String {
     code.push_str("/// All supported Chip types\n");
     code.push_str("pub const CHIP_TYPES: &[ChipType] = &[\n");
     for (type_name, _chip_type) in get_sorted_chip_types(config) {
-        if config.chip_types.contains_key(type_name.as_str()) {
-            code.push_str(&format!("    ChipType::Chip{},\n", type_name));
+        if let Some(chip_type) = config.chip_types.get(type_name.as_str()) {
+            code.push_str(&format!(
+                "    ChipType::{},\n",
+                variant_name(type_name, chip_type)
+            ));
         }
     }
     code.push_str("];\n");
@@ -547,64 +617,55 @@ fn generate_chip_type_impl(config: &ChipTypesConfig) -> String {
 
     code.push_str("impl ChipType {\n");
 
-    // Generate try_from_str
     code.push_str(&generate_try_from_str(config));
     code.push_str("\n\n");
 
-    // Generate name
     code.push_str(&generate_name_method(config));
     code.push_str("\n\n");
 
-    // Generate aliases
     code.push_str(&generate_aliases_method(config));
     code.push_str("\n\n");
 
-    // Generate chip function
     code.push_str(&generate_chip_function_method(config));
     code.push_str("\n\n");
 
-    // Generate bit modes
     code.push_str(&generate_bit_modes_method(config));
     code.push_str("\n\n");
 
-    // Generate supports X bit mode
     code.push_str(&generate_supports_bit_mode_method(config));
     code.push_str("\n\n");
 
-    // Generate c_enum_name
     code.push_str(&generate_c_enum_method(config));
     code.push_str("\n\n");
 
-    // Generate chip_pins
     code.push_str(&generate_chip_pins_method(config));
     code.push_str("\n\n");
 
-    // Generate size_bytes
     code.push_str(&generate_size_bytes_method(config));
     code.push_str("\n\n");
 
-    // Generate num_addr_lines
     code.push_str(&generate_num_addr_lines_method(config));
     code.push_str("\n\n");
 
-    // Generate address_pins
     code.push_str(&generate_address_pins_method(config));
     code.push_str("\n\n");
 
-    // Generate data_pins
     code.push_str(&generate_data_pins_method(config));
     code.push_str("\n\n");
 
-    // Generate control_lines
     code.push_str(&generate_control_lines_method(config));
     code.push_str("\n\n");
 
-    // Generate programming_pins
     code.push_str(&generate_programming_pins_method(config));
     code.push_str("\n\n");
 
-    // Generate power_pins
     code.push_str(&generate_power_pins_method(config));
+    code.push_str("\n\n");
+
+    code.push_str(&generate_is_plugin_method(config));
+    code.push_str("\n\n");
+
+    code.push_str(&generate_chip_type_is_supported_fn(config));
     code.push_str("\n\n");
 
     code.push_str("}\n");
@@ -625,34 +686,54 @@ fn generate_try_from_str(config: &ChipTypesConfig) -> String {
 
     code.push_str("    /// Parse Chip type from string identifier\n");
     code.push_str("    ///\n");
+    code.push_str("    /// Matching is case-insensitive and aliases are also accepted.\n");
+    code.push_str("    ///\n");
     code.push_str("    /// # Examples\n");
     code.push_str("    ///\n");
     code.push_str("    /// ```\n");
     code.push_str("    /// use onerom_config::chip::ChipType;\n");
     code.push_str("    ///\n");
-    code.push_str(
-        "    /// assert_eq!(ChipType::try_from_str(\"2364\"), Some(ChipType::Chip2364));\n",
-    );
-    code.push_str(
-        "    /// assert_eq!(ChipType::try_from_str(\"27128\"), Some(ChipType::Chip27128));\n",
-    );
+    code.push_str("    /// assert_eq!(ChipType::try_from_str(\"2364\"), Some(ChipType::Chip2364));\n");
+    code.push_str("    /// assert_eq!(ChipType::try_from_str(\"27128\"), Some(ChipType::Chip27128));\n");
+    code.push_str("    /// assert_eq!(ChipType::try_from_str(\"2016\"), Some(ChipType::Chip6116)); // alias\n");
     code.push_str("    /// assert_eq!(ChipType::try_from_str(\"invalid\"), None);\n");
     code.push_str("    /// ```\n");
-    code.push_str("    pub fn try_from_str(s: &str) -> Option<Self> {\n");
-    code.push_str("        match s {\n");
 
+    code.push_str("    pub fn try_from_str(s: &str) -> Option<Self> {\n");
+
+    let mut first = true;
     for (type_name, _chip_type) in get_sorted_chip_types(config) {
-        if config.chip_types.contains_key(type_name) {
-            code.push_str(&format!(
-                "            \"{}\" => Some(ChipType::Chip{}),\n",
-                type_name, type_name
-            ));
+        if let Some(chip_type) = config.chip_types.get(type_name.as_str()) {
+            let vname = variant_name(type_name, chip_type);
+
+            let mut names = vec![type_name.to_ascii_lowercase()];
+            if let Some(aliases) = &chip_type.aliases {
+                for alias in aliases {
+                    let lower = alias.to_ascii_lowercase();
+                    if !names.contains(&lower) {
+                        names.push(lower);
+                    }
+                }
+            }
+
+            let condition = names
+                .iter()
+                .map(|n| format!("s.eq_ignore_ascii_case(\"{}\")", n))
+                .collect::<Vec<_>>()
+                .join(" || ");
+
+            let keyword = if first { "if" } else { "} else if" };
+            first = false;
+            code.push_str(&format!("        {} {} {{\n", keyword, condition));
+            code.push_str(&format!("            Some(ChipType::{})\n", vname));
         }
     }
 
-    code.push_str("            _ => None,\n");
+    code.push_str("        } else {\n");
+    code.push_str("            None\n");
     code.push_str("        }\n");
     code.push_str("    }\n");
+
     code
 }
 
@@ -672,10 +753,11 @@ fn generate_name_method(config: &ChipTypesConfig) -> String {
     code.push_str("        match self {\n");
 
     for (type_name, _chip_type) in get_sorted_chip_types(config) {
-        if config.chip_types.contains_key(type_name) {
+        if let Some(chip_type) = config.chip_types.get(type_name.as_str()) {
             code.push_str(&format!(
-                "            ChipType::Chip{} => \"{}\",\n",
-                type_name, type_name
+                "            ChipType::{} => \"{}\",\n",
+                variant_name(type_name, chip_type),
+                type_name
             ));
         }
     }
@@ -688,34 +770,31 @@ fn generate_name_method(config: &ChipTypesConfig) -> String {
 fn generate_aliases_method(config: &ChipTypesConfig) -> String {
     let mut code = String::new();
 
-    code.push_str("    /// Get any alternative names or aliases for this Chip type\n");
+    code.push_str("    /// Get all names for this Chip type, including the primary name and any aliases\n");
     code.push_str("    ///\n");
     code.push_str("    /// # Examples\n");
     code.push_str("    ///\n");
     code.push_str("    /// ```\n");
     code.push_str("    /// use onerom_config::chip::ChipType;\n");
     code.push_str("    ///\n");
-    code.push_str("    /// assert_eq!(ChipType::Chip6116.aliases(), &[\"2016\"]);\n");
+    code.push_str("    /// assert_eq!(ChipType::Chip6116.aliases(), &[\"6116\", \"2016\"]);\n");
+    code.push_str("    /// assert_eq!(ChipType::Chip2364.aliases(), &[\"2364\", \"4764\"]);\n");
     code.push_str("    /// ```\n");
     code.push_str("    pub const fn aliases(&self) -> &'static [&'static str] {\n");
     code.push_str("        match self {\n");
 
     for (type_name, _chip_type) in get_sorted_chip_types(config) {
         if let Some(chip_type) = config.chip_types.get(type_name) {
-            let aliases = chip_type
-                .aliases
-                .as_ref()
-                .map(|aliases| {
-                    aliases
-                        .iter()
-                        .map(|alias| format!("\"{}\"", alias))
-                        .collect::<Vec<String>>()
-                        .join(", ")
-                })
-                .unwrap_or_default();
+            let mut all_names = vec![format!("\"{}\"", type_name)];
+            if let Some(aliases) = &chip_type.aliases {
+                for alias in aliases {
+                    all_names.push(format!("\"{}\"", alias));
+                }
+            }
             code.push_str(&format!(
-                "            ChipType::Chip{} => &[{}],\n",
-                type_name, aliases
+                "            ChipType::{} => &[{}],\n",
+                variant_name(type_name, chip_type),
+                all_names.join(", ")
             ));
         }
     }
@@ -724,7 +803,6 @@ fn generate_aliases_method(config: &ChipTypesConfig) -> String {
     code.push_str("    }\n");
     code
 }
-
 fn generate_chip_function_method(config: &ChipTypesConfig) -> String {
     let mut code = String::new();
 
@@ -743,11 +821,12 @@ fn generate_chip_function_method(config: &ChipTypesConfig) -> String {
     for (type_name, _chip_type) in get_sorted_chip_types(config) {
         if let Some(chip_type) = config.chip_types.get(type_name) {
             code.push_str(&format!(
-                "            ChipType::Chip{} => ChipFunction::{},\n",
-                type_name,
+                "            ChipType::{} => ChipFunction::{},\n",
+                variant_name(type_name, chip_type),
                 match chip_type.function {
                     ChipFunction::Rom => "Rom",
                     ChipFunction::Ram => "Ram",
+                    ChipFunction::Plugin => "Plugin",
                 }
             ));
         }
@@ -783,8 +862,9 @@ fn generate_bit_modes_method(config: &ChipTypesConfig) -> String {
                 .collect::<Vec<String>>()
                 .join(", ");
             code.push_str(&format!(
-                "            ChipType::Chip{} => &[{}],\n",
-                type_name, modes
+                "            ChipType::{} => &[{}],\n",
+                variant_name(type_name, chip_type),
+                modes
             ));
         }
     }
@@ -818,10 +898,18 @@ fn generate_supports_bit_mode_method(config: &ChipTypesConfig) -> String {
                 .map(|mode| mode.to_string())
                 .collect::<Vec<String>>()
                 .join(" | ");
-            code.push_str(&format!(
-                "            ChipType::Chip{} => matches!(mode, {}),\n",
-                type_name, modes
-            ));
+            if modes.is_empty() {
+                code.push_str(&format!(
+                    "            ChipType::{} => false,\n",
+                    variant_name(type_name, chip_type)
+                ));
+            } else {
+                code.push_str(&format!(
+                    "            ChipType::{} => matches!(mode, {}),\n",
+                    variant_name(type_name, chip_type),
+                    modes
+                ));
+            }
         }
     }
 
@@ -846,11 +934,29 @@ fn generate_c_enum_method(config: &ChipTypesConfig) -> String {
     code.push_str("        match self {\n");
 
     for (type_name, _chip_type) in get_sorted_chip_types(config) {
-        if config.chip_types.contains_key(type_name) {
-            code.push_str(&format!(
-                "            ChipType::Chip{} => \"CHIP_TYPE_{}\",\n",
-                type_name, type_name
-            ));
+        if let Some(chip_type) = config.chip_types.get(type_name.as_str()) {
+            if !chip_type.function.is_plugin() {
+                code.push_str(&format!(
+                    "            ChipType::{} => \"CHIP_TYPE_{}\",\n",
+                    variant_name(type_name, chip_type),
+                    type_name
+                ));
+            } else {
+                let caps_snake_name = type_name
+                    .chars()
+                    .fold(String::new(), |mut acc, c| {
+                        if c.is_uppercase() && !acc.is_empty() {
+                            acc.push('_');
+                        }
+                        acc.push(c.to_ascii_uppercase());
+                        acc
+                    });
+                code.push_str(&format!(
+                    "            ChipType::{} => \"CHIP_TYPE_{}\",\n",
+                    variant_name(type_name, chip_type),
+                    caps_snake_name
+                ));
+            }
         }
     }
 
@@ -878,8 +984,9 @@ fn generate_chip_pins_method(config: &ChipTypesConfig) -> String {
     for (type_name, _chip_type) in get_sorted_chip_types(config) {
         if let Some(chip_type) = config.chip_types.get(type_name) {
             code.push_str(&format!(
-                "            ChipType::Chip{} => {},\n",
-                type_name, chip_type.pins
+                "            ChipType::{} => {},\n",
+                variant_name(type_name, chip_type),
+                chip_type.pins
             ));
         }
     }
@@ -908,8 +1015,9 @@ fn generate_size_bytes_method(config: &ChipTypesConfig) -> String {
     for (type_name, _chip_type) in get_sorted_chip_types(config) {
         if let Some(chip_type) = config.chip_types.get(type_name) {
             code.push_str(&format!(
-                "            ChipType::Chip{} => {},\n",
-                type_name, chip_type.size
+                "            ChipType::{} => {},\n",
+                variant_name(type_name, chip_type),
+                chip_type.size
             ));
         }
     }
@@ -937,8 +1045,8 @@ fn generate_num_addr_lines_method(config: &ChipTypesConfig) -> String {
     for (type_name, _chip_type) in get_sorted_chip_types(config) {
         if let Some(chip_type) = config.chip_types.get(type_name) {
             code.push_str(&format!(
-                "            ChipType::Chip{} => {},\n",
-                type_name,
+                "            ChipType::{} => {},\n",
+                variant_name(type_name, chip_type),
                 chip_type.address.len()
             ));
         }
@@ -980,8 +1088,9 @@ fn generate_address_pins_method(config: &ChipTypesConfig) -> String {
                 .collect::<Vec<_>>()
                 .join(", ");
             code.push_str(&format!(
-                "            ChipType::Chip{} => &[{}],\n",
-                type_name, pins_str
+                "            ChipType::{} => &[{}],\n",
+                variant_name(type_name, chip_type),
+                pins_str
             ));
         }
     }
@@ -1020,8 +1129,9 @@ fn generate_data_pins_method(config: &ChipTypesConfig) -> String {
                 .collect::<Vec<_>>()
                 .join(", ");
             code.push_str(&format!(
-                "            ChipType::Chip{} => &[{}],\n",
-                type_name, pins_str
+                "            ChipType::{} => &[{}],\n",
+                variant_name(type_name, chip_type),
+                pins_str
             ));
         }
     }
@@ -1059,10 +1169,11 @@ fn generate_control_lines_method(config: &ChipTypesConfig) -> String {
 
     for (type_name, _chip_type) in get_sorted_chip_types(config) {
         if let Some(chip_type) = config.chip_types.get(type_name) {
-            // Generate const array for this Chip type
-            code.push_str(&format!("            ChipType::Chip{} => &[\n", type_name));
+            code.push_str(&format!(
+                "            ChipType::{} => &[\n",
+                variant_name(type_name, chip_type)
+            ));
 
-            // Sort control lines by name for consistency
             let mut control_lines: Vec<_> = chip_type.control.iter().collect();
             control_lines.sort_by_key(|(name, _)| *name);
 
@@ -1116,6 +1227,7 @@ fn generate_programming_pins_method(config: &ChipTypesConfig) -> String {
 
     for (type_name, _chip_type) in get_sorted_chip_types(config) {
         if let Some(chip_type) = config.chip_types.get(type_name) {
+            let vname = variant_name(type_name, chip_type);
             if let Some(ref prog) = chip_type.programming {
                 let mut specs = Vec::new();
 
@@ -1152,25 +1264,16 @@ fn generate_programming_pins_method(config: &ChipTypesConfig) -> String {
                 }
 
                 if !specs.is_empty() {
-                    code.push_str(&format!(
-                        "            ChipType::Chip{} => Some(&[\n",
-                        type_name
-                    ));
+                    code.push_str(&format!("            ChipType::{} => Some(&[\n", vname));
                     for spec in specs {
                         code.push_str(&format!("                {},\n", spec));
                     }
                     code.push_str("            ]),\n");
                 } else {
-                    code.push_str(&format!(
-                        "            ChipType::Chip{} => None,\n",
-                        type_name
-                    ));
+                    code.push_str(&format!("            ChipType::{} => None,\n", vname));
                 }
             } else {
-                code.push_str(&format!(
-                    "            ChipType::Chip{} => None,\n",
-                    type_name
-                ));
+                code.push_str(&format!("            ChipType::{} => None,\n", vname));
             }
         }
     }
@@ -1190,7 +1293,10 @@ fn generate_power_pins_method(config: &ChipTypesConfig) -> String {
 
     for (type_name, _chip_type) in get_sorted_chip_types(config) {
         if let Some(chip_type) = config.chip_types.get(type_name) {
-            code.push_str(&format!("            ChipType::Chip{} => &[\n", type_name));
+            code.push_str(&format!(
+                "            ChipType::{} => &[\n",
+                variant_name(type_name, chip_type)
+            ));
 
             if let Some(ref power_pins) = chip_type.power {
                 for power_pin in power_pins {
@@ -1210,5 +1316,168 @@ fn generate_power_pins_method(config: &ChipTypesConfig) -> String {
 
     code.push_str("        }\n");
     code.push_str("    }\n");
+    code
+}
+
+fn generate_is_plugin_method(config: &ChipTypesConfig) -> String {
+    let mut code = String::new();
+
+    code.push_str("    /// Check if this ChipType is a plugin\n");
+    code.push_str("    ///\n");
+    code.push_str("    /// # Examples\n");
+    code.push_str("    ///\n");
+    code.push_str("    /// ```\n");
+    code.push_str("    /// use onerom_config::chip::ChipType;\n");
+    code.push_str("    ///\n");
+    code.push_str("    /// assert!(!ChipType::Chip2364.is_plugin());\n");
+    code.push_str("    /// assert!(ChipType::SystemPlugin.is_plugin());\n");
+    code.push_str("    /// ```\n");
+    code.push_str("    pub const fn is_plugin(&self) -> bool {\n");
+    code.push_str("        match self {\n");
+
+    for (type_name, _chip_type) in get_sorted_chip_types(config) {
+        if let Some(chip_type) = config.chip_types.get(type_name) {
+            code.push_str(&format!(
+                "            ChipType::{} => {},\n",
+                variant_name(type_name, chip_type),
+                chip_type.function.is_plugin()
+            ));
+        }
+    }
+
+    code.push_str("        }\n");
+    code.push_str("    }\n");
+
+    code
+}
+
+fn generate_chip_type_is_supported_fn(config: &ChipTypesConfig) -> String {
+    let mut code = String::new();
+
+    code.push_str("    /// Check if this ChipType is supported by the library\n");
+    code.push_str("    ///\n");
+    code.push_str("    /// This checks if the ChipType is one of the known variants defined in this module.\n");
+    code.push_str("    ///\n");
+    code.push_str("    /// # Examples\n");
+    code.push_str("    ///\n");
+    code.push_str("    /// ```\n");
+    code.push_str("    /// use onerom_config::chip::ChipType;\n");
+    code.push_str("    ///\n");
+    code.push_str("    /// assert!(ChipType::Chip2364.is_supported());\n");
+    code.push_str("    /// assert!(!ChipType::try_from_str(\"unknown\").is_some());\n");
+    code.push_str("    /// ```\n");
+    code.push_str("    pub const fn is_supported(&self) -> bool {\n");
+    code.push_str("        match self {\n");
+
+    for (type_name, _chip_type) in get_sorted_chip_types(config) {
+        if let Some(chip_type) = config.chip_types.get(type_name) {
+            code.push_str(&format!(
+                "            ChipType::{} => {},\n",
+                variant_name(type_name, chip_type),
+                chip_type.supported
+            ));
+        }
+    }
+
+    code.push_str("        }\n");
+    code.push_str("    }\n");
+
+    code
+}
+
+fn generate_chip_type_names(config: &ChipTypesConfig) -> String {
+    let mut code = String::new();
+
+    // Collect names grouped by pin count, all non-plugin names, and plugin names
+    let mut by_pin: std::collections::HashMap<u8, Vec<String>> = std::collections::HashMap::new();
+    let mut all_names: Vec<String> = Vec::new();
+    let mut plugin_names: Vec<String> = Vec::new();
+
+    for (type_name, chip_type) in &config.chip_types {
+        let mut names = vec![type_name.clone()];
+        if let Some(aliases) = &chip_type.aliases {
+            names.extend(aliases.iter().cloned());
+        }
+
+        if !chip_type.supported {
+            continue; // Skip unsupported types
+        }
+
+        if chip_type.function.is_plugin() {
+            for name in &names {
+                if !plugin_names.contains(name) {
+                    plugin_names.push(name.clone());
+                }
+            }
+        } else {
+            let entry = by_pin.entry(chip_type.pins).or_default();
+            for name in &names {
+                if !entry.contains(name) {
+                    entry.push(name.clone());
+                }
+                if !all_names.contains(name) {
+                    all_names.push(name.clone());
+                }
+            }
+        }
+    }
+
+    all_names.sort_unstable();
+    plugin_names.sort_unstable();
+
+    // CHIP_TYPE_NAMES
+    code.push_str("/// All chip type names and aliases, alphabetically sorted.\n");
+    code.push_str("///\n");
+    code.push_str("/// Includes primary names and all known aliases for every supported chip type.\n");
+    code.push_str("/// Does not include plugins.\n");
+    code.push_str("pub const CHIP_TYPE_NAMES: &[&str] = &[\n");
+    for name in &all_names {
+        code.push_str(&format!("    \"{name}\",\n"));
+    }
+    code.push_str("];\n\n");
+
+    // CHIP_TYPE_NAMES_PLUGINS
+    code.push_str("/// All plugin type names and aliases, alphabetically sorted.\n");
+    code.push_str("pub const CHIP_TYPE_NAMES_PLUGINS: &[&str] = &[\n");
+    for name in &plugin_names {
+        code.push_str(&format!("    \"{name}\",\n"));
+    }
+    code.push_str("];\n\n");
+
+    // Per-pin-count arrays
+    let mut pin_counts: Vec<u8> = by_pin.keys().copied().collect();
+    pin_counts.sort_unstable();
+
+    for &pins in &pin_counts {
+        let names = by_pin.get_mut(&pins).unwrap();
+        names.sort_unstable();
+
+        code.push_str(&format!(
+            "/// All chip type names and aliases for {pins}-pin chips, alphabetically sorted.\n"
+        ));
+        code.push_str(&format!(
+            "pub const CHIP_TYPE_NAMES_{pins}_PIN: &[&str] = &[\n"
+        ));
+        for name in names {
+            code.push_str(&format!("    \"{name}\",\n"));
+        }
+        code.push_str("];\n\n");
+    }
+
+    // chip_type_names_for_pins function
+    code.push_str("/// Return the chip type names and aliases for the given pin count.\n");
+    code.push_str("///\n");
+    code.push_str("/// Returns `None` if no chip types exist for the given pin count.\n");
+    code.push_str("pub const fn chip_type_names_for_pins(pins: u8) -> Option<&'static [&'static str]> {\n");
+    code.push_str("    match pins {\n");
+    for &pins in &pin_counts {
+        code.push_str(&format!(
+            "        {pins} => Some(CHIP_TYPE_NAMES_{pins}_PIN),\n"
+        ));
+    }
+    code.push_str("        _ => None,\n");
+    code.push_str("    }\n");
+    code.push_str("}\n");
+
     code
 }
