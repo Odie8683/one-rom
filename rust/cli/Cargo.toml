@@ -51,3 +51,20 @@ static_vcruntime = "3.0"
 
 [dev-dependencies]
 tempfile = "3"
+
+# Cargo deb metadata for building Linux deb packages
+[package.metadata.deb]
+name = "onerom-cli"
+maintainer = "Piers Finlayson <piers@piers.rocks>"
+copyright = "Piers Finlayson"
+license-file = ["LICENSE.txt", "0"]
+extended-description = "Command line interface to manage One ROM - the most flexible retro ROM replacement"
+depends = "$auto"
+section = "utils"
+priority = "optional"
+maintainer-scripts = "scripts/linux/maintainer"
+profile = "release"
+assets = [
+    ["target/release/onerom", "usr/bin/", "755"],
+    ["scripts/69-onerom-cli.rules", "lib/udev/rules.d/69-onerom-cli.rules", "644"],
+]

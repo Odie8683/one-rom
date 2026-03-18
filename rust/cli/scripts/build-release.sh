@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Builds One ROM Studio for macOS, Linux, and Windows serially on separate
+# Builds One ROM CLI for macOS, Linux, and Windows serially on separate
 # build machines.
 #
 # Assumes SSH key-based authentication is set up for the build machines using
@@ -31,7 +31,7 @@ WINDOWS_HOST="windows-11-arm64"
 
 REPO_URL="https://github.com/piersfinlayson/one-rom.git"
 BUILD_DIR="builds/one-rom-build"
-STUDIO_DIR="$BUILD_DIR/rust/studio"
+CLI_DIR="$BUILD_DIR/rust/cli"
 
 # Check for required Windows signing PIN
 if [ -z "$1" ]; then
@@ -82,7 +82,7 @@ echo "Updating repository..."
 git checkout main
 git fetch origin
 git reset --hard origin/main
-cd rust/studio
+cd rust/cli
 echo "Cleaning dist directory..."
 rm -f dist/*
 EOF
@@ -106,7 +106,7 @@ Write-Host "Updating repository..."
 git checkout main
 git fetch origin
 git reset --hard origin/main
-cd rust\studio
+cd rust\cli
 Write-Host "Cleaning dist directory..."
 if (Test-Path dist) {
   cmd /c rmdir /s /q dist
@@ -127,7 +127,7 @@ ssh -t "$MACOS_HOST" "security unlock-keychain ~/Library/Keychains/login.keychai
 echo "Continuing macOS build..."
 start=$(date +%s)
 set +e
-ssh "$MACOS_HOST" "zsh -l -c 'cd $STUDIO_DIR && scripts/build-mac.sh'" > /tmp/studio-build-mac.log 2>&1
+ssh "$MACOS_HOST" "zsh -l -c 'cd $CLI_DIR && scripts/build-mac.sh'" > /tmp/cli-build-mac.log 2>&1
 mac_status=$?
 set -e
 end=$(date +%s)
@@ -136,48 +136,48 @@ ssh "$MACOS_HOST" "security lock-keychain ~/Library/Keychains/login.keychain-db"
 echo "macOS build completed (status: $mac_status) in $((end - start)) seconds"
 if [ $mac_status -ne 0 ]; then
   echo "macOS build log:"
-  cat /tmp/studio-build-mac.log
+  cat /tmp/cli-build-mac.log
 fi
 
 echo ""
 echo "=== Starting Linux build... ==="
 start=$(date +%s)
 set +e
-ssh "$LINUX_HOST" "bash -l -c 'cd $STUDIO_DIR && scripts/build-linux.sh'" > /tmp/studio-build-linux.log 2>&1
+ssh "$LINUX_HOST" "bash -l -c 'cd $CLI_DIR && scripts/build-linux.sh'" > /tmp/cli-build-linux.log 2>&1
 linux_status=$?
 set -e
 end=$(date +%s)
 echo "Linux build completed (status: $linux_status) in $((end - start)) seconds"
 if [ $linux_status -ne 0 ]; then
   echo "Linux build log:"
-  cat /tmp/studio-build-linux.log
+  cat /tmp/cli-build-linux.log
 fi
 
 echo ""
 echo "=== Starting Windows build... ==="
 start=$(date +%s)
 set +e
-ssh "$WINDOWS_HOST" ". 'C:\Program Files\Microsoft Visual Studio\18\Community\Common7\Tools\Launch-VsDevShell.ps1'; cd $STUDIO_DIR; .\scripts\build-win.ps1 $WINDOWS_PIN" > /tmp/studio-build-win.log 2>&1
+ssh "$WINDOWS_HOST" ". 'C:\Program Files\Microsoft Visual Studio\18\Community\Common7\Tools\Launch-VsDevShell.ps1'; cd $CLI_DIR; .\scripts\build-win.ps1 $WINDOWS_PIN" > /tmp/cli-build-win.log 2>&1
 win_status=$?
 set -e
 end=$(date +%s)
 echo "Windows build completed (status: $win_status) in $((end - start)) seconds"
 if [ $win_status -ne 0 ]; then
     echo "Windows build log:"
-    cat /tmp/studio-build-win.log
+    cat /tmp/cli-build-win.log
 fi
 
 echo ""
 echo "=== Collecting build artifacts ==="
 
 echo "Copying macOS artifacts..."
-scp "$MACOS_HOST:$STUDIO_DIR/dist/*.dmg" dist/
+scp "$MACOS_HOST:$CLI_DIR/dist/onerom.zip" dist/onerom-cli-mac.zip
 
 echo "Copying Linux artifacts..."
-scp "$LINUX_HOST:$STUDIO_DIR/dist/*.deb" dist/
+scp "$LINUX_HOST:$CLI_DIR/dist/*.deb" dist/
 
 echo "Copying Windows artifacts..."
-scp "$WINDOWS_HOST:$STUDIO_DIR/dist/*.exe" dist/
+scp "$WINDOWS_HOST:$CLI_DIR/dist/*.zip" dist/
 
 echo ""
 echo "=== Build complete ==="

@@ -1,0 +1,30 @@
+# One ROM Studio copies this file to /lib/udev/rules.d/ as part of the debian package installation.
+#
+# Inclusion of a device below means that a device with that USB VID/PID can be accessed by a user
+# in the `plugdev` group, or, via uaccess, the active desktop user.
+
+# Copy this file to /etc/udev/rules.d/
+# If rules fail to reload automatically, you can refresh udev rules
+# with the command "udevadm control --reload"
+
+# This rules are based on the udev rules from the OpenOCD project.
+# See http://openocd.org/ for more details.
+#
+# This file is available under the GNU General Public License v2.0 as well as the MIT license
+
+ACTION!="add|change", GOTO="onerom_cli_rules_end"
+
+SUBSYSTEM=="gpio", MODE="0660", GROUP="plugdev", TAG+="uaccess"
+
+SUBSYSTEM!="usb|tty|hidraw", GOTO="onerom_cli_rules_end"
+
+# One ROM Bootloader
+ATTRS{idVendor}=="1209", ATTRS{idProduct}=="f540", MODE="660", GROUP="plugdev", TAG+="uaccess"
+
+# One ROM
+ATTRS{idVendor}=="1209", ATTRS{idProduct}=="f540", MODE="660", GROUP="plugdev", TAG+="uaccess"
+
+# RP2350
+ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000f", MODE="660", GROUP="plugdev", TAG+="uaccess"
+
+LABEL="onerom_cli_rules_end"
