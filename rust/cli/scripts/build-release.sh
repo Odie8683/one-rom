@@ -171,7 +171,7 @@ echo ""
 echo "=== Collecting build artifacts ==="
 
 echo "Copying macOS artifacts..."
-scp "$MACOS_HOST:$CLI_DIR/dist/onerom.zip" dist/onerom-cli-mac.zip
+scp "$MACOS_HOST:$CLI_DIR/dist/*.zip" dist/
 
 echo "Copying Linux artifacts..."
 scp "$LINUX_HOST:$CLI_DIR/dist/*.deb" dist/

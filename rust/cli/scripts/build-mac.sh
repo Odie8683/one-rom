@@ -133,8 +133,8 @@ if [ "$SIGN" = true ]; then
     fi
 
     echo "Notarizing binary..."
-    zip -j "$DIST_DIR/onerom.zip" "$BINARY"
-    xcrun notarytool submit "$DIST_DIR/onerom.zip" \
+    zip -j "$DIST_DIR/onerom-cli-mac-${VERSION}.zip" "$BINARY"
+    xcrun notarytool submit "$DIST_DIR/onerom-cli-mac-${VERSION}.zip" \
         --keychain-profile "onerom-notarization" \
         --wait
 

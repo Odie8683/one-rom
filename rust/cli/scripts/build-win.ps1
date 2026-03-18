@@ -121,7 +121,7 @@ foreach ($Target in $Targets) {
     }
 
     $Arch = if ($Target -eq "x86_64-pc-windows-msvc") { "x86_64" } else { "arm64" }
-    $ZipPath = "dist\onerom-cli-win-${Arch}.zip"
+    $ZipPath = "dist\onerom-cli-win-${Version}-${Arch}.zip"
     Compress-Archive -Path "..\target\$Target\release\onerom.exe" -DestinationPath $ZipPath -Force
     Write-Host "Created: $ZipPath"
 }
