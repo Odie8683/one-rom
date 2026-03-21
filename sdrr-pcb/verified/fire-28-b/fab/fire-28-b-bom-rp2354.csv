@@ -11,6 +11,6 @@
 "R4","1","33R","","","","Resistor_SMD:R_0402_1005Metric","~","C25105"
 "R9,R10","2","5K1","","","","Resistor_SMD:R_0402_1005Metric","~","C25905"
 "U1","1","RP2350_60QFN","","","","RP2350_60QFN_minimal:RP2350-QFN-60-1EP_7x7_P0.4mm_EP3.4x3.4mm_ThermalVias","","C41378174"
-"U3","1","AP2112K-3.3","","","","Package_TO_SOT_SMD:SOT-23-5","","C23380830"
+"U3","1","AP2112K-3.3","","","","Package_TO_SOT_SMD:SOT-23-5","","C51118"
 "U4","1","USBLC6-2P6","","","","Package_TO_SOT_SMD:SOT-666","https://www.st.com/resource/en/datasheet/usblc6-2.pdf","C15999"
 "Y1","1","Crystal_GND24","","","","Crystal:Crystal_SMD_Abracon_ABM8G-4Pin_3.2x2.5mm","~","C20625731"
