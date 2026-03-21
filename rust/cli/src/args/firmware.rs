@@ -4,7 +4,7 @@
 
 //! Argument definitions for `onerom firmware`.
 
-use crate::args::CommandTrait;
+use crate::args::{CommandTrait, program::ProgramArgs};
 use clap::{Args, Subcommand};
 use enum_dispatch::enum_dispatch;
 
@@ -84,6 +84,12 @@ pub enum FirmwareCommands {
     ///
     ///   onerom firmware chips --all
     Chips(FirmwareChipsArgs),
+
+    /// Build firmware and program One ROM in one step.
+    /// 
+    /// This is an alias for `onerom program`.  Use `onerom program --help` for
+    /// more details and examples.
+    Program(ProgramArgs),
 }
 
 #[derive(Debug, Args)]

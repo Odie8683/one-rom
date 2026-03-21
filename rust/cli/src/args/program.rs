@@ -85,6 +85,7 @@ pub struct ProgramArgs {
     #[arg(
         long,
         value_name = "FILE",
+        visible_alias = "fw",
         conflicts_with_all = ["config_file", "slot", "base_firmware", "version"]
     )]
     pub firmware: Option<String>,
