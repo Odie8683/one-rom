@@ -46,4 +46,9 @@ static inline void status_led_off(uint8_t pin) {
     STUB_LOG("status_led_off");
 }
 
+static inline void status_led_disable(uint8_t pin) {
+    (void)pin;
+    STUB_LOG("status_led_disable");
+}
+
 #endif // RP235X_INLINES_H
