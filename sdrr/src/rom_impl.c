@@ -412,8 +412,13 @@ void SECTION_MAIN_LOOP main_loop(
 #else
     ROM_IMPL_LOG("Begin serving data");
 #endif // MAIN_LOOP_ONE_SHOT
-    if ((runtime->status_led_enabled) && (info->pins->status < MAX_USED_GPIOS)) {
-        status_led_on(info->pins->status);
+    if (info->pins->status < MAX_USED_GPIOS) {
+        if (runtime->status_led_enabled) {
+            DEBUG("Status LED on");
+            status_led_on(info->pins->status);
+        }
+    } else {
+        DEBUG("Status LED invalid %d", info->pins->status);
     }
 
 #if defined(RP235X)
@@ -425,6 +430,15 @@ void SECTION_MAIN_LOOP main_loop(
 #endif // TEST_BUILD
     } else {
         DEBUG("Fire CPU");
+        if (info->pins->status < MAX_USED_GPIOS) {
+            if (!runtime->status_led_enabled) {
+                // We set the status LED to input in Fire CPU mode, as
+                // the data line writes get replicated to the status (and
+                // other) pins, so it will be on much of the time.
+                DEBUG("Status LED off");
+                status_led_disable(info->pins->status);
+            }
+        }
     }
 #endif // RP235X
 

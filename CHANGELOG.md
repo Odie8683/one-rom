@@ -56,6 +56,10 @@ The only supported IRQs for plugins in this release are TIMER0_IRQ_0 and USBCTRL
 
 - Introduced fire-24-eadb01 as a possibly temporary workaround for a single fire-24-e board.  Do not rely on this hardware version, as it may be removed without warning in future.
 
+### Fixes
+
+- Disabling the status LED using firmware overrides didn't work for CPU serving mode for fire-24-a and fire-24-usb-b.  This has been fixed.
+
 ## v0.6.6 - 2026-02-25
 
 The headline for this release is "bug fixes and other improvements".

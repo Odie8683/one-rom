@@ -166,7 +166,7 @@
 //   - mov using pins as a source, only moving the configured "IN" pins.
 //   Neither of these are supported by the RP2040's PIOs.
 // - All Chip Select (or CE/OE) lines must be connected to contiguous GPIOs.
-// - Any active high chip seledct lines must be inverted prior to use, by
+// - Any active high chip select lines must be inverted prior to use, by
 //   using GPIO input inversion (INOVER).
 // - All Data lines must be connected to contiguous GPIOs.
 // - All Address lines must be connected to contiguous GPIOs, and be limited

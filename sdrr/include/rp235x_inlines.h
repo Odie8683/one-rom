@@ -83,4 +83,9 @@ static inline void __attribute__((always_inline)) status_led_off(uint8_t pin) {
     SIO_GPIO_OUT_SET_PIN(pin);
 }
 
+static inline void __attribute__((always_inline)) status_led_disable(uint8_t pin) {
+    // Disable the status LED by disabling output
+    GPIO_PAD(pin) |= PAD_OUTPUT_DISABLE;
+}
+
 #endif // RP235X_INLINES_H
