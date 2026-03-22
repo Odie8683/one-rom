@@ -91,7 +91,7 @@ pub fn build_image_result(
         }
         Err(e) => {
             warn!("Error building : {e}");
-            create.display_content = format!("Error building image:\n  - {e}");
+            create.display_content = format!("Error building image:\n  {e}");
         }
     }
 

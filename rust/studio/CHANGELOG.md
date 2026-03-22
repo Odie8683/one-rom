@@ -4,8 +4,9 @@
 
 - Pulls in new boards and chip types (including chip type alias support)
 - Adds a "reload" button next to selected config, to streamline config update workflow
-- Inherits new, more robust picoboot crate 0.2.0
-- Does _not_ support live managing devices running new USB stack, place these into "stopped" mode using the CLI before using Studio to program.
+- Inherits new, more robust picoboot crate 0.2.1
+- Make errors new helpful.
+- Supports "running" boards - stop them using the UI before progamming.
 
 ## v0.1.15 - 2026-02-25
 

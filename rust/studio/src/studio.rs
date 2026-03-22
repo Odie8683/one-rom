@@ -591,7 +591,7 @@ impl Studio {
             fw.clone()
         } else {
             warn!("No firmware downloaded, cannot build image");
-            return CreateMessage::BuildImageResult(Err("No firmware downloaded".to_string()))
+            return CreateMessage::BuildImageResult(Err("No firmware downloaded.\n  This is likely due to an internal error.  Please report it.".to_string()))
                 .into();
         };
 
@@ -599,7 +599,7 @@ impl Studio {
             cfg.clone()
         } else {
             warn!("No config downloaded, cannot build image");
-            return CreateMessage::BuildImageResult(Err("No config downloaded".to_string())).into();
+            return CreateMessage::BuildImageResult(Err("No config downloaded.\n  This is likely due to an internal error.  Please report it.".to_string())).into();
         };
 
         // Turn config into string
@@ -608,7 +608,7 @@ impl Studio {
             Err(e) => {
                 warn!("Config is not valid UTF-8: {}", e);
                 return CreateMessage::BuildImageResult(Err(
-                    "Config is not valid UTF-8".to_string()
+                    "The supplied config is not valid UTF-8.".to_string(),
                 ))
                 .into();
             }
@@ -621,14 +621,14 @@ impl Studio {
             } else {
                 warn!("Cannot get firmware version from selected release, cannot build image");
                 return CreateMessage::BuildImageResult(Err(
-                    "Cannot get firmware version from selected release".to_string(),
+                    "Cannot get firmware version from selected release.\n  This is likely due to an internal error.  Please report it.".to_string(),
                 ))
                 .into();
             }
         } else {
             warn!("Cannot get firmware version from hardware info, cannot build image");
             return CreateMessage::BuildImageResult(Err(
-                "Cannot get firmware version from hardware info".to_string(),
+                "Cannot get firmware version from hardware info.\n  This is likely due to an internal error.  Please report it.".to_string(),
             ))
             .into();
         };
@@ -643,7 +643,7 @@ impl Studio {
                     "Firmware version {fw_ver} is too new for this app version to build (max buildable: {max})"
                 );
                 return CreateMessage::BuildImageResult(Err(
-                    format!("Firmware version {fw_ver} is too new for this app version to build.\nMaximum buildable firmware version: {max}\n\nUpdate the app to build with newer firmware versions.")
+                    format!("Firmware version {fw_ver} is too new for this app version to build.\nMaximum buildable firmware version: {max}\n  Update the app to build with newer firmware versions.")
                 ))
                 .into();
             }
@@ -654,7 +654,7 @@ impl Studio {
         } else {
             warn!("Cannot get MCU family from hardware info, cannot build image");
             return CreateMessage::BuildImageResult(Err(
-                "Cannot get MCU family from hardware info".to_string(),
+                "Cannot get MCU family from hardware info.\n  This is likely due to an internal error.  Please report it.".to_string(),
             ))
             .into();
         };
@@ -663,10 +663,7 @@ impl Studio {
             Ok(b) => b,
             Err(e) => {
                 warn!("Failed to create image builder from config: {e:?}");
-                return CreateMessage::BuildImageResult(Err(format!(
-                    "Failed to create image builder from config:\n  - {e:?}"
-                )))
-                .into();
+                return CreateMessage::BuildImageResult(Err(e.to_string())).into();
             }
         };
 
@@ -678,10 +675,7 @@ impl Studio {
             Ok(()) => (),
             Err(e) => {
                 warn!("Failed to get ROM files: {e:?}");
-                return CreateMessage::BuildImageResult(Err(format!(
-                    "Failed to get ROM files:\n  - {e:?}"
-                )))
-                .into();
+                return CreateMessage::BuildImageResult(Err(e.to_string())).into();
             }
         }
 
@@ -690,7 +684,7 @@ impl Studio {
             Some(fw) => fw,
             None => {
                 warn!("No selected firmware, cannot build image");
-                return CreateMessage::BuildImageResult(Err("No selected firmware".to_string()))
+                return CreateMessage::BuildImageResult(Err("No selected firmware.\n  This is likely due to an internal error.  Please report it.".to_string()))
                     .into();
             }
         };
@@ -701,7 +695,7 @@ impl Studio {
             None => {
                 warn!("Cannot get firmware properties, cannot build image");
                 return CreateMessage::BuildImageResult(Err(
-                    "Cannot get firmware properties".to_string()
+                    "Cannot get firmware properties.\n  This is likely due to an internal error.  Please report it.".to_string()
                 ))
                 .into();
             }
@@ -712,10 +706,7 @@ impl Studio {
             Ok((md, roms)) => (md, roms),
             Err(e) => {
                 warn!("Failed to build image: {e:?}");
-                return CreateMessage::BuildImageResult(Err(format!(
-                    "Failed to build image:\n  - {e:?}"
-                )))
-                .into();
+                return CreateMessage::BuildImageResult(Err(e.to_string())).into();
             }
         };
 
@@ -839,8 +830,7 @@ impl Studio {
                 return Message::ReleaseDoesntExist.into();
             }
             Err(e) => {
-                let log =
-                    format!("Failed to download release {fw_ver:?} for {board} {mcu}:\n - {e}");
+                let log = format!("Failed to download release {fw_ver} for {board} {mcu}:\n  {e}");
                 warn!("{log}");
                 Err(log)
             }

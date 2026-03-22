@@ -664,7 +664,7 @@ impl ChipSet {
     ) -> Result<Self> {
         // Check some Chips were supplied
         if chips.is_empty() {
-            return Err(Error::NoChips{id});
+            return Err(Error::NoChips { id });
         }
 
         // Check set type matches number of Chips

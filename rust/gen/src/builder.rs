@@ -268,7 +268,7 @@ impl Builder {
 
                 // Check chip_type is supported
                 if !SUPPORTED_CHIP_TYPES.contains(&chip.chip_type) {
-                    return Err(Error::UnsupportedChipType {
+                    return Err(Error::UnsupportedToolChipType {
                         chip_type: chip.chip_type,
                     });
                 }
@@ -323,7 +323,10 @@ impl Builder {
                         }
                     };
                     if cs.is_none() {
-                        return Err(Error::MissingCsConfig { chip_type: chip.chip_type, line: line.name });
+                        return Err(Error::MissingCsConfig {
+                            chip_type: chip.chip_type,
+                            line: line.name,
+                        });
                     }
                 }
 
@@ -678,7 +681,8 @@ impl Builder {
         for set in self.config.chip_sets.iter() {
             for rom in set.chips.iter() {
                 if !board.supports_chip_type(rom.chip_type) {
-                    return Err(Error::UnsupportedChipType {
+                    return Err(Error::UnsupportedBoardChipType {
+                        board,
                         chip_type: rom.chip_type,
                     });
                 }

@@ -33,7 +33,7 @@ impl HardwareInfo {
     }
 
     /// Constructs firmware properties from hardware info and a release.  This
-    /// is used when building firmware usig `onerom_gen`.
+    /// is used when building firmware using `onerom_gen`.
     pub fn firmware_properties(&self, release: &Release) -> Option<FirmwareProperties> {
         let version = match release.firmware_version() {
             Ok(v) => v,

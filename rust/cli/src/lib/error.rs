@@ -29,7 +29,9 @@ pub enum Error {
     #[error("Unknown board type: {0}\n  Known board types: {1}")]
     InvalidBoard(String, String),
 
-    #[error("You must not specify both --device and --board together.\n  If --device is specified, this is used to determine the board type automatically if possible.")]
+    #[error(
+        "You must not specify both --device and --board together.\n  If --device is specified, this is used to determine the board type automatically if possible."
+    )]
     DeviceAndBoard,
 
     #[error("The selected operation does not apply to a device.\n  Do not specify --device.")]
@@ -72,13 +74,19 @@ pub enum Error {
     #[error("No latest release found in manifest.\n  This is likely a bug.  Please report it.")]
     NoLatestRelease,
 
-    #[error("License was not accepted.\n  You must accept the license to proceed with this operation.")]
+    #[error(
+        "License was not accepted.\n  You must accept the license to proceed with this operation."
+    )]
     LicenseNotAccepted,
 
-    #[error("The base firmware image supplied is larger than the maximum supported\n  {0} bytes supplied vs {1} bytes maximum")]
+    #[error(
+        "The base firmware image supplied is larger than the maximum supported\n  {0} bytes supplied vs {1} bytes maximum"
+    )]
     BaseFirmwareTooLarge(usize, usize),
 
-    #[error("Assembled firmware has parse errors (use --force to override):\n  {0}\n  This is likely a bug.  Please report it.")]
+    #[error(
+        "Assembled firmware has parse errors (use --force to override):\n  {0}\n  This is likely a bug.  Please report it."
+    )]
     FirmwareValidation(String),
 
     #[error("Failed to stop device, cannot proceed.\n  This is likely a bug.  Please report it.")]
@@ -90,7 +98,9 @@ pub enum Error {
     #[error("Invalid argument found:\n  {0}")]
     InvalidArgument(String),
 
-    #[error("Cannot program One ROM as no configuration or firmware specified.\n  Use --config, --slot, --firmware, or --base-firmware.")]
+    #[error(
+        "Cannot program One ROM as no configuration or firmware specified.\n  Use --config, --slot, --firmware, or --base-firmware."
+    )]
     NoFirmwareSource,
 
     #[error("Unexpected reboot state specified.\n  This is likely a bug.  Please report it.")]
@@ -102,7 +112,9 @@ pub enum Error {
     #[error("This board does not support chip types {1}.\n  Supported types: {2}")]
     UnsupportedBoardChipType(String, String, String),
 
-    #[error("Could not determine board type from the connected device {0}.\n  It may be an unprogrammed One ROM or have corrupt firmware.\n  Supply the board type with --board")]
+    #[error(
+        "Could not determine board type from the connected device {0}.\n  It may be an unprogrammed One ROM or have corrupt firmware.\n  Supply the board type with --board"
+    )]
     NoBoardFromDevice(String),
 }
 

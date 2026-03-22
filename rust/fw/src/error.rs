@@ -61,34 +61,46 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::Config { details } => write!(f, "Configuration error:\n  {details}"),
-            Error::Read { file, error } => write!(f, "Error reading file {file}:\n  {error}"),
-            Error::Parse { error } => write!(f, "Hit error parsing supplied configuration:\n  {error}"),
-            Error::Build { error } => write!(f, "Hit error building firmware:\n  {error}"),
-            Error::License { error } => write!(f, "Hit error processing a license:\n  {error}"),
-            Error::FirmwareVersion { error } => {
-                match error {
-                    ConfigError::InvalidFirmwareVersion => write!(f, "Invalid firmware version supplied"),
-                    ConfigError::InvalidMcuVariant { variant } => write!(f, "Invalid MCU variant: {variant}"),
-                }
+            Error::Config { details } => write!(f, "Configuration error.\n  {details}"),
+            Error::Read { file, error } => write!(f, "Error reading file {file}.\n  {error}"),
+            Error::Parse { error } => {
+                write!(f, "Hit error parsing supplied configuration.\n  {error}")
             }
+            Error::Build { error } => write!(f, "Hit error building firmware.\n  {error}"),
+            Error::License { error } => write!(f, "Hit error processing a license.\n  {error}"),
+            Error::FirmwareVersion { error } => match error {
+                ConfigError::InvalidFirmwareVersion => {
+                    write!(f, "Invalid firmware version supplied")
+                }
+                ConfigError::InvalidMcuVariant { variant } => {
+                    write!(f, "Invalid MCU variant: {variant}")
+                }
+            },
             Error::Network { url, error } => {
-                write!(f, "Hit network error accessing URL {url}:\n  {error}")
+                write!(f, "Hit network error accessing URL {url}.\n  {error}")
             }
             Error::Http { url, status } => {
-                write!(f, "Hit HTTP error accessing URL {url}: Status code {status}")
+                write!(
+                    f,
+                    "Hit HTTP error accessing URL {url}.\n  Status code {status}"
+                )
             }
-            Error::Json { error } => write!(f, "Hit an error parsing the supplied JSON file:\n  {error}"),
-            Error::ReleaseNotFound => write!(f, "Requested firmware release not found"),
+            Error::Json { error } => {
+                write!(f, "Hit an error parsing the supplied JSON file.\n  {error}")
+            }
+            Error::ReleaseNotFound => write!(f, "Requested firmware release not found."),
             Error::TooLarge { portion, size, max } => {
-                write!(f, "Hit an error: {portion} size {size} exceeds maximum of {max}")
+                write!(
+                    f,
+                    "Hit an error: {portion} size {size} exceeds maximum of {max}."
+                )
             }
             Error::FileWrite { file, error } => {
-                write!(f, "Hit an error writing file {file}:\n  {error}")
+                write!(f, "Hit an error writing file {file}.\n  {error}")
             }
             Error::LicenseNotAccepted => write!(f, "License not accepted by user"),
             Error::Zip { file, error } => {
-                write!(f, "Hit an error extracting zip file {file}:\n  {error}")
+                write!(f, "Hit an error extracting zip file {file}.\n  {error}")
             }
         }
     }
