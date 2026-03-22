@@ -20,7 +20,7 @@
 void usb_main(
     ora_lookup_fn_t ora_lookup_fn,
     ora_plugin_type_t plugin_type,
-    ora_core_t core
+    const ora_entry_args_t *entry_args
 );
 __attribute__((section(".plugin_header")))
 const ora_plugin_header_t ora_plugin_header = {
@@ -141,14 +141,14 @@ size_t usb_get_serial(uint16_t *desc_str, size_t max_chars) {
 void usb_main(
     ora_lookup_fn_t ora_lookup_fn,
     ora_plugin_type_t plugin_type,
-    ora_core_t core
+    const ora_entry_args_t *entry_args
 ) {
     // Unused variables
     (void)plugin_type;
-    (void)core;
+    (void)entry_args;
 
-    // Initialize .data and .bss.  Do up-front to avoid accidentally using it
-    // first
+    // Initialize .ram_func, .data and .bss.  Do up-front to avoid
+    // accidentally using it first
     init_data_bss();
 
     // Look up the required functions from the API.

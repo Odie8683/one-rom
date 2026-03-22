@@ -28,11 +28,15 @@ BUILD_DIR := build
 SRC       := plugin_main.c
 
 ifeq ($(PLUGIN_TYPE),SYSTEM)
-    PLUGIN_BASE := 0x10010000
-    PLUGIN_PREFIX := plugin_system
+$(info "Building system plugin")
+PLUGIN_BASE := 0x10010000
+PLUGIN_TYPE_NUM := 0
+PLUGIN_PREFIX := plugin_system
 else ifeq ($(PLUGIN_TYPE),USER)
-    PLUGIN_BASE := 0x10020000
-    PLUGIN_PREFIX := plugin_user
+$(info "Building user plugin)
+PLUGIN_BASE := 0x10020000
+PLUGIN_TYPE_NUM := 1
+PLUGIN_PREFIX := plugin_user
 else
     $(error PLUGIN_TYPE must be SYSTEM or USER)
 endif
@@ -43,11 +47,12 @@ BIN       := $(BUILD_DIR)/$(PLUGIN_PREFIX).bin
 CFLAGS  := -mcpu=cortex-m33 -mthumb -mfloat-abi=hard -mfpu=fpv5-sp-d16 \
            -nostdlib -O2 -Wall -Wextra -Werror \
            -ffunction-sections -fdata-sections \
+           -DPLUGIN_TYPE_NUM=$(PLUGIN_TYPE_NUM) \
            -I $(ORA_INCLUDE)
 
 LDFLAGS := -nostdlib \
            -T $(ORA_INCLUDE)/plugin.ld \
-           -Wl,--defsym,PLUGIN_BASE=$(PLUGIN_BASE) \
+           -Wl,--defsym,PLUGIN_TYPE=$(PLUGIN_TYPE_NUM) \
            -Wl,--fatal-warnings
 
 .PHONY: all clean

@@ -35,7 +35,7 @@ uint8_t check_plugin_valid(
     uint32_t expected_launch_region = (0x1001 + index) << 16;
     uint32_t entry_addr = (uint32_t)(uintptr_t)header->entry;
     if ((entry_addr & ~expected_launch_region) >= 0x10000) {
-        ERR("Invalid plugin - ep 0x%08x", entry_addr, expected_launch_region);
+        ERR("Invalid plugin - 0x%08x vs ep 0x%08x", entry_addr, expected_launch_region);
         return 0;
     }
 
@@ -275,6 +275,26 @@ static void reset_core1(void) {
     }
 }
 
+// MUST be kept in sync with the values in plugin.ld and changing them forces
+// a change to the plugin version.
+static const ora_entry_args_t system_plugin_args = {
+    .core = ORA_CORE_0,
+    .static_ram_base = 0x20081000,
+    .static_ram_size = 0x800,
+    .stack_top = 0x20081C00,
+    .stack_size = 0x400,
+};
+static const ora_entry_args_t user_plugin_args = {
+    .core = ORA_CORE_0,
+    .static_ram_base = 0x20081C00,
+    .static_ram_size = 0x200,
+    .stack_top = 0x20082000,
+    .stack_size = 0x200,
+    // Note this arbitrarily splits the available 0x400 bytes in half, with
+    // one half for static RAM and the other half for stack - it's up to the
+    // plugin to manage.
+};
+
 static void core1_main(void) {
     // Read a single uint32_t from the FIFO
     DEBUG("Core 1 started");
@@ -282,12 +302,52 @@ static void core1_main(void) {
     core1_plugin_entry |= 1;
     ora_plugin_entry_t entry = (ora_plugin_entry_t)(uintptr_t)core1_plugin_entry;
     DEBUG("Core 1 launching plugin at 0x%08x", core1_plugin_entry);
-    entry(ora_fn_lookup, ORA_PLUGIN_TYPE_SYSTEM, ORA_CORE_1);
+    entry(ora_fn_lookup, ORA_PLUGIN_TYPE_SYSTEM, &system_plugin_args);
+}
+
+extern uint32_t _Min_Stack_Size;
+extern uint32_t _estack;
+
+// Paint core 1's stack with a known value to make it easier to detect stack
+// usage
+void paint_stack_core1(void) {
+    uint32_t stack_top = (uint32_t)&_estack;
+    uint8_t paint_val = 0x55;
+    uint32_t total_stack_size = (uint32_t)&_Min_Stack_Size;
+    uint32_t core1_stack_size = total_stack_size / 2;
+    uint32_t core1_stack_bottom = stack_top - total_stack_size;
+    uint32_t core1_stack_top = core1_stack_bottom + core1_stack_size;
+    DEBUG("Painting core 1 stack from 0x%08x to 0x%08x with 0x%02x",
+          core1_stack_bottom, core1_stack_top, paint_val);
+    for (uint32_t addr = core1_stack_bottom; addr < core1_stack_top; addr++) {
+        ((uint8_t *)addr)[0] = paint_val;
+    }
+}
+// Implemented in assembly, as this function clears this core's free stack.
+void __attribute__((naked)) paint_stack_core0(void) {
+    __asm volatile (
+        "ldr  r0, =_estack          \n"  // r0 = top of all stack (_estack addr is the value)
+        "ldr  r1, =_Min_Stack_Size  \n"  // r1 = total stack size (linker symbol addr is the value)
+        "lsr  r1, r1, #1            \n"  // r1 = core 0 stack size (half of total)
+        "sub  r2, r0, r1            \n"  // r2 = core 0 stack bottom (top - size)
+        "mov  r3, sp                \n"  // r3 = current SP (caller's frame fully established)
+        "movs r0, #0x33             \n"  // r0 = paint value
+        "1:                         \n"  // loop start
+        "cmp  r2, r3                \n"  // have we reached SP?
+        "bhs  2f                    \n"  // if addr >= SP, done
+        "strb r0, [r2]              \n"  // paint byte at addr
+        "adds r2, r2, #1            \n"  // advance addr
+        "b    1b                    \n"  // loop
+        "2:                         \n"  // done
+        "bx   lr                    \n"  // return
+    );
 }
 
 void launch_core1(ora_plugin_entry_t plugin_entry) {
-    extern uint32_t _estack;
     uint32_t core1_stack_top = (uint32_t)&_estack - 1024;
+
+    // Paint core 1's stack
+    paint_stack_core1();
 
     // Reset core 1
     DEBUG("Resetting core 1");
@@ -358,10 +418,13 @@ void ora_launch_plugins(const sdrr_info_t *info) {
                 } else {
                     LOG("Lauching user plugin");
                 }
+
+                paint_stack_core0();
+
                 // Set thumb bit
                 uint32_t entry_addr = (uint32_t)(uintptr_t)header->entry | 1;
                 ora_plugin_entry_t entry = (ora_plugin_entry_t)(uintptr_t)entry_addr;
-                entry(ora_fn_lookup, ORA_PLUGIN_TYPE_USER, ORA_CORE_0);
+                entry(ora_fn_lookup, ORA_PLUGIN_TYPE_USER, &user_plugin_args);
             }
         }
     }

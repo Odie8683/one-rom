@@ -21,7 +21,7 @@
  * void plugin_main(
  *    ora_lookup_fn_t ora_lookup_fn,
  *    ora_plugin_type_t plugin_type,
- *    ora_core_t core
+ *    ora_entry_args_t *entry_args
  * ) {
  *     // Lookup plugin API functions using ora_lookup_fn.
  *     // Implement desired plugin function.
@@ -73,13 +73,22 @@
  *   the register for the approriate DMA channel.  This may be exposed via the
  *   API in the future.
  * 
- * - There are no data or bss sections available as part of the plugin
- *   environment, so no static or global variables - just stack, .rodata and
- *   what you alloc via ora_alloc.
+ * - The plugin must manage its own data, bss (and any other RAM sections) and
+ *   stack allocation.  This management includes initialisation of these
+ *   sections on startup.
+ * 
+ * - The arguments provided to the plugin's entry point indicates its static
+ *   RAM address, size, stack start and stack size.  The plugin may use
+ *   ora_alloc to allocated additional memory from the free pool, but this is
+ *   not guaranteed to succeed, and will likely fail on larger pin count One
+ *   ROMs (32 and 40 pin).  The static RAM address, size, and stack details
+ *   are provided in the plugin's entry point arguments as well as supplied
+ *   by the plugin.ld linker script.
  * 
  * - The stack is limited to 1KB per core/plugin.  Some of this stack is used
  *   by the firmware before calling the plugin entry point, so less than 1KB
- *   will be available.
+ *   will be available.  For user plugins, this 1KB _includes_ static RAM
+ *   allocation.
  * 
  * - Different One ROM pin variants have different amount of free RAM, with
  *   One ROM 32 and One ROM 40 having minimal available RAM - small numbers
@@ -140,7 +149,7 @@
     void fn( \
         ora_lookup_fn_t ora_lookup_fn, \
         ora_plugin_type_t plugin_type, \
-        ora_core_t core \
+        const ora_entry_args_t *entry_args \
     ); \
     __attribute__((section(".plugin_header"))) \
     const ora_plugin_header_t ora_plugin_header = { \

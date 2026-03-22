@@ -36,7 +36,7 @@ PICOBOOTX_SRC_C := $(addprefix picobootx/,$(PICOBOOTX_SRC_C))
 PICOBOOTX_INCLUDE_DIRS := $(addprefix picobootx/,$(PICOBOOTX_INCLUDE_DIRS))
 
 PLUGIN_BASE   := 0x10010000
-PLUGIN_PREFIX := plugin_system_usb
+PLUGIN_PREFIX := usb_system_plugin
 
 ELF := $(BUILD_DIR)/$(PLUGIN_PREFIX).elf
 BIN := $(BUILD_DIR)/$(PLUGIN_PREFIX).bin
@@ -55,8 +55,8 @@ CFLAGS := -mcpu=cortex-m33 -mthumb -mfloat-abi=hard -mfpu=fpv5-sp-d16 \
 		  $(addprefix -I,$(PICOBOOTX_INCLUDE_DIRS))
 
 LDFLAGS := -nostdlib \
-           -T usb.ld \
-           -Wl,--defsym,PLUGIN_BASE=$(PLUGIN_BASE) \
+           -T ../../../sdrr/ora/plugin.ld \
+           -Wl,--defsym,PLUGIN_TYPE=0 \
            -Wl,--fatal-warnings \
 		   -Wl,--no-warn-rwx-segments \
            -Wl,-Map=$(BUILD_DIR)/$(PLUGIN_PREFIX).map

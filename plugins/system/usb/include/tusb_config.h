@@ -42,6 +42,7 @@
 #define __not_in_flash(x)
 #define CFG_TUD_TASK_QUEUE_SZ     4
 #define CFG_TUD_ENDPOINT_MAX      4
+#define USB_MAX_ENDPOINTS         CFG_TUD_ENDPOINT_MAX
 
 //--------------------------------------------------------------------+
 // Board Specific Configuration

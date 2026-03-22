@@ -249,6 +249,52 @@ typedef void (*ora_irq_handler_t)(void);
  * @{
  */
 
+ /**
+ * @brief System plugin entry point arguments
+ * 
+ * Passed to the plugin entry point function as a pointer.
+ */
+typedef struct {
+    /**
+     * @brief The core the plugin is running on
+     */
+    ora_core_t core;
+
+    /**
+     * @brief The plugin's static RAM base address
+     * 
+     * Can be used by the plugin at runtime to validate it has been built with
+     * the correct linker settings, and exit early if not.
+     */
+    uint32_t static_ram_base;
+
+    /**
+     * @brief The plugin's static RAM size in bytes
+     * 
+     * Can be used by the plugin at runtime to validate it has been built with
+     * the correct linker settings, and exit early if not.
+     */
+    uint32_t static_ram_size;
+
+    /**
+     * @brief The top address of the stack for the core running this plugin
+     * 
+     * Some of the stack will have been used before the plugin entry point is
+     * called.  The rest can be assumed unused.
+     * 
+     * Can be used by the plugin to check it isn't exceeding the stack limits.
+     * If careful, a plugin can use unused stack space in this core's stack as
+     * additional RAM.
+     */
+    uint32_t stack_top;
+
+    /**
+     * @brief The total size of the stack for the core running this plugin
+     * @sa stack_top
+     */
+    uint32_t stack_size;
+} ora_entry_args_t;
+
 /**
  * @brief Lookup an API function pointer by its identifier
  *
@@ -278,12 +324,13 @@ typedef void *(*ora_lookup_fn_t)(api_id_t id);
  *
  * @param ora_lookup_fn A pointer to the API lookup function
  * @param plugin_type   Whether this is a system or user plugin
- * @param core          The MCU core the plugin is running on
+ * @param entry_args    A pointer to a structure containing the plugin's entry
+ * arguments
  */
 typedef void (*ora_plugin_entry_t)(
     ora_lookup_fn_t ora_lookup_fn,
     ora_plugin_type_t plugin_type,
-    ora_core_t core
+    const ora_entry_args_t *entry_args
 );
 
 /**
