@@ -173,6 +173,7 @@ void Reset_Handler(void) {
     // Call the main function
     main();
 
+#if defined(RP235X)
     // Main has returned - which means we are doing byte serving with PIOs.
     // We can now launch plugins.
     ora_launch_plugins(&sdrr_info);
@@ -181,6 +182,12 @@ void Reset_Handler(void) {
     while(1) {
         __asm volatile("wfi");
     }
+#else // STM32F4
+    // Main should never return, but if it does, just loop here.
+    while (1) {
+        ;
+    }
+#endif
 }
 
 // Default handler for unhandled interrupts - fast continuous blink
