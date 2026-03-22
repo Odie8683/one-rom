@@ -21,7 +21,6 @@ pub use meta::{MAX_METADATA_LEN, Metadata, PAD_METADATA_BYTE};
 use alloc::string::String;
 use onerom_config::chip::ChipType;
 use onerom_config::fw::{FirmwareVersion, ServeAlg};
-use onerom_config::mcu::Family;
 
 pub use builder::MAX_SUPPORTED_FIRMWARE_VERSION;
 
@@ -38,18 +37,23 @@ pub const MIN_FIRMWARE_OVERRIDES_VERSION: FirmwareVersion = FirmwareVersion::new
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub enum Error {
     RightSize {
+        chip_type: ChipType,
         size: usize,
+        size_handling: SizeHandling,
     },
     ImageTooSmall {
+        chip_type: ChipType,
         index: usize,
         expected: usize,
         actual: usize,
     },
     ImageTooLarge {
+        chip_type: ChipType,
         image_size: usize,
         expected_size: usize,
     },
     DuplicationNotExactDivisor {
+        chip_type: ChipType,
         image_size: usize,
         expected_size: usize,
     },
@@ -58,16 +62,21 @@ pub enum Error {
         expected: usize,
         actual: usize,
     },
-    NoChips,
+    NoChips {
+        id: usize,
+    },
     TooManyChips {
+        id: usize,
         expected: usize,
         actual: usize,
     },
     TooFewChips {
+        id: usize,
         expected: usize,
         actual: usize,
     },
     MissingCsConfig {
+        chip_type: ChipType,
         line: &'static str,
     },
     MissingPointer {
@@ -113,8 +122,12 @@ pub enum Error {
         frequency_mhz: u32,
     },
     FirmwareTooOld {
+        feat: &'static str,
         version: FirmwareVersion,
         minimum: FirmwareVersion,
+    },
+    UnsupportedFeature {
+        feat: &'static str,
     },
     FirmwareTooNew {
         version: FirmwareVersion,
@@ -125,14 +138,111 @@ pub enum Error {
     FirmwareUnsupported {
         version: FirmwareVersion,
     },
-    WrongMcuFamily {
-        actual: Family,
-        required: Family,
-    },
     Base64,
     Base16,
 }
 type Result<T> = core::result::Result<T, Error>;
+
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Error::RightSize { chip_type, size, size_handling } => write!(f, "The provided image is already the correct size ({size} bytes) for a {chip_type}.  The {size_handling} option should not be used.  Remove it."),
+            Error::ImageTooSmall {
+                chip_type,
+                index: _,
+                expected,
+                actual,
+            } => write!(
+                f,
+                "The provided image is too small for a {chip_type}.\n  Expected at least {expected} bytes, got {actual} bytes.\n  Consider using the duplicate or padding options to make the image larger."
+            ),
+            Error::ImageTooLarge {
+                chip_type,
+                image_size,
+                expected_size,
+            } => write!(
+                f,
+                "The provided chip image is larger than the size supported by a {chip_type}: expected at most {expected_size} bytes, got {image_size} bytes"
+            ),
+            Error::DuplicationNotExactDivisor {
+                chip_type,
+                image_size,
+                expected_size,
+            } => write!(
+                f,
+                "Image duplication requires that the size of the provided image is an exact divisor of the size required by a {chip_type}.\n  {image_size} is not an exact divisor of {expected_size}.\n  Consider using the padding option instead."
+            ),
+            Error::BufferTooSmall {
+                location,
+                expected,
+                actual,
+            } => write!(
+                f,
+                "Internal error: Buffer for {location} is too small: expected at least {expected} bytes, got {actual} bytes"
+            ),
+            Error::NoChips { id } => write!(f, "No chips were specified for set {id}"),
+            Error::TooManyChips { id, expected, actual } => write!(
+                f,
+                "Too many chips specified for set {id}.\n  Expected at most {expected}, got {actual}"
+            ),
+            Error::TooFewChips { id, expected, actual } => write!(
+                f,
+                "Too few chips specified for set {id}.\n  Expected at least {expected}, got {actual}"
+            ),
+            Error::MissingCsConfig { chip_type, line } => write!(f, "The configuration is missing required chip select line {line} configuration for {chip_type}"),
+            Error::MissingPointer { id } => write!(f, "Internal error: Missing pointer with internal id: {id}"),
+            Error::InvalidServeAlg { serve_alg } => {
+                write!(f, "The configured serving algorithm is not valid for the type of chip, ROM or set: {serve_alg}")
+            }
+            Error::InconsistentCsLogic { first, other } => write!(
+                f,
+                "The configured chip select logic is self-inconsistent:\n  The first is {first}, the other is {other}"
+            ),
+            Error::InvalidConfig { error } => write!(f, "There is a problem with the supplied configuration:\n  {error}"),
+            Error::UnsupportedConfigVersion { version } => {
+                write!(f, "The configuration version {version} is unsupported by this tool")
+            }
+            Error::DuplicateFile { id } => write!(f, "Internal error: Duplicate file supplied with internal id: {id}"),
+            Error::InvalidFile { id, total } => {
+                write!(f, "Internal error: Invalid file with internal id: {id}, total files: {total}")
+            }
+            Error::MissingFile { id } => write!(f, "Internal error: Missing file with internal id: {id}"),
+            Error::UnsupportedChipType { chip_type } => {
+                write!(f, "This tool does not support chip type {chip_type}")
+            }
+            Error::InvalidLicense { id } => write!(f, "Internal error: No license exists with internal id {id}"),
+            Error::UnvalidatedLicense { id } => write!(f, "Internal error: A license with internal id {id} has not been validated"),
+            Error::BadLocation { id, reason } => {
+                write!(f, "An invalid location was specified for the file with internal id {id}\n  {reason}")
+            }
+            Error::UnsupportedFrequency { frequency_mhz } => {
+                write!(f, "Unsupported MCU frequency for this One ROM: {frequency_mhz}MHz")
+            }
+            Error::FirmwareTooOld {
+                feat,
+                version,
+                minimum,
+            } => write!(
+                f,
+                "Selected firmware version {version} does not support {feat}\n  The minimum supported version for {feat} is {minimum}"
+            ),
+            Error::UnsupportedFeature { feat } => write!(
+                f,
+                "The {feat} feature is currently unsupported"
+            ),
+            Error::FirmwareTooNew { version, maximum } => write!(
+                f,
+                "Selected firmware version {version} is too new\n  The maximum firmware version supported by this tool is {maximum}"
+            ),
+            Error::FirmwareUnsupported { version } => write!(
+                f,
+                "Selected firmware version {version} is unsupported by this tool due to known issues"
+            ),
+            Error::Base64 => write!(f, "Base64 encoding/decoding error"),
+            Error::Base16 => write!(f, "Base16 encoding/decoding error"),
+        }
+    }
+}
 
 pub fn crate_version() -> &'static str {
     env!("CARGO_PKG_VERSION")

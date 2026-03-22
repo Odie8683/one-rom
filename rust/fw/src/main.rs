@@ -145,7 +145,9 @@ fn propose_license(license: &License) -> Result<(), Error> {
 
     // Prompt user
     print!("Do you accept this license? (y/N): ");
-    std::io::stdout().flush().map_err(|e| Error::write("stdout".to_string(), e))?;
+    std::io::stdout()
+        .flush()
+        .map_err(|e| Error::write("stdout".to_string(), e))?;
     let mut input = String::new();
     std::io::stdin()
         .read_line(&mut input)

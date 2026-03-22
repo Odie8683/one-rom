@@ -13,12 +13,12 @@ use onerom_config::hw::{Board, Model};
 use onerom_config::mcu::Variant as McuVariant;
 use onerom_gen::firmware::FirmwareConfig;
 
+use crate::types::{BitMode, FireServeMode, FireVreg, LimpMode};
 use crate::{
     McuLine, McuStorage, SdrrAddress, SdrrCsState, SdrrLogicalAddress, SdrrMcuPort, SdrrRomType,
     SdrrServe,
 };
 use crate::{ParseError, Parser, Reader};
-use crate::types::{BitMode, FireVreg, FireServeMode, LimpMode};
 
 #[cfg(not(feature = "std"))]
 use alloc::{format, string::String, vec, vec::Vec};
@@ -122,7 +122,7 @@ pub struct SdrrInfo {
 impl SdrrInfo {
     /// Returns whether this device is capable of being connected to via USB
     /// while running.
-    /// 
+    ///
     /// This is currently true if the first plugin is a system plugin.
     pub fn is_usb_run_capable(&self) -> bool {
         // Get the first ROM set, if it exists

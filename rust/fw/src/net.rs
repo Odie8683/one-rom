@@ -29,14 +29,18 @@ pub fn fetch_license(url: &str) -> Result<String, Error> {
         });
     }
 
-    let body = response.text().map_err(|e| Error::network(url.to_string(), e))?;
+    let body = response
+        .text()
+        .map_err(|e| Error::network(url.to_string(), e))?;
     Ok(body)
 }
 
 /// Retrieves a license from a URL
 pub async fn fetch_license_async(url: &str) -> Result<String, Error> {
     debug!("Fetching license from {}", url);
-    let response = reqwest::get(url).await.map_err(|e| Error::network(url.to_string(), e))?;
+    let response = reqwest::get(url)
+        .await
+        .map_err(|e| Error::network(url.to_string(), e))?;
     if !response.status().is_success() {
         return Err(Error::Http {
             url: url.to_string(),
@@ -44,7 +48,10 @@ pub async fn fetch_license_async(url: &str) -> Result<String, Error> {
         });
     }
 
-    let body = response.text().await.map_err(|e| Error::network(url.to_string(), e))?;
+    let body = response
+        .text()
+        .await
+        .map_err(|e| Error::network(url.to_string(), e))?;
     Ok(body)
 }
 
@@ -86,17 +93,21 @@ pub fn fetch_rom_file(
         } else if file_to_retrieve.starts_with("http://")
             || file_to_retrieve.starts_with("https://")
         {
-            let response = reqwest::blocking::get(file_to_retrieve).map_err(|e| Error::network(file_to_retrieve.to_string(), e))?;
+            let response = reqwest::blocking::get(file_to_retrieve)
+                .map_err(|e| Error::network(file_to_retrieve.to_string(), e))?;
             if !response.status().is_success() {
                 return Err(Error::Http {
                     url: file_to_retrieve.to_string(),
                     status: response.status().as_u16(),
                 });
             }
-            response.bytes().map_err(|e| Error::network(file_to_retrieve.to_string(), e))?
+            response
+                .bytes()
+                .map_err(|e| Error::network(file_to_retrieve.to_string(), e))?
         } else {
             // Local file
-            let data = std::fs::read(file_to_retrieve).map_err(|e| Error::read(file_to_retrieve.to_string(), e))?;
+            let data = std::fs::read(file_to_retrieve)
+                .map_err(|e| Error::read(file_to_retrieve.to_string(), e))?;
             bytes::Bytes::from(data)
         }
     } else {
@@ -168,10 +179,14 @@ pub async fn fetch_rom_file_async(
                     status: response.status().as_u16(),
                 });
             }
-            response.bytes().await.map_err(|e| Error::network(file_to_retrieve.to_string(), e))?
+            response
+                .bytes()
+                .await
+                .map_err(|e| Error::network(file_to_retrieve.to_string(), e))?
         } else {
             // Local file
-            let data = std::fs::read(file_to_retrieve).map_err(|e| Error::read(file_to_retrieve.to_string(), e))?;
+            let data = std::fs::read(file_to_retrieve)
+                .map_err(|e| Error::read(file_to_retrieve.to_string(), e))?;
             bytes::Bytes::from(data)
         }
     } else {
@@ -199,7 +214,9 @@ fn extract_file(data: &[u8], extract: &str) -> Result<Vec<u8>, Error> {
     debug!("Extracting file `{}` from zip", extract);
     let reader = std::io::Cursor::new(data);
     let mut zip = zip::ZipArchive::new(reader).map_err(|e| Error::zip(extract.to_string(), e))?;
-    let mut file = zip.by_name(extract).map_err(|e| Error::zip(extract.to_string(), e))?;
+    let mut file = zip
+        .by_name(extract)
+        .map_err(|e| Error::zip(extract.to_string(), e))?;
     let mut data = Vec::new();
     std::io::copy(&mut file, &mut data).map_err(|e| Error::read(extract.to_string(), e))?;
     Ok(data)
@@ -223,7 +240,8 @@ impl Releases {
     pub fn from_network() -> Result<Self, Error> {
         let url = Self::manifest_url();
         debug!("Fetching releases manifest from {}", url);
-        let response = reqwest::blocking::get(&url).map_err(|e| Error::network(url.to_string(), e))?;
+        let response =
+            reqwest::blocking::get(&url).map_err(|e| Error::network(url.to_string(), e))?;
         if !response.status().is_success() {
             return Err(Error::Http {
                 url: url.to_string(),
@@ -231,7 +249,9 @@ impl Releases {
             });
         }
 
-        let body = response.text().map_err(|e| Error::network(url.to_string(), e))?;
+        let body = response
+            .text()
+            .map_err(|e| Error::network(url.to_string(), e))?;
         Self::from_json(&body)
     }
 
@@ -243,7 +263,9 @@ impl Releases {
 
     pub async fn from_network_async_url(url: &str) -> Result<Self, Error> {
         debug!("Fetching releases manifest from {}", url);
-        let response = reqwest::get(url).await.map_err(|e| Error::network(url.to_string(), e))?;
+        let response = reqwest::get(url)
+            .await
+            .map_err(|e| Error::network(url.to_string(), e))?;
         if !response.status().is_success() {
             return Err(Error::Http {
                 url: url.to_string(),
@@ -251,7 +273,10 @@ impl Releases {
             });
         }
 
-        let body = response.text().await.map_err(|e| Error::network(url.to_string(), e))?;
+        let body = response
+            .text()
+            .await
+            .map_err(|e| Error::network(url.to_string(), e))?;
         Self::from_json(&body)
     }
 
@@ -336,14 +361,17 @@ impl Releases {
 
         // Download the firmware
         debug!("Downloading firmware from {}", url);
-        let response = reqwest::blocking::get(&url).map_err(|e| Error::network(url.to_string(), e))?;
+        let response =
+            reqwest::blocking::get(&url).map_err(|e| Error::network(url.to_string(), e))?;
         if !response.status().is_success() {
             return Err(Error::Http {
                 url: url.to_string(),
                 status: response.status().as_u16(),
             });
         }
-        let bytes = response.bytes().map_err(|e| Error::network(url.to_string(), e))?;
+        let bytes = response
+            .bytes()
+            .map_err(|e| Error::network(url.to_string(), e))?;
         Ok(bytes.to_vec())
     }
 
@@ -357,14 +385,19 @@ impl Releases {
 
         // Download the firmware
         debug!("Downloading firmware from {}", url);
-        let response = reqwest::get(&url).await.map_err(|e| Error::network(url.to_string(), e))?;
+        let response = reqwest::get(&url)
+            .await
+            .map_err(|e| Error::network(url.to_string(), e))?;
         if !response.status().is_success() {
             return Err(Error::Http {
                 url: url.to_string(),
                 status: response.status().as_u16(),
             });
         }
-        let bytes = response.bytes().await.map_err(|e| Error::network(url.to_string(), e))?;
+        let bytes = response
+            .bytes()
+            .await
+            .map_err(|e| Error::network(url.to_string(), e))?;
         Ok(bytes.to_vec())
     }
 
@@ -395,7 +428,10 @@ impl core::fmt::Display for Release {
 impl Release {
     pub fn url(&self, board: &HwBoard, mcu: &McuVariant) -> Result<String, Error> {
         let path = self.path(board.name(), &mcu.to_string())?;
-        Ok(format!("https://{}/{}/firmware.bin", FIRMWARE_SITE_BASE, path))
+        Ok(format!(
+            "https://{}/{}/firmware.bin",
+            FIRMWARE_SITE_BASE, path
+        ))
     }
 
     pub fn supports_hw(&self, board: &HwBoard, mcu: &McuVariant) -> bool {

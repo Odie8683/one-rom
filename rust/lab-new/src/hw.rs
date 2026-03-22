@@ -19,7 +19,9 @@ pub fn get_board() -> impl Board {
 
 #[cfg(feature = "eprom-16bit")]
 pub trait Board {
-    fn new() -> Self where Self: Sized;
+    fn new() -> Self
+    where
+        Self: Sized;
     // Ordered A0-Amax
     fn addr_pins(&self) -> [Flex<'static>; 19];
     // Ordered D0-D15
@@ -36,7 +38,9 @@ pub trait Board {
 }
 #[cfg(feature = "eprom-8bit")]
 pub trait Board {
-    fn new() -> Self where Self: Sized;
+    fn new() -> Self
+    where
+        Self: Sized;
     // Ordered A0-Amax
     #[cfg(feature = "pin-32")]
     fn addr_pins(&self) -> [Flex<'static>; 19];
@@ -99,9 +103,7 @@ impl Board for Fire40A {
     }
 
     fn special_pins(&self) -> Vec<Flex<'static>> {
-        vec![
-            Flex::new(unsafe { PIN_18::steal() }),
-        ]
+        vec![Flex::new(unsafe { PIN_18::steal() })]
     }
 
     fn data_pins(&self) -> [Flex<'static>; 16] {
@@ -126,11 +128,9 @@ impl Board for Fire40A {
     }
 
     fn led_pins(&self) -> [Flex<'static>; 1] {
-        [
-            Flex::new(unsafe { PIN_42::steal() }),
-        ]
+        [Flex::new(unsafe { PIN_42::steal() })]
     }
-    
+
     fn sel_pins(&self) -> Vec<Flex<'static>> {
         vec![
             Flex::new(unsafe { PIN_40::steal() }),
@@ -139,7 +139,7 @@ impl Board for Fire40A {
             Flex::new(unsafe { PIN_39::steal() }),
         ]
     }
-}   
+}
 
 #[cfg(feature = "fire-32-a")]
 pub struct Fire32A {}
@@ -204,9 +204,7 @@ impl Board for Fire32A {
     }
 
     fn led_pins(&self) -> [Flex<'static>; 1] {
-        [
-            Flex::new(unsafe { PIN_45::steal() }),
-        ]
+        [Flex::new(unsafe { PIN_45::steal() })]
     }
 
     #[allow(dead_code)]
@@ -218,7 +216,7 @@ impl Board for Fire32A {
             Flex::new(unsafe { PIN_37::steal() }),
         ]
     }
-}   
+}
 
 #[cfg(feature = "fire-28-a")]
 pub struct Fire28A {}
@@ -254,7 +252,6 @@ impl Board for Fire28A {
         vec![
             Flex::new(unsafe { PIN_8::steal() }),
             Flex::new(unsafe { PIN_9::steal() }),
-
         ]
     }
 
@@ -277,9 +274,7 @@ impl Board for Fire28A {
     }
 
     fn led_pins(&self) -> [Flex<'static>; 1] {
-        [
-            Flex::new(unsafe { PIN_29::steal() }),
-        ]
+        [Flex::new(unsafe { PIN_29::steal() })]
     }
 
     #[allow(dead_code)]
@@ -289,7 +284,7 @@ impl Board for Fire28A {
             Flex::new(unsafe { PIN_27::steal() }),
         ]
     }
-}   
+}
 
 #[cfg(feature = "fire-24-e")]
 pub struct Fire24E {}
@@ -349,9 +344,7 @@ impl Board for Fire24E {
     }
 
     fn led_pins(&self) -> [Flex<'static>; 1] {
-        [
-            Flex::new(unsafe { PIN_29::steal() }),
-        ]
+        [Flex::new(unsafe { PIN_29::steal() })]
     }
 
     #[allow(dead_code)]
@@ -363,4 +356,4 @@ impl Board for Fire24E {
             Flex::new(unsafe { PIN_27::steal() }),
         ]
     }
-}   
+}

@@ -12,7 +12,7 @@ use onerom_gen::firmware::{FirmwareConfig, ServeAlgParams};
 use static_assertions::const_assert_eq;
 
 use crate::Reader;
-use crate::types::{BitMode, FireVreg, FireServeMode, LimpMode};
+use crate::types::{BitMode, FireServeMode, FireVreg, LimpMode};
 use crate::{MAX_VERSION_MAJOR, MAX_VERSION_MINOR, MAX_VERSION_PATCH};
 use crate::{McuLine, McuStorage, SdrrCsState, SdrrRomType, SdrrServe};
 use crate::{SdrrExtraInfo, SdrrMcuPort, SdrrPins, SdrrRomInfo, SdrrRomSet};

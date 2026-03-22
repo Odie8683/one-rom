@@ -127,10 +127,20 @@ fn generate_lib_rs(config: &ChipTypesConfig) -> String {
             let mut entry = format!(
                 "//! - **{}**: {} ({})\n",
                 type_name,
-                chip_type.description.split(" with ").next().unwrap_or(&chip_type.description),
-                chip_type.description.split(" with ").nth(1).unwrap_or("see datasheet")
+                chip_type
+                    .description
+                    .split(" with ")
+                    .next()
+                    .unwrap_or(&chip_type.description),
+                chip_type
+                    .description
+                    .split(" with ")
+                    .nth(1)
+                    .unwrap_or("see datasheet")
             );
-            if let Some(aliases) = &chip_type.aliases && !aliases.is_empty() {
+            if let Some(aliases) = &chip_type.aliases
+                && !aliases.is_empty()
+            {
                 entry.push_str(&format!("//!   Aliases: {}\n", aliases.join(", ")));
             }
 
@@ -149,7 +159,9 @@ fn generate_lib_rs(config: &ChipTypesConfig) -> String {
                         chip_type.pins, type_name
                     );
                 }
-            } else if (type_name.starts_with("27") || type_name.starts_with("SST39SF")) && chip_type.function == ChipFunction::Rom {
+            } else if (type_name.starts_with("27") || type_name.starts_with("SST39SF"))
+                && chip_type.function == ChipFunction::Rom
+            {
                 if chip_type.pins == 24 {
                     eprom_24pin.push(entry);
                 } else if chip_type.pins == 28 {
@@ -507,21 +519,17 @@ fn generate_chip_type_enum(config: &ChipTypesConfig) -> String {
                     "    #[cfg_attr(feature = \"schemars\", schemars(rename = \"{type_name}\"))]\n"
                 ));
             } else {
-                let snake_name = type_name
-                    .chars()
-                    .fold(String::new(), |mut acc, c| {
-                        if c.is_uppercase() && !acc.is_empty() {
-                            acc.push('_');
-                        }
-                        acc.push(c.to_ascii_lowercase());
-                        acc
-                    });
+                let snake_name = type_name.chars().fold(String::new(), |mut acc, c| {
+                    if c.is_uppercase() && !acc.is_empty() {
+                        acc.push('_');
+                    }
+                    acc.push(c.to_ascii_lowercase());
+                    acc
+                });
                 code.push_str(&format!(
                     "    #[cfg_attr(feature = \"schemars\", schemars(rename = \"{snake_name}\"))]\n"
                 ));
-                code.push_str(&format!(
-                    "    #[serde(rename = \"{snake_name}\")]\n"
-                ));
+                code.push_str(&format!("    #[serde(rename = \"{snake_name}\")]\n"));
             }
             code.push_str(&format!("    {},\n", vname));
         }
@@ -542,15 +550,13 @@ fn generate_chip_type_enum(config: &ChipTypesConfig) -> String {
             let vname = variant_name(type_name, chip_type);
             if vname == *type_name {
                 // Plugin: also accept snake_case form
-                let snake_name = type_name
-                    .chars()
-                    .fold(String::new(), |mut acc, c| {
-                        if c.is_uppercase() && !acc.is_empty() {
-                            acc.push('_');
-                        }
-                        acc.push(c.to_ascii_lowercase());
-                        acc
-                    });
+                let snake_name = type_name.chars().fold(String::new(), |mut acc, c| {
+                    if c.is_uppercase() && !acc.is_empty() {
+                        acc.push('_');
+                    }
+                    acc.push(c.to_ascii_lowercase());
+                    acc
+                });
                 code.push_str(&format!(
                     "            \"{}\" | \"{}\" => Ok(ChipType::{}),\n",
                     type_name, snake_name, vname
@@ -693,8 +699,12 @@ fn generate_try_from_str(config: &ChipTypesConfig) -> String {
     code.push_str("    /// ```\n");
     code.push_str("    /// use onerom_config::chip::ChipType;\n");
     code.push_str("    ///\n");
-    code.push_str("    /// assert_eq!(ChipType::try_from_str(\"2364\"), Some(ChipType::Chip2364));\n");
-    code.push_str("    /// assert_eq!(ChipType::try_from_str(\"27128\"), Some(ChipType::Chip27128));\n");
+    code.push_str(
+        "    /// assert_eq!(ChipType::try_from_str(\"2364\"), Some(ChipType::Chip2364));\n",
+    );
+    code.push_str(
+        "    /// assert_eq!(ChipType::try_from_str(\"27128\"), Some(ChipType::Chip27128));\n",
+    );
     code.push_str("    /// assert_eq!(ChipType::try_from_str(\"2016\"), Some(ChipType::Chip6116)); // alias\n");
     code.push_str("    /// assert_eq!(ChipType::try_from_str(\"invalid\"), None);\n");
     code.push_str("    /// ```\n");
@@ -770,7 +780,9 @@ fn generate_name_method(config: &ChipTypesConfig) -> String {
 fn generate_aliases_method(config: &ChipTypesConfig) -> String {
     let mut code = String::new();
 
-    code.push_str("    /// Get all names for this Chip type, including the primary name and any aliases\n");
+    code.push_str(
+        "    /// Get all names for this Chip type, including the primary name and any aliases\n",
+    );
     code.push_str("    ///\n");
     code.push_str("    /// # Examples\n");
     code.push_str("    ///\n");
@@ -942,15 +954,13 @@ fn generate_c_enum_method(config: &ChipTypesConfig) -> String {
                     type_name
                 ));
             } else {
-                let caps_snake_name = type_name
-                    .chars()
-                    .fold(String::new(), |mut acc, c| {
-                        if c.is_uppercase() && !acc.is_empty() {
-                            acc.push('_');
-                        }
-                        acc.push(c.to_ascii_uppercase());
-                        acc
-                    });
+                let caps_snake_name = type_name.chars().fold(String::new(), |mut acc, c| {
+                    if c.is_uppercase() && !acc.is_empty() {
+                        acc.push('_');
+                    }
+                    acc.push(c.to_ascii_uppercase());
+                    acc
+                });
                 code.push_str(&format!(
                     "            ChipType::{} => \"CHIP_TYPE_{}\",\n",
                     variant_name(type_name, chip_type),
@@ -1428,7 +1438,9 @@ fn generate_chip_type_names(config: &ChipTypesConfig) -> String {
     // CHIP_TYPE_NAMES
     code.push_str("/// All chip type names and aliases, alphabetically sorted.\n");
     code.push_str("///\n");
-    code.push_str("/// Includes primary names and all known aliases for every supported chip type.\n");
+    code.push_str(
+        "/// Includes primary names and all known aliases for every supported chip type.\n",
+    );
     code.push_str("/// Does not include plugins.\n");
     code.push_str("pub const CHIP_TYPE_NAMES: &[&str] = &[\n");
     for name in &all_names {
@@ -1468,7 +1480,9 @@ fn generate_chip_type_names(config: &ChipTypesConfig) -> String {
     code.push_str("/// Return the chip type names and aliases for the given pin count.\n");
     code.push_str("///\n");
     code.push_str("/// Returns `None` if no chip types exist for the given pin count.\n");
-    code.push_str("pub const fn chip_type_names_for_pins(pins: u8) -> Option<&'static [&'static str]> {\n");
+    code.push_str(
+        "pub const fn chip_type_names_for_pins(pins: u8) -> Option<&'static [&'static str]> {\n",
+    );
     code.push_str("    match pins {\n");
     for &pins in &pin_counts {
         code.push_str(&format!(

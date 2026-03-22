@@ -131,6 +131,17 @@ pub enum ServeAlg {
     AddrOnAnyCs,
 }
 
+impl Display for ServeAlg {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            ServeAlg::Default => write!(f, "default"),
+            ServeAlg::TwoCsOneAddr => write!(f, "two_cs_one_addr"),
+            ServeAlg::AddrOnCs => write!(f, "addr_on_cs"),
+            ServeAlg::AddrOnAnyCs => write!(f, "addr_on_any_cs"),
+        }
+    }
+}
+
 impl ServeAlg {
     pub fn try_from_str(s: &str) -> Option<Self> {
         if s.eq_ignore_ascii_case("default") {

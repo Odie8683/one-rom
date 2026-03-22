@@ -191,5 +191,6 @@ pub async fn get_rom_files_async(builder: &mut Builder) -> Result<(), Error> {
 
 pub fn read_rom_config(rom_config_filename: &str) -> Result<String, Error> {
     // Load the config file
-    std::fs::read_to_string(rom_config_filename).map_err(|e| Error::read(rom_config_filename.to_string(), e))
+    std::fs::read_to_string(rom_config_filename)
+        .map_err(|e| Error::read(rom_config_filename.to_string(), e))
 }

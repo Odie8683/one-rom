@@ -52,7 +52,7 @@ impl ChecksumState {
     }
 
     fn finish(self) -> u32 {
-        self.0 .0
+        self.0.0
     }
 }
 
@@ -193,11 +193,16 @@ impl<const N: usize> RomEprom8<N> {
         mut cs_pins: Vec<Flex<'static>>,
     ) -> Self {
         if cs_pins.len() != 2 {
-            panic!("Expected exactly two CS pins for CE and OE, got {}", cs_pins.len());
+            panic!(
+                "Expected exactly two CS pins for CE and OE, got {}",
+                cs_pins.len()
+            );
         }
         let ce = cs_pins.pop().expect("No CE pin found");
         let oe = cs_pins.pop().expect("No OE pin found");
-        Self { core: RomCore::new(addr, data, ce, oe) }
+        Self {
+            core: RomCore::new(addr, data, ce, oe),
+        }
     }
 
     pub fn init(&mut self) {
@@ -298,15 +303,24 @@ impl Rom27C400 {
         mut special_pins: Vec<Flex<'static>>,
     ) -> Self {
         if special_pins.len() != 1 {
-            panic!("Expected exactly one special pin for 27C400 BYTE#, got {}", special_pins.len());
+            panic!(
+                "Expected exactly one special pin for 27C400 BYTE#, got {}",
+                special_pins.len()
+            );
         }
         let byte_n = special_pins.pop().unwrap();
         if cs_pins.len() != 2 {
-            panic!("Expected exactly two CS pins for 27C400 CE and OE, got {}", cs_pins.len());
+            panic!(
+                "Expected exactly two CS pins for 27C400 CE and OE, got {}",
+                cs_pins.len()
+            );
         }
         let ce = cs_pins.pop().expect("No CE pin found");
         let oe = cs_pins.pop().expect("No OE pin found");
-        Self { core: RomCore::new(addr, data, ce, oe), byte_n }
+        Self {
+            core: RomCore::new(addr, data, ce, oe),
+            byte_n,
+        }
     }
 
     pub const fn type_as_str(&self) -> &'static str {
@@ -350,7 +364,9 @@ impl Rom27C400 {
                 csum.update(hi);
             }
 
-            failures += self.core.test_tristate(byte_count, Self::TRISTATE_SETTLE_CYCLES);
+            failures += self
+                .core
+                .test_tristate(byte_count, Self::TRISTATE_SETTLE_CYCLES);
         }
 
         self.core.oe.set_high();
@@ -374,7 +390,12 @@ impl Rom27C400 {
             let failures = self.read_mode(mode, &mut sha, &mut csum);
             let mut sha1 = [0u8; 20];
             sha1.copy_from_slice(&sha.finalize());
-            results.push(ModeResult { mode, sha1, checksum: csum.finish(), failures });
+            results.push(ModeResult {
+                mode,
+                sha1,
+                checksum: csum.finish(),
+                failures,
+            });
         }
 
         results

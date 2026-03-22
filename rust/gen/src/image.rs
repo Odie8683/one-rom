@@ -72,6 +72,17 @@ pub enum SizeHandling {
     Pad,
 }
 
+impl core::fmt::Display for SizeHandling {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            SizeHandling::None => write!(f, "none"),
+            SizeHandling::Duplicate => write!(f, "duplicate"),
+            SizeHandling::Truncate => write!(f, "truncate"),
+            SizeHandling::Pad => write!(f, "pad"),
+        }
+    }
+}
+
 /// Possible Chip Select line logic options
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
@@ -86,6 +97,16 @@ pub enum CsLogic {
     /// Used for 2332/2316 ROMs, when a CS line isn't used because it's always
     /// tied active.
     Ignore,
+}
+
+impl core::fmt::Display for CsLogic {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            CsLogic::ActiveLow => write!(f, "active low"),
+            CsLogic::ActiveHigh => write!(f, "active high"),
+            CsLogic::Ignore => write!(f, "ignore"),
+        }
+    }
 }
 
 /// Location within a larger Chip image that the specific image to use resides
@@ -291,6 +312,7 @@ impl Chip {
 
             if end > source.len() {
                 return Err(Error::ImageTooSmall {
+                    chip_type: *chip_type,
                     index,
                     expected: end,
                     actual: source.len(),
@@ -329,7 +351,9 @@ impl Chip {
                     }
                     _ => {
                         return Err(Error::RightSize {
+                            chip_type: *chip_type,
                             size: expected_size,
+                            size_handling: size_handling.clone(),
                         });
                     }
                 }
@@ -339,6 +363,7 @@ impl Chip {
                 match size_handling {
                     SizeHandling::None => {
                         return Err(Error::ImageTooSmall {
+                            chip_type: *chip_type,
                             index,
                             expected: expected_size,
                             actual: source.len(),
@@ -347,6 +372,7 @@ impl Chip {
                     SizeHandling::Duplicate => {
                         if !expected_size.is_multiple_of(source.len()) {
                             return Err(Error::DuplicationNotExactDivisor {
+                                chip_type: *chip_type,
                                 image_size: source.len(),
                                 expected_size,
                             });
@@ -369,6 +395,7 @@ impl Chip {
                     }
                     SizeHandling::Truncate => {
                         return Err(Error::ImageTooLarge {
+                            chip_type: *chip_type,
                             image_size: source.len(),
                             expected_size,
                         });
@@ -383,6 +410,7 @@ impl Chip {
                     }
                     _ => {
                         return Err(Error::ImageTooLarge {
+                            chip_type: *chip_type,
                             image_size: source.len(),
                             expected_size,
                         });
@@ -479,10 +507,7 @@ impl Chip {
     // Gets the actual byte at the actual address into the image.  This is
     // used for plugins, where the address/bytes are not mangled/demangled,
     // but rather stored on flash as-is so they can be executed.
-    fn get_byte_raw(
-        &self,
-        address: usize,
-    ) -> u8 {
+    fn get_byte_raw(&self, address: usize) -> u8 {
         let data = self
             .data
             .as_ref()
@@ -639,12 +664,13 @@ impl ChipSet {
     ) -> Result<Self> {
         // Check some Chips were supplied
         if chips.is_empty() {
-            return Err(Error::NoChips);
+            return Err(Error::NoChips{id});
         }
 
         // Check set type matches number of Chips
         if chips.len() > 1 && set_type == ChipSetType::Single {
             return Err(Error::TooManyChips {
+                id,
                 expected: 1,
                 actual: chips.len(),
             });
@@ -652,6 +678,7 @@ impl ChipSet {
 
         if chips.len() == 1 && set_type != ChipSetType::Single {
             return Err(Error::TooFewChips {
+                id,
                 expected: 2,
                 actual: chips.len(),
             });
@@ -910,8 +937,11 @@ impl ChipSet {
             // retrieve this for each Chip in the set, as each Chip may be
             // a different type (size).
             let num_addr_lines = chip_in_set.chip_type.num_addr_lines();
-            let mut phys_pin_to_addr_map =
-                handle_snowflake_chip_types(board, board.phys_pin_to_addr_map(), &chip_in_set.chip_type);
+            let mut phys_pin_to_addr_map = handle_snowflake_chip_types(
+                board,
+                board.phys_pin_to_addr_map(),
+                &chip_in_set.chip_type,
+            );
             Self::truncate_phys_pin_to_addr_map(&mut phys_pin_to_addr_map, num_addr_lines);
 
             // All of CS1/X1/X2 have to have the same active low/high status
@@ -1141,11 +1171,23 @@ impl ChipSet {
 
             // Write the CS states
             let is_plugin = chip.chip_type.chip_function().is_plugin();
-            buf[offset] = if is_plugin { CsLogic::Ignore.c_enum_val() } else { chip.cs_config.cs1_logic().c_enum_val() };
+            buf[offset] = if is_plugin {
+                CsLogic::Ignore.c_enum_val()
+            } else {
+                chip.cs_config.cs1_logic().c_enum_val()
+            };
             offset += 1;
-            buf[offset] = if is_plugin { CsLogic::Ignore.c_enum_val() } else { chip.cs_config.cs2_logic().map_or(2, |cs| cs.c_enum_val()) };
+            buf[offset] = if is_plugin {
+                CsLogic::Ignore.c_enum_val()
+            } else {
+                chip.cs_config.cs2_logic().map_or(2, |cs| cs.c_enum_val())
+            };
             offset += 1;
-            buf[offset] = if is_plugin { CsLogic::Ignore.c_enum_val() } else { chip.cs_config.cs3_logic().map_or(2, |cs| cs.c_enum_val()) };
+            buf[offset] = if is_plugin {
+                CsLogic::Ignore.c_enum_val()
+            } else {
+                chip.cs_config.cs3_logic().map_or(2, |cs| cs.c_enum_val())
+            };
             offset += 1;
 
             // Add filename if required
@@ -1345,7 +1387,10 @@ fn handle_snowflake_chip_types(
                 modified_map.remove(0);
                 modified_map.push(Some(16));
             } else {
-                panic!("Address line A16 found at unexpected position {} in phys_pin_to_addr_map for 27C301 handling", a16_index);
+                panic!(
+                    "Address line A16 found at unexpected position {} in phys_pin_to_addr_map for 27C301 handling",
+                    a16_index
+                );
             }
         } else {
             panic!("Address line A16 not found in phys_pin_to_addr_map for 27C301 handling");

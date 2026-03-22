@@ -730,15 +730,13 @@ fn generate_sdrr_config_implementation(filename: &Path, config: &Config) -> Resu
                 board.pin_oe(ChipType::Chip27256),
             )
         }
-        32 => {
-            (
-                board.pin_cs1(ChipType::Chip27C080),
-                board.pin_oe(ChipType::Chip27C301),
-                board.pin_cs3(ChipType::Chip27C010),
-                board.pin_ce(ChipType::Chip27C010),
-                board.pin_oe(ChipType::Chip27C010),
-            )
-        }
+        32 => (
+            board.pin_cs1(ChipType::Chip27C080),
+            board.pin_oe(ChipType::Chip27C301),
+            board.pin_cs3(ChipType::Chip27C010),
+            board.pin_ce(ChipType::Chip27C010),
+            board.pin_oe(ChipType::Chip27C010),
+        ),
         40 => (
             board.pin_cs1(ChipType::Chip27C400),
             board.pin_cs2(ChipType::Chip27C400),
@@ -924,10 +922,7 @@ fn generate_sdrr_config_implementation(filename: &Path, config: &Config) -> Resu
         "// Main SDRR information structure, located at known point in flash"
     )?;
     writeln!(file, "#if !defined(TEST_BUILD)")?;
-    writeln!(
-        file,
-        "__attribute__((section(\".sdrr_info\")))"
-    )?;
+    writeln!(file, "__attribute__((section(\".sdrr_info\")))")?;
     writeln!(file, "#endif // !TEST_BUILD")?;
     writeln!(file, "const sdrr_info_t sdrr_info = {{")?;
 

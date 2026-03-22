@@ -22,12 +22,12 @@ fn main() {
     // Create a map file
     let out_dir = env::var("OUT_DIR").unwrap();
     println!("cargo:rustc-link-arg=-Map={out_dir}/output.map");
-        // Generate memory.x
-        generate_rp2350_memory_x();
+    // Generate memory.x
+    generate_rp2350_memory_x();
 
-        // Generate built information
-        built::write_built_file().expect("Failed to acquire build-time information");
-    }
+    // Generate built information
+    built::write_built_file().expect("Failed to acquire build-time information");
+}
 
 fn generate_rp2350_memory_x() {
     let out_dir = env::var("OUT_DIR").unwrap();

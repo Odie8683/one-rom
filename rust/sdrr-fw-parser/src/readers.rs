@@ -9,7 +9,7 @@
 use crate::Reader;
 
 #[cfg(not(feature = "std"))]
-use alloc::{format, string::String, vec::Vec, vec};
+use alloc::{format, string::String, vec, vec::Vec};
 
 /// A reader that operates on an in-memory firmware image.
 ///
@@ -67,18 +67,34 @@ impl MemoryReader {
     /// * `base_address` - The base address where this firmware would be loaded
     ///   in the target device (typically `0x08000000` for STM32F4)
     pub fn new(data: Vec<u8>, base_address: u32) -> Self {
-        Self { regions: vec![MemoryRegion { kind: RegionKind::Flash, data, base_address }] }
+        Self {
+            regions: vec![MemoryRegion {
+                kind: RegionKind::Flash,
+                data,
+                base_address,
+            }],
+        }
     }
 
     /// Create a memory reader from a specific region (e.g. RAM)
     pub fn new_of_kind(kind: RegionKind, data: Vec<u8>, base_address: u32) -> Self {
-        Self { regions: vec![MemoryRegion { kind, data, base_address }] }
+        Self {
+            regions: vec![MemoryRegion {
+                kind,
+                data,
+                base_address,
+            }],
+        }
     }
 
     /// Add a memory region to the reader. This allows the reader to handle multiple
     /// regions (e.g. flash and RAM) in a single reader instance.
     pub fn add_region(&mut self, kind: RegionKind, data: Vec<u8>, base_address: u32) {
-        self.regions.push(MemoryRegion { kind, base_address, data });
+        self.regions.push(MemoryRegion {
+            kind,
+            base_address,
+            data,
+        });
     }
 }
 
@@ -86,13 +102,18 @@ impl Reader for MemoryReader {
     type Error = String;
 
     async fn read(&mut self, addr: u32, buf: &mut [u8]) -> Result<(), Self::Error> {
-        let end_addr = addr.checked_add(buf.len() as u32)
+        let end_addr = addr
+            .checked_add(buf.len() as u32)
             .ok_or_else(|| format!("Address overflow at 0x{:08X}", addr))?;
 
-        let region = self.regions.iter().find(|r| {
-            let region_end = r.base_address.saturating_add(r.data.len() as u32);
-            addr >= r.base_address && end_addr <= region_end
-        }).ok_or_else(|| format!("No region covers 0x{:08X}..0x{:08X}", addr, end_addr))?;
+        let region = self
+            .regions
+            .iter()
+            .find(|r| {
+                let region_end = r.base_address.saturating_add(r.data.len() as u32);
+                addr >= r.base_address && end_addr <= region_end
+            })
+            .ok_or_else(|| format!("No region covers 0x{:08X}..0x{:08X}", addr, end_addr))?;
 
         let offset = (addr - region.base_address) as usize;
         buf.copy_from_slice(&region.data[offset..offset + buf.len()]);
@@ -101,7 +122,11 @@ impl Reader for MemoryReader {
 
     /// Updates the base address for any flash regions
     fn update_base_address(&mut self, new_base: u32) {
-        if let Some(r) = self.regions.iter_mut().find(|r| r.kind == RegionKind::Flash) {
+        if let Some(r) = self
+            .regions
+            .iter_mut()
+            .find(|r| r.kind == RegionKind::Flash)
+        {
             r.base_address = new_base;
         }
     }

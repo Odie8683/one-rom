@@ -169,7 +169,8 @@ fn generate_family_comparison_table(
         let control_str = format_control_lines(chip_type);
         let prog_str = format_programming_pins(chip_type);
 
-        let aliases_str = chip_type.aliases
+        let aliases_str = chip_type
+            .aliases
             .as_ref()
             .map(|a| a.join(", "))
             .unwrap_or_default();

@@ -86,7 +86,7 @@ pub enum FirmwareCommands {
     Chips(FirmwareChipsArgs),
 
     /// Build firmware and program One ROM in one step.
-    /// 
+    ///
     /// This is an alias for `onerom program`.  Use `onerom program --help` for
     /// more details and examples.
     Program(ProgramArgs),

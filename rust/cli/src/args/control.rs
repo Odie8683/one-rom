@@ -457,12 +457,12 @@ pub struct ControlPokeLiveArgs {
     ///
     /// Accepts decimal and hexadecimal (0x prefix) formats.
     /// Mutually exclusive with --input.
-    #[arg(long, short, value_name = "BYTE", value_parser = parse_u8, group = "poke_source")]
+    #[arg(long, short, visible_alias = "value", value_name = "BYTE", value_parser = parse_u8, group = "poke_source")]
     pub byte: Option<u8>,
 
     /// Write the contents of this binary file.
     ///
-    /// Mutually exclusive with --value.
+    /// Mutually exclusive with --byte.
     #[arg(long, visible_alias = "in", value_name = "FILE", group = "poke_source")]
     pub input: Option<String>,
 

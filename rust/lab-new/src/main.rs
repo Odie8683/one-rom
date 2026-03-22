@@ -61,8 +61,7 @@ async fn main(_spawner: Spawner) -> ! {
 
     // Initialize peripherals with clocks set to 150MHz
     let mut config = Config::default();
-    let clocks = ClockConfig::system_freq(150_000_000)
-        .expect("Failed to configure clocks");
+    let clocks = ClockConfig::system_freq(150_000_000).expect("Failed to configure clocks");
     config.clocks = clocks;
     let _p = embassy_rp::init(config);
 
@@ -104,15 +103,21 @@ async fn main(_spawner: Spawner) -> ! {
         info!("Reading {} ...", rom.type_as_str());
         let results = rom.read();
         for r in &results {
-            info!("{} SHA1: {} checksum: {:#010X}",
+            info!(
+                "{} SHA1: {} checksum: {:#010X}",
                 r.mode,
-                hex::encode(r.sha1), r.checksum);
+                hex::encode(r.sha1),
+                r.checksum
+            );
         }
         if results.len() >= 2 {
-            let match_ok = results.windows(2).all(|w| w[0].sha1 == w[1].sha1 && w[0].checksum == w[1].checksum);
+            let match_ok = results
+                .windows(2)
+                .all(|w| w[0].sha1 == w[1].sha1 && w[0].checksum == w[1].checksum);
             info!("Match: {}", match_ok);
         }
-        let ts_failures = results.iter()
+        let ts_failures = results
+            .iter()
             .map(|r| format!("{}: {}", r.mode, r.failures))
             .collect::<Vec<_>>()
             .join(", ");

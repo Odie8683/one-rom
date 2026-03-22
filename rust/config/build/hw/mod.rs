@@ -1453,7 +1453,9 @@ fn generate_supported_chip_type_names_method(_configs: &[HwConfigData]) -> Strin
     code.push_str("    ///\n");
     code.push_str("    /// Returns an empty slice if no chip types are defined for this\n");
     code.push_str("    /// board's pin count.\n");
-    code.push_str("    pub const fn supported_chip_type_names(&self) -> &'static [&'static str] {\n");
+    code.push_str(
+        "    pub const fn supported_chip_type_names(&self) -> &'static [&'static str] {\n",
+    );
     code.push_str("        match chip_type_names_for_pins(self.chip_pins()) {\n");
     code.push_str("            Some(names) => names,\n");
     code.push_str("            None => &[],\n");

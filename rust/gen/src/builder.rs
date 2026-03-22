@@ -209,6 +209,7 @@ impl Builder {
                 for chip in set.chips.iter() {
                     if matches!(chip.chip_type, ChipType::Chip231024) {
                         return Err(Error::FirmwareTooOld {
+                            feat: "231024 ROMs",
                             version: *version,
                             minimum: MIN_FW_CHIP_TYPE_231024,
                         });
@@ -219,9 +220,9 @@ impl Builder {
 
         // Validate each rom set has roms
         let mut chip_num = 0;
-        for set in config.chip_sets.iter() {
+        for (set_id, set) in config.chip_sets.iter().enumerate() {
             if set.chips.is_empty() {
-                return Err(Error::NoChips);
+                return Err(Error::NoChips { id: set_id });
             }
 
             // FirmwareConfig only supported from 0.6.0 firmware onwards
@@ -229,6 +230,7 @@ impl Builder {
             if set.firmware_overrides.is_some() {
                 if version < &MIN_FIRMWARE_OVERRIDES_VERSION {
                     return Err(Error::FirmwareTooOld {
+                        feat: "firmware overrides",
                         version: *version,
                         minimum: MIN_FIRMWARE_OVERRIDES_VERSION,
                     });
@@ -238,6 +240,7 @@ impl Builder {
             if set.chips.len() > 1 {
                 if set.set_type == ChipSetType::Single {
                     return Err(Error::TooManyChips {
+                        id: set_id,
                         expected: 1,
                         actual: set.chips.len(),
                     });
@@ -245,6 +248,7 @@ impl Builder {
 
                 if set.chips.len() > 3 && set.set_type == ChipSetType::Multi {
                     return Err(Error::TooManyChips {
+                        id: set_id,
                         expected: 3,
                         actual: set.chips.len(),
                     });
@@ -252,6 +256,7 @@ impl Builder {
 
                 if set.chips.len() > 4 && set.set_type == ChipSetType::Banked {
                     return Err(Error::TooManyChips {
+                        id: set_id,
                         expected: 4,
                         actual: set.chips.len(),
                     });
@@ -270,8 +275,17 @@ impl Builder {
 
                 if chip.chip_type.is_plugin() && version < &FirmwareVersion::new(0, 6, 7, 0) {
                     return Err(Error::FirmwareTooOld {
+                        feat: "plugins",
                         version: *version,
                         minimum: FirmwareVersion::new(0, 6, 7, 0),
+                    });
+                }
+
+                if matches!(chip.chip_type, ChipType::PioPlugin) {
+                    return Err(Error::FirmwareTooOld {
+                        feat: "PIO plugin",
+                        version: *version,
+                        minimum: FirmwareVersion::new(0, 6, 8, 0),
                     });
                 }
 
@@ -309,7 +323,7 @@ impl Builder {
                         }
                     };
                     if cs.is_none() {
-                        return Err(Error::MissingCsConfig { line: line.name });
+                        return Err(Error::MissingCsConfig { chip_type: chip.chip_type, line: line.name });
                     }
                 }
 

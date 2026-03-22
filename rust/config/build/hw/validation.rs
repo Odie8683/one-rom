@@ -388,7 +388,7 @@ pub fn validate_config(name: &str, config: &HwConfigJson) {
                     name
                 );
             }
-        },
+        }
         40 => {
             validate_pin_values(
                 &config.mcu.pins.addr,
@@ -397,7 +397,7 @@ pub fn validate_config(name: &str, config: &HwConfigJson) {
                 16,
                 config.mcu.family.max_valid_addr_cs_pin(),
             );
-            
+
             // A0 must be the _first_ address pin for 40-pin ROMs, so that the
             // LSB (as read in from the PIOs, the lowest GPIO), is A0.  This
             // allows, 16-bit mode, sticking a 0 bit as the LSB bit to get two

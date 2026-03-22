@@ -29,8 +29,7 @@ use onerom_cli::Error;
 #[tokio::main]
 async fn main() {
     if let Err(e) = sub_main().await {
-        eprintln!();
-        eprintln!("Error: {e}");
+        eprintln!("Failed to execute command.\n{e}");
         std::process::exit(1);
     }
 }

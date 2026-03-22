@@ -834,18 +834,22 @@ pub enum FireVreg {
 
 /// Data bus width mode
 #[repr(u8)]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq, DekuRead, DekuWrite)]
+#[derive(
+    Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq, DekuRead, DekuWrite,
+)]
 #[deku(id_type = "u8")]
 pub enum BitMode {
     #[deku(id = "0x01")]
-    Mode8  = 0x01,
+    Mode8 = 0x01,
     #[deku(id = "0x02")]
     Mode16 = 0x02,
 }
 
 /// Whether the RP2350 serves using the CPU or PIO
 #[repr(u8)]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq, DekuRead, DekuWrite)]
+#[derive(
+    Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq, DekuRead, DekuWrite,
+)]
 #[deku(id_type = "u8")]
 pub enum FireServeMode {
     #[deku(id = "0x00")]
@@ -854,10 +858,11 @@ pub enum FireServeMode {
     Pio = 0x01,
 }
 
-
 /// Limp mode pattern
 #[repr(u8)]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq, DekuRead, DekuWrite)]
+#[derive(
+    Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq, DekuRead, DekuWrite,
+)]
 #[deku(id_type = "u8")]
 pub enum LimpMode {
     #[deku(id = "0x00")]

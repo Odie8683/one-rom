@@ -302,7 +302,7 @@ impl ChipType {
 
     pub fn validate(&self, type_name: &str) -> Result<(), ValidationError> {
         if self.function.is_plugin() {
-            return self.validate_plugin_type(type_name)
+            return self.validate_plugin_type(type_name);
         }
 
         if !VALID_PIN_COUNTS.contains(&self.pins) {
