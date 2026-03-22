@@ -88,7 +88,7 @@ fn check_firmware_size(options: &Options, data: &[u8]) -> Result<(), Error> {
         println!("Firmware size {} bytes", data.len());
     }
     if data.len() > FIRMWARE_SIZE {
-        return Err(Error::FirmwareTooLarge(data.len(), FIRMWARE_SIZE));
+        return Err(Error::BaseFirmwareTooLarge(data.len(), FIRMWARE_SIZE));
     }
     Ok(())
 }

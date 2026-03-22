@@ -163,7 +163,7 @@ async fn reboot_to_stopped_if_running(options: &mut Options) -> Result<(), Error
     let new_device =
         select_device(serial.as_deref(), options.unrecognised, &options.vid_pid).await?;
     if new_device.is_running() {
-        return Err(Error::DeviceRunning);
+        return Err(Error::DeviceStillRunning);
     }
     options.device = Some(new_device);
     Ok(())

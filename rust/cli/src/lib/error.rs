@@ -4,43 +4,45 @@
 
 //! Shared error type for the One ROM CLI library.
 
+use sdrr_fw_parser::SdrrRomType;
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("USB error: {0}")]
+    #[error("Hit an error accessing USB:\n  {0}")]
     Usb(String),
 
     #[error("No One ROMs found")]
     NoDevices,
 
-    #[error("Multiple devices found - use --device to select one.\n  Found: {}", .0.join(", "))]
+    #[error("Multiple One ROMs found.  Use --device to select one.\n  Found: {}", .0.join(", "))]
     MultipleDevices(Vec<String>),
 
-    #[error("Device not found: {0}")]
+    #[error("One ROM not found: {0}")]
     DeviceNotFound(String),
 
-    #[error("I/O error: {0}")]
+    #[error("Hit an input/output error: {0}")]
     Io(String),
 
     #[error("{0}")]
     Other(String),
 
-    #[error("Unknown board type: {0}\nBoard types: {1}")]
+    #[error("Unknown board type: {0}\n  Known board types: {1}")]
     InvalidBoard(String, String),
 
-    #[error("Cannot specify both --device and --board together")]
+    #[error("You must not specify both --device and --board together.\n  If --device is specified, this is used to determine the board type automatically if possible.")]
     DeviceAndBoard,
 
-    #[error("Operation does not apply to --device")]
+    #[error("The selected operation does not apply to a device.\n  Do not specify --device.")]
     Device,
 
-    #[error("No --device was specified")]
+    #[error("No device was specified.\n  Specify a device using --device.")]
     NoDevice,
 
-    #[error("Command '{0}' has not been implemented")]
+    #[error("The '{0}' command has not been implemented")]
     Unimplemented(String),
 
     #[error(
-        "The operation attempted to access an unsupported memory region: address {0:#010x} length {1:#010x}"
+        "The operation attempted to access an unsupported memory region\n  Address {0:#010x}, length {1:#010x}"
     )]
     InvalidMemoryRange(u32, u32),
 
@@ -57,55 +59,50 @@ pub enum Error {
     UnknownRomType,
 
     #[error(
-        "The operation attempted to access past the end of a live ROM image\n  ROM type {0} image size is {1} bytes"
+        "The operation attempted to access past the end of a live ROM image.\n  The {0} size is {1} bytes"
     )]
-    LiveOutOfBounds(String, usize),
+    LiveOutOfBounds(SdrrRomType, usize),
 
-    #[error("Either --board or --device must be specified")]
+    #[error("Cannot determine the board type.\n  Either --board or --device must be specified.")]
     NoBoardOrDevice,
 
-    #[error("Version '{0}' not found. Available releases: {1}")]
+    #[error("Specified version '{0}' not found.\n  Available releases: {1}")]
     VersionNotFound(String, String),
 
-    #[error("No latest release found in manifest")]
+    #[error("No latest release found in manifest.\n  This is likely a bug.  Please report it.")]
     NoLatestRelease,
 
-    #[error("License not accepted")]
+    #[error("License was not accepted.\n  You must accept the license to proceed with this operation.")]
     LicenseNotAccepted,
 
-    #[error("Firmware image supplied is larger than the maximum supported: {0} bytes vs {1} bytes")]
-    FirmwareTooLarge(usize, usize),
+    #[error("The base firmware image supplied is larger than the maximum supported\n  {0} bytes supplied vs {1} bytes maximum")]
+    BaseFirmwareTooLarge(usize, usize),
 
-    #[error("Assembled firmware has parse errors (use --force to override):\n{0}")]
+    #[error("Assembled firmware has parse errors (use --force to override):\n  {0}\n  This is likely a bug.  Please report it.")]
     FirmwareValidation(String),
 
-    #[error(
-        "--base-firmware without --config or --rom requires --no-config to confirm flashing firmware with no ROM images"
-    )]
-    NoConfigNotConfirmed,
+    #[error("Failed to stop device, cannot proceed.\n  This is likely a bug.  Please report it.")]
+    DeviceStillRunning,
 
-    #[error("Failed to stop device, cannot proceed")]
-    DeviceRunning,
-
-    #[error("Flash verification failed at offset {0:#010x}: expected {1:#04x}, got {2:#04x}")]
+    #[error("Flash verification failed at offset {0:#010x}:\n  Expected {1:#04x}, got {2:#04x}")]
     VerifyFailed(usize, u8, u8),
 
-    #[error("Invalid argument: {0}")]
+    #[error("Invalid argument found:\n  {0}")]
     InvalidArgument(String),
 
-    #[error("No firmware source specified. Use --config, --rom, --firmware, or --base-firmware.")]
+    #[error("Cannot program One ROM as no configuration or firmware specified.\n  Use --config, --slot, --firmware, or --base-firmware.")]
     NoFirmwareSource,
 
-    #[error("Reboot was disabled")]
+    #[error("Unexpected reboot state specified.\n  This is likely a bug.  Please report it.")]
     NoReboot,
 
-    #[error("Unsupported chip type '{0}'.\nSupported types for this board: {1}")]
+    #[error("Unsupported chip type '{0}'.\n  Supported types for this board: {1}")]
     UnsupportedChipType(String, String),
 
-    #[error("Unsupported chip type '{0}' (and {1}) for this board.\nSupported types: {2}")]
+    #[error("This board does not support chip types {1}.\n  Supported types: {2}")]
     UnsupportedBoardChipType(String, String, String),
 
-    #[error("Could not determine board type from device:\n  {0}\nSupply it with --board")]
+    #[error("Could not determine board type from the connected device {0}.\n  It may be an unprogrammed One ROM or have corrupt firmware.\n  Supply the board type with --board")]
     NoBoardFromDevice(String),
 }
 

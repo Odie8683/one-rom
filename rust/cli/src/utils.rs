@@ -180,7 +180,7 @@ pub fn check_live_read_write(
         // If length is not specified (read only) read to the end of the ROM
         // image
         if offset as usize >= rom_size {
-            return Err(Error::LiveOutOfBounds(rom_type.to_string(), rom_size));
+            return Err(Error::LiveOutOfBounds(rom_type, rom_size));
         }
         (rom_size as u32) - offset
     };
@@ -188,7 +188,7 @@ pub fn check_live_read_write(
     let end_offset = offset + length;
     assert!(rom_size <= LIVE_ROM_MAX_OFFSET as usize);
     if end_offset as usize > rom_size {
-        return Err(Error::LiveOutOfBounds(rom_type.to_string(), rom_size));
+        return Err(Error::LiveOutOfBounds(rom_type, rom_size));
     }
 
     Ok((LIVE_ROM_BASE + offset, length))

@@ -328,7 +328,7 @@ async fn ensure_stopped(options: &mut Options) -> Result<(), Error> {
     let new_device = select_device(selector, options.unrecognised, &options.vid_pid).await?;
 
     if new_device.is_running() {
-        return Err(Error::DeviceRunning);
+        return Err(Error::DeviceStillRunning);
     }
     options.device = Some(new_device);
     Ok(())
