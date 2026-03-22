@@ -127,7 +127,7 @@ fn fw_source_control<'a>(analyse: &'a Analyse, device: &'a Device) -> Element<'a
         row
     }
     .push_maybe(
-        if analyse.selected_source_tab == Source::Device && device.is_usb_run_capable() {
+        if device.is_usb_run_capable() {
             Some(reboot_button(analyse, device))
         } else {
             None
