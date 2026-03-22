@@ -66,12 +66,6 @@ debug-logging-rp2350:HW_REV=fire-24-a,DEBUG_LOGGING=1,BOOT_LOGGING=1,MCU=rp2350,
 main-loop-logging-f401re:HW_REV=ice-24-f,MAIN_LOOP_LOGGING=1,BOOT_LOGGING=1,MCU=f401re,CONFIG=old-config/test-sdrr-0.mk
 main-loop-logging-rp2350:HW_REV=fire-24-a,MAIN_LOOP_LOGGING=1,BOOT_LOGGING=1,MCU=rp2350,CONFIG=old-config/test-sdrr-0.mk
 
-# Enable MAIN_LOOP_ONE_SHOT
-main-loop-one-shot-f401re:HW_REV=ice-24-f,MAIN_LOOP_ONE_SHOT=1,MAIN_LOOP_LOGGING=1,BOOT_LOGGING=1,MCU=f401re,CONFIG=old-config/test-sdrr-0.mk
-main-loop-one-shot-debug-f401re:HW_REV=ice-24-f,DEBUG_LOGGING=1,MAIN_LOOP_ONE_SHOT=1,MAIN_LOOP_LOGGING=1,BOOT_LOGGING=1,MCU=f401re,CONFIG=old-config/test-sdrr-0.mk
-main-loop-one-shot-rp2350:HW_REV=fire-24-a,MAIN_LOOP_ONE_SHOT=1,MAIN_LOOP_LOGGING=1,BOOT_LOGGING=1,MCU=rp2350,CONFIG=old-config/test-sdrr-0.mk
-main-loop-one-shot-debug-rp2350:HW_REV=fire-24-a,DEBUG_LOGGING=1,MAIN_LOOP_ONE_SHOT=1,MAIN_LOOP_LOGGING=1,BOOT_LOGGING=1,MCU=rp2350,CONFIG=old-config/test-sdrr-0.mk
-
 # DISABLE_PRELOAD_TO_RAM
 disable-preload-to-ram-f401re:HW_REV=ice-24-f,DISABLE_PRELOAD_TO_RAM=1,MCU=f401re,CONFIG=old-config/test-sdrr-0.mk
 disable-preload-to-ram-rp2350:HW_REV=fire-24-a,DISABLE_PRELOAD_TO_RAM=1,MCU=rp2350,CONFIG=old-config/test-sdrr-0.mk

@@ -24,7 +24,7 @@
 // #define OVERCLOCK 1  // Enable overclocking (may damage the part)
 // #define MAIN_LOOP_LOGGING 1  // Enable main loop logging
 // #define MAIN_LOOP_ONE_SHOT 1 // Run the main loop once, then log, then run
-//                              // it again
+//                              // it again.  DEPRECATED
 // #define DISABLE_CCM 1    // Disable CCM RAM - only relevant for variants
 //                          // that support CCM RAM
 // #define C_MAIN_LOOP 1    // Disable assembly main loop, use less performant
