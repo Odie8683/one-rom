@@ -137,20 +137,7 @@ size_t usb_get_serial(uint16_t *desc_str, size_t max_chars) {
     return len;
 }
 
-// Main plugin entry point
-void usb_main(
-    ora_lookup_fn_t ora_lookup_fn,
-    ora_plugin_type_t plugin_type,
-    const ora_entry_args_t *entry_args
-) {
-    // Unused variables
-    (void)plugin_type;
-    (void)entry_args;
-
-    // Initialize .ram_func, .data and .bss.  Do up-front to avoid
-    // accidentally using it first
-    init_data_bss();
-
+void usb_init(ora_lookup_fn_t ora_lookup_fn) {
     // Look up the required functions from the API.
     context.ora_lookup_fn = ora_lookup_fn;
     context.log = ora_lookup_fn(ORA_ID_LOG);
@@ -192,6 +179,24 @@ void usb_main(
     tusb_init(BOARD_TUD_RHPORT, &dev_init);
 
     DEBUG("USB plugin setup complete");
+}
+
+// Main plugin entry point
+void usb_main(
+    ora_lookup_fn_t ora_lookup_fn,
+    ora_plugin_type_t plugin_type,
+    const ora_entry_args_t *entry_args
+) {
+    // Unused variables
+    (void)plugin_type;
+    (void)entry_args;
+
+    // Initialize .ram_func, .data and .bss.  Do up-front to avoid
+    // accidentally using it first
+    init_data_bss();
+
+    // Initialize USB and related functionality
+    usb_init(ora_lookup_fn);
 
     while (1) {
         tud_task();
