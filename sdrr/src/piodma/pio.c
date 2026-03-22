@@ -31,7 +31,6 @@ int pio(
         rc = piorom(info, runtime, set, rom_table_addr);
     }
 
-    // Only returns in emulation case.
     return rc;
 }
 

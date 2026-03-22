@@ -433,9 +433,7 @@ int firmware_main(void) {
     //XIP_QMI_M0_TIMING &= ~0x04;
     //XIP_QMI_M0_TIMING |= 0x01;
     main_loop(&sdrr_info, &sdrr_runtime_info, set);
-#if defined(TEST_BUILD)
     return 0;
-#endif // TEST_BUILD
 #endif
 
 #if defined(EXECUTE_FROM_RAM) || defined(XIP_CACHE_WARM)

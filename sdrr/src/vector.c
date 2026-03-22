@@ -120,6 +120,8 @@ extern uint32_t _sdrr_runtime_info_ram[]; // Start of .sdrr_runtime_info section
 extern uint32_t _sdrr_runtime_info_flash[];   // Start of .sdrr_runtime_info section in flash
 extern uint32_t _sdrr_runtime_info_end[];   // End of .sdrr_runtime_info section in flash
 
+void ora_launch_plugins(const sdrr_info_t *info);
+
 // Reset handler
 void Reset_Handler(void) {
     // Enable hard floating point support:
@@ -170,9 +172,15 @@ void Reset_Handler(void) {
 
     // Call the main function
     main();
-    
-    // In case main returns
-    while(1);
+
+    // Main has returned - which means we are doing byte serving with PIOs.
+    // We can now launch plugins.
+    ora_launch_plugins(&sdrr_info);
+
+    // In case there's no user plugin (i.e. on this core)
+    while(1) {
+        __asm volatile("wfi");
+    }
 }
 
 // Default handler for unhandled interrupts - fast continuous blink

@@ -2122,8 +2122,11 @@ int piorom(
         DEBUG("Start PIOs");
         piorom_start_pios(&config);
 
+#if !defined(DEBUG_BUILD)
+        // Done
+        return 0;
+#else // DEBUG_BUILD
         while (1) {
-#if defined(DEBUG_BUILD)
             uint32_t read_addr1 = DMA_CH_REG(1)->read_addr;
             DEBUG("DMA1 Read Addr: 0x%08X",
                 read_addr1);
@@ -2132,18 +2135,8 @@ int piorom(
 
             // Delay to avoid swamping RTT
             for (volatile int ii = 0; ii < 100000; ii++);
-#else
-        // Low power wait for (VBUS) interrupt.  Avoids any potential SRAM or
-        // peripheral access that might introduce jitter on the PIO/DMA
-        // serving.
-#if !defined(TEST_BUILD)
-        // Launch any plugins.  Returns if a plugin isn't launched on this
-        // core.
-        ora_launch_plugins(info);
-#endif // !TEST_BUILD
-        APIO_ASM_WFI();
-#endif // !DEBUG_BUILD
         }
+#endif // !DEBUG_BUILD
     } else {
 #if !defined(TEST_BUILD)
         DEBUG("PIO ROM serving running without DMA - CPU active loop");

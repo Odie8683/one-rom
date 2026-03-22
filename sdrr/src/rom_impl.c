@@ -425,9 +425,7 @@ void SECTION_MAIN_LOOP main_loop(
     // If we are using PIO/DMA ROM serving, jump to that now
     if (runtime->fire_serve_mode == FIRE_SERVE_PIO) {
         pio(info, runtime, set, rom_table_val);
-#if defined(TEST_BUILD)
         return;
-#endif // TEST_BUILD
     } else {
         DEBUG("Fire CPU");
         if (info->pins->status < MAX_USED_GPIOS) {
