@@ -82,6 +82,10 @@ pub enum Message {
     BuildingSelectDataVec(Vec<u8>),
     BuildingComplete,
     BuildingCancelled,
+
+    StopDevice,
+    RunDevice,
+    DeviceRebootComplete(Result<(), String>),
 }
 
 // Main Create Message handling function
@@ -201,6 +205,10 @@ pub fn message(
             create.set_display_content("Custom configuration build cancelled.");
             Task::none()
         }
+
+        Message::StopDevice => create.stop_device(),
+        Message::RunDevice => create.run_device(),
+        Message::DeviceRebootComplete(result) => create.reboot_complete(result),
     }
 }
 
@@ -261,6 +269,13 @@ impl std::fmt::Display for Message {
             }
             Message::BuildingComplete => write!(f, "BuildingComplete"),
             Message::BuildingCancelled => write!(f, "BuildingCancelled"),
+
+            Message::StopDevice => write!(f, "StopDevice"),
+            Message::RunDevice => write!(f, "RunDevice"),
+            Message::DeviceRebootComplete(result) => match result {
+                Ok(()) => write!(f, "DeviceRebootComplete(Ok)"),
+                Err(e) => write!(f, "DeviceRebootComplete(Err({e}))"),
+            },
         }
     }
 }

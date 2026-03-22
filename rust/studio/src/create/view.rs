@@ -399,17 +399,44 @@ fn build_section<'a>(
         } else {
             "Flash Firmware".to_string()
         };
-        let (on_press, highlighted) = if create.is_busy() || !device.is_ready() {
-            (None, false)
-        } else {
-            (Some(Message::FlashFirmware.into()), true)
-        };
+        let (on_press, highlighted) =
+            if create.is_busy() || !device.is_ready() || device.is_running() {
+                (None, false)
+            } else {
+                (Some(Message::FlashFirmware.into()), true)
+            };
         let flash_button = Style::text_button_small(flash_content, on_press, highlighted);
 
-        button_row
-            .push(Space::with_width(Length::Fill))
-            .push(save_button)
-            .push(flash_button)
+        let mut row = button_row.push(Space::with_width(Length::Fill));
+
+        if device.is_usb_run_capable() {
+            let (content, message) = if device.is_running() {
+                (
+                    "Stop",
+                    if !create.is_busy() {
+                        Some(Message::StopDevice.into())
+                    } else {
+                        None
+                    },
+                )
+            } else {
+                (
+                    "Run",
+                    if !create.is_busy() {
+                        Some(Message::RunDevice.into())
+                    } else {
+                        None
+                    },
+                )
+            };
+            row = row.push(Style::text_button_small(
+                content,
+                message,
+                !create.is_busy(),
+            ));
+        }
+
+        row.push(save_button).push(flash_button)
     } else {
         button_row
     };

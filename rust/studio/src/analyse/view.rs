@@ -126,9 +126,40 @@ fn fw_source_control<'a>(analyse: &'a Analyse, device: &'a Device) -> Element<'a
     } else {
         row
     }
+    .push_maybe(
+        if analyse.selected_source_tab == Source::Device && device.is_usb_run_capable() {
+            Some(reboot_button(analyse, device))
+        } else {
+            None
+        },
+    )
     .push(source_button)
     .spacing(20)
     .into()
+}
+
+fn reboot_button<'a>(analyse: &'a Analyse, device: &'a Device) -> Button<'a, AppMessage> {
+    let (content, message) = if device.is_running() {
+        (
+            "Stop",
+            if analyse.state.is_idle() {
+                Some(Message::StopDevice.into())
+            } else {
+                None
+            },
+        )
+    } else {
+        (
+            "Run",
+            if analyse.state.is_idle() {
+                Some(Message::RunDevice.into())
+            } else {
+                None
+            },
+        )
+    };
+
+    Style::text_button_small(content, message, analyse.state.is_idle())
 }
 
 // Heading for firmware source selection
@@ -171,7 +202,10 @@ fn fw_content_heading<'a>(
 // Flash firmware button
 fn flash_file_button<'a>(analyse: &'a Analyse, device: &'a Device) -> Button<'a, AppMessage> {
     // Only highlight if ready to flash
-    let highlighted = analyse.state.is_idle() && device.is_ready() && analyse.fw_info.is_some();
+    let highlighted = analyse.state.is_idle()
+        && device.is_ready()
+        && analyse.fw_info.is_some()
+        && !device.is_running();
 
     // Figure out whether the button will do anything (based on highlighted
     // state)

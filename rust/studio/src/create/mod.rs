@@ -23,7 +23,7 @@ use onerom_config::mcu::{Family, MCU_VARIANTS, Variant as McuVariant};
 use onerom_fw::net::{Release, Releases};
 
 use crate::app::{AppMessage, progress_tick_subscription};
-use crate::device::Device;
+use crate::device::{Client, Device, Message as DeviceMessage};
 use crate::hw::HardwareInfo;
 use crate::studio::{Message as StudioMessage, RuntimeInfo};
 use crate::style::Style;
@@ -46,6 +46,7 @@ enum State {
         cs: Vec<Option<Active>>,
         data: Option<String>,
     },
+    Rebooting,
 }
 
 impl State {
@@ -272,5 +273,32 @@ impl Create {
         }));
 
         Subscription::batch(subs)
+    }
+
+    pub fn stop_device(&mut self) -> Task<AppMessage> {
+        self.state = State::Rebooting;
+        self.set_display_content("Rebooting device...");
+        Task::done(AppMessage::Device(DeviceMessage::RebootDevice {
+            client: Client::Create,
+            stopped: true,
+        }))
+    }
+
+    pub fn run_device(&mut self) -> Task<AppMessage> {
+        self.state = State::Rebooting;
+        self.set_display_content("Rebooting device...");
+        Task::done(AppMessage::Device(DeviceMessage::RebootDevice {
+            client: Client::Create,
+            stopped: false,
+        }))
+    }
+
+    pub fn reboot_complete(&mut self, result: Result<(), String>) -> Task<AppMessage> {
+        self.state = State::Idle;
+        match result {
+            Ok(()) => self.set_display_content("Device rebooted successfully."),
+            Err(e) => self.set_display_content(format!("Device reboot failed: {e}")),
+        }
+        Task::none()
     }
 }

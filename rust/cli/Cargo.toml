@@ -25,7 +25,7 @@ onerom-fw = { path="../fw", version = "0.1.17" }
 onerom-gen = { path="../gen", version = "0.5.5" }
 sdrr-fw-parser = { path="../sdrr-fw-parser", version = "0.6.8" }
 
-picoboot = { version = "0.2.0", features = ["reader", "tokio"] }
+picoboot = { version = "0.2.1", features = ["reader", "tokio"] }
 
 base64 = { version = "0.22" }
 bytes = "1.10"

@@ -14,6 +14,29 @@ use std::time::Duration;
 use crate::app::AppMessage;
 use crate::device::{Address, Client, Message};
 use crate::hw::HardwareInfo;
+use crate::internal_error;
+
+pub const FIRE_VID: u16 = 0x1209;
+pub const FIRE_BOOT_LOADER_PID: u16 = 0xf540;
+pub const FIRE_RUN_PID: u16 = 0xf542;
+
+// Studio can manage:
+// - Stock RP2350 MCUs
+// - One ROM's custom bootloader VID/PID 1209:f540
+// - One ROM's application VID/PID 1209:f542
+const FIRE_TARGETS: [Target; 3] = [
+    Target::Rp2350,
+    Target::Custom {
+        vid: FIRE_VID,
+        pid: FIRE_BOOT_LOADER_PID,
+    },
+    Target::Custom {
+        vid: FIRE_VID,
+        pid: FIRE_RUN_PID,
+    },
+];
+
+const REBOOT_DELAY: Duration = Duration::from_millis(10);
 
 /// Retrieve the list of connected USB devices.  Sends
 /// Message::UsbDevicesDetected when done.
@@ -50,8 +73,7 @@ async fn get_ice_list_async() -> Option<Vec<UsbDeviceType>> {
 
 // Use picoboot::list_devices to get Fire devices
 async fn get_fire_list_async() -> Option<Vec<UsbDeviceType>> {
-    let fire_targets = [Target::Rp2350];
-    match Picoboot::list_devices(Some(&fire_targets)).await {
+    match Picoboot::list_devices(Some(&FIRE_TARGETS)).await {
         Ok(devices) => {
             let mut usb_devices = Vec::new();
             for d in devices {
@@ -101,6 +123,13 @@ impl std::fmt::Display for UsbDeviceType {
 }
 
 impl UsbDeviceType {
+    pub fn is_run_capable(&self) -> bool {
+        matches!(
+            self,
+            UsbDeviceType::Fire(p) if p.vid() == FIRE_VID && p.pid() == FIRE_RUN_PID
+        )
+    }
+
     pub fn from_dfu(dfu_device: DfuDevice) -> Option<Self> {
         match (dfu_device.info().vid, dfu_device.info().pid) {
             (0x0483, 0xDF11) => Some(UsbDeviceType::Ice(dfu_device)),
@@ -238,6 +267,34 @@ async fn flash_fire_async(mut picoboot: Picoboot, client: Client, data: Vec<u8>)
             );
             warn!("{log}");
             Message::FlashFirmwareResult(client, Err(log)).into()
+        }
+    }
+}
+
+pub async fn reboot_async(usb_device: UsbDeviceType, client: Client, stopped: bool) -> AppMessage {
+    match usb_device {
+        UsbDeviceType::Fire(mut p) => {
+            let reboot_type = if stopped {
+                picoboot::RebootType::Bootsel {
+                    disable_msd: true,
+                    disable_picoboot: false,
+                }
+            } else {
+                picoboot::RebootType::Normal
+            };
+            match p.reboot(reboot_type, REBOOT_DELAY).await {
+                Ok(()) => Message::RebootDeviceResult(client, Ok(())).into(),
+                Err(e) => {
+                    let log = format!("Failed to reboot Fire USB ({}): {e}", p.info());
+                    warn!("{log}");
+                    Message::RebootDeviceResult(client, Err(log)).into()
+                }
+            }
+        }
+        _ => {
+            let log = "Attempted to reboot non-Fire device";
+            internal_error!("{log}");
+            Message::RebootDeviceResult(client, Err(log.into())).into()
         }
     }
 }

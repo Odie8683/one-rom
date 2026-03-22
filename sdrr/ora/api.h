@@ -558,26 +558,31 @@ typedef struct {
      * @brief Plugin API version
      * @sa ORA_PLUGIN_VERSION
      */
+    // offset 4
     uint32_t api_version;
 
     /** 
      * @brief Plugin's major version
      */
-     uint16_t major_version;
+    // offset 8
+    uint16_t major_version;
 
     /**
      * @brief Plugin's minor version
      */
+    // offset 10
     uint16_t minor_version;
 
     /**
     * @brief Plugin's patch version
     */
+    // offset 12
     uint16_t patch_version;
 
     /**
     * @brief Plugin's build version
     */
+    // offset 14
     uint16_t build_version;
 
     /**
@@ -586,12 +591,14 @@ typedef struct {
      * One ROM launches the pluging by calling the @ref ora_plugin_entry_t
      * function at this location.
      */
+    // offset 16
     ora_plugin_entry_t entry;
 
     /**
      * @brief Plugin type
      * @sa ora_plugin_type_t
      */
+    // offset 20
     ora_plugin_type_t plugin_type;
 
     /**
@@ -616,6 +623,7 @@ typedef struct {
      * ...
      * - 255 = maximum available statically allocated RAM used.
      */
+    // offset 21
     uint8_t sam_usage;
 
     /**
@@ -628,16 +636,34 @@ typedef struct {
      * For future compatibility, any unused bits must be set to 0.
      *
      * This is a bit field, with 1 indicating override.  Bit 0 = LSB
-     * Bit 0 - Disable VBUS detect.
+     * Bit 0 - Disable VBUS detect @sa ORA_OVERRIDE1_DISABLE_VBUS_DETECT
      */
+    // offset 22
     uint8_t overrides1;
+
+    /**
+     * @brief Plugin properties
+     * 
+     * 
+     * This is used to indicate properties of the plugin to the firmware, to
+     * allow the core firmware and firmware parses to make informed decisions
+     * about how to use the plugin.
+     * 
+     * For future compatibility, any unused bits must be set to 0.
+     * 
+     * This is a bit field, with 1 indicating the presence of the property.
+     * Bit 0 = LSB
+     * Bit 0 = supports running while USB is connected @sa ORA_PROPERTY1_SUPPORTS_USB_RUNNING
+     */
+    // offset 23
+    uint8_t properties1;
 
     /**
      * @brief Reserved for future use
      *
      * This field is reserved for future use and must be set to 0.
      */
-    uint8_t reserved[233];
+    uint8_t reserved[232];
 } ora_plugin_header_t;
 #define ORA_PLUGIN_HEADER_SIZE 256  // Must not change without version bump
 #if !defined(TEST_BUILD)
@@ -648,6 +674,11 @@ _Static_assert(sizeof(ora_plugin_header_t) == ORA_PLUGIN_HEADER_SIZE, "ora_plugi
  * @brief Firmware override flag for VBUS detect
  */
 #define ORA_OVERRIDE1_DISABLE_VBUS_DETECT (1 << 0)
+
+/** 
+ * @brief Plugin property flag for USB support
+ */
+#define ORA_PROPERTY1_SUPPORTS_USB_RUNNING (1 << 0)
 
 /** @} */
 

@@ -30,6 +30,15 @@ pub struct Sdrr {
     pub ram: Option<SdrrRuntimeInfo>,
 }
 
+impl Sdrr {
+    /// Method detects and returns whether the One ROM parsed is running.  This
+    /// is based on the ability to parse the runtime information from RAM
+    /// which is only present when the One ROM firmware is running.
+    pub fn is_running(&self) -> bool {
+        self.ram.is_some()
+    }
+}
+
 /// Main SDRR runtime information data structure.  Contains all data parsed
 /// from RAM.
 ///
@@ -111,6 +120,29 @@ pub struct SdrrInfo {
 }
 
 impl SdrrInfo {
+    /// Returns whether this device is capable of being connected to via USB
+    /// while running.
+    /// 
+    /// This is currently true if the first plugin is a system plugin.
+    pub fn is_usb_run_capable(&self) -> bool {
+        // Get the first ROM set, if it exists
+        let rom_set = match self.rom_sets.first() {
+            Some(set) => set,
+            None => return false,
+        };
+
+        // Get the first ROM in the set, if it exists
+        let rom_info = match rom_set.roms.first() {
+            Some(info) => info,
+            None => return false,
+        };
+
+        // We should expand this to use the plugin header information which
+        // contains supported capabilities - requires us to have read and held
+        // the actual ROM image data (which in this case would be the plugin).
+        matches!(rom_info.rom_type, SdrrRomType::SystemPlugin)
+    }
+
     /// Demangles a byte from the physical pin representation to the logical
     /// representation which is served on D0-D7.  Use when looking up a byte
     /// from the ROM image data to get the "real" byte.

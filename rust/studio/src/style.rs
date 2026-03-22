@@ -584,7 +584,8 @@ impl<'a> Style<'a> {
                 .on_press(msg),
             Self::text_extra_small("Reload").color(Self::COLOUR_TEXT_DIM),
             tooltip::Position::Top,
-        ).into()
+        )
+        .into()
     }
 
     fn footer_1_left() -> Element<'a, AppMessage> {

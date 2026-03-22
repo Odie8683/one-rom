@@ -15,8 +15,8 @@ use onerom_config::mcu::Variant as McuVariant;
 use sdrr_fw_parser::SdrrInfo;
 
 use crate::analyse::device::{
-    detect_device, file_device_loaded, firmware_flash_complete, flash_firmware, handle_device_data,
-    reread_device,
+    detect_device, device_reboot_complete, file_device_loaded, firmware_flash_complete,
+    flash_firmware, handle_device_data, reread_device, run_device, stop_device,
 };
 use crate::analyse::file::{fw_file_chooser, load_file};
 use crate::analyse::{Analyse, Source};
@@ -48,6 +48,10 @@ pub enum Message {
 
     // Progress tick
     ProgressTick,
+
+    StopDevice,
+    RunDevice,
+    DeviceRebootComplete(Result<(), String>),
 }
 
 impl std::fmt::Display for Message {
@@ -65,6 +69,9 @@ impl std::fmt::Display for Message {
             Message::FlashFirmware => write!(f, "FlashFirmware"),
             Message::FlashComplete(_) => write!(f, "FlashComplete(...)"),
             Message::ProgressTick => write!(f, "ProgressTick"),
+            Message::StopDevice => write!(f, "StopDevice"),
+            Message::RunDevice => write!(f, "RunDevice"),
+            Message::DeviceRebootComplete(_) => write!(f, "DeviceRebootComplete(...)"),
         }
     }
 }
@@ -152,5 +159,9 @@ pub fn message(
             analyse.progress_tick();
             Task::none()
         }
+
+        Message::StopDevice => stop_device(analyse),
+        Message::RunDevice => run_device(analyse),
+        Message::DeviceRebootComplete(result) => device_reboot_complete(analyse, result),
     }
 }

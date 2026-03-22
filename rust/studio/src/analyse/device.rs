@@ -371,11 +371,22 @@ pub fn file_device_loaded(
     // Clear state back to idle as we're done reading
     analyse.state = AnalyseState::Idle;
 
+    // Figure out whether this device is capable of running firmware while
+    // connected via USB.  We'll likely extend this to other properties in
+    // future
+    let usb_run_capable = analyse
+        .fw_info
+        .as_ref()
+        .map_or(false, |info| info.is_usb_run_capable());
+    let usb_run_capable_task = Task::done(AppMessage::Device(DeviceMessage::SetUsbRunCapable(
+        usb_run_capable,
+    )));
+
     // Decide whether to send decoded hardware information to the rest of the
     // app.  Create uses this to pre-populate its own hardware info display.
     match share_hw_info(analyse) {
-        Some(msg) => Task::done(msg),
-        None => Task::none(),
+        Some(msg) => Task::chain(usb_run_capable_task, Task::done(msg)),
+        None => usb_run_capable_task,
     }
 }
 
@@ -393,5 +404,42 @@ fn share_hw_info(analyse: &mut Analyse) -> Option<AppMessage> {
         ))))
     } else {
         None
+    }
+}
+
+pub fn stop_device(analyse: &mut Analyse) -> Task<AppMessage> {
+    debug!("Stopping device");
+    let start_task = analyse.start_analysis(AnalyseState::Rebooting);
+    let reboot_task = Task::done(AppMessage::Device(DeviceMessage::RebootDevice {
+        client: Client::Analyse,
+        stopped: true,
+    }));
+    Task::chain(start_task, reboot_task)
+}
+
+pub fn run_device(analyse: &mut Analyse) -> Task<AppMessage> {
+    debug!("Running device");
+    let start_task = analyse.start_analysis(AnalyseState::Rebooting);
+    let reboot_task = Task::done(AppMessage::Device(DeviceMessage::RebootDevice {
+        client: Client::Analyse,
+        stopped: false,
+    }));
+    Task::chain(start_task, reboot_task)
+}
+
+pub fn device_reboot_complete(
+    analyse: &mut Analyse,
+    result: Result<(), String>,
+) -> Task<AppMessage> {
+    match result {
+        Ok(()) => {
+            analyse.analysis_content += "\nDevice rebooted successfully, re-analysing...";
+            detect_device(analyse, None)
+        }
+        Err(e) => {
+            analyse.analysis_content += &format!("\nDevice reboot failed: {e}");
+            analyse.state = AnalyseState::Idle;
+            Task::none()
+        }
     }
 }

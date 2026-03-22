@@ -13,11 +13,13 @@ use crate::analyse::Message as AnalyseMessage;
 use crate::app::AppMessage;
 use crate::create::Message as CreateMessage;
 use crate::device::probe::ProbeType;
-use crate::device::usb::UsbDeviceType;
+use crate::device::usb::{UsbDeviceType, get_usb_device_list_delay};
 use crate::device::{Address, Client, Device, DeviceType};
 use crate::hw::HardwareInfo;
 use crate::internal_error;
 use crate::studio::RuntimeInfo;
+
+const REBOOT_DELAY: Duration = Duration::from_millis(1000);
 
 /// Device messages
 #[derive(Debug, Clone)]
@@ -56,6 +58,15 @@ pub enum Message {
     },
     DeviceData(Client, Vec<u8>),
     ReadFailed(Client, String),
+    RebootDevice {
+        client: Client,
+        stopped: bool,
+    },
+    RebootDeviceResult(Client, Result<(), String>),
+
+    // Analyser figures out if the device is capable of running firmware
+    // based on its firmware parsing.
+    SetUsbRunCapable(bool),
 }
 
 impl std::fmt::Display for Message {
@@ -116,6 +127,14 @@ impl std::fmt::Display for Message {
             }
             Message::KeyRescan => write!(f, "KeyRescan"),
             Message::Rescan => write!(f, "Rescan"),
+            Message::RebootDevice { client, stopped } => {
+                write!(f, "RebootDevice(client={client}, stopped={stopped})")
+            }
+            Message::RebootDeviceResult(client, result) => match result {
+                Ok(()) => write!(f, "RebootDeviceResult(client={client}, Ok)"),
+                Err(e) => write!(f, "RebootDeviceResult(client={client}, Err: {})", e),
+            },
+            Message::SetUsbRunCapable(capable) => write!(f, "SetUsbRunCapable({capable})"),
         }
     }
 }
@@ -167,7 +186,20 @@ pub fn handle_message(
         Message::UsbDevicesDetected(devices) => {
             device.usb_devices = devices;
             device.usb_devices_updated();
-            Task::none()
+            let reboot_result = device.reboot_result.take();
+            if let Some((client, result)) = reboot_result {
+                // Trigger analyse to rescan the device in the analyse case
+                match client {
+                    Client::Analyse => {
+                        Task::done(AnalyseMessage::DeviceRebootComplete(result).into())
+                    }
+                    Client::Create => {
+                        Task::done(CreateMessage::DeviceRebootComplete(result).into())
+                    }
+                }
+            } else {
+                Task::none()
+            }
         }
 
         // The overall device, a probe or USB device has been selected
@@ -191,8 +223,17 @@ pub fn handle_message(
             data,
         } => {
             debug!("{client} Flashing firmware");
-            device.operating = Some(client.clone());
-            device.selected.flash(client, hw_info, data)
+            if device.running {
+                let log = "Cannot flash firmware while device is running";
+                warn!("{log}");
+                Task::done(match client {
+                    Client::Analyse => AnalyseMessage::FlashComplete(Err(log.into())).into(),
+                    Client::Create => CreateMessage::FlashFirmwareResult(Err(log.into())).into(),
+                })
+            } else {
+                device.operating = Some(client.clone());
+                device.selected.flash(client, hw_info, data)
+            }
         }
         Message::FlashFirmwareResult(client, result) => {
             debug!(
@@ -208,7 +249,7 @@ pub fn handle_message(
             // Pause briefly before re-enumeration to allow the device to reset
             // and then send the done message
             Task::done(msg).chain(Task::future(crate::device::usb::get_usb_device_list_delay(
-                Duration::from_millis(1000),
+                REBOOT_DELAY,
             )))
         }
 
@@ -238,6 +279,27 @@ pub fn handle_message(
             assert_eq!(client, Client::Analyse);
             device.operating = None;
             Task::done(AnalyseMessage::ReadFailed(error).into())
+        }
+        Message::RebootDevice { client, stopped } => {
+            debug!("{client} Rebooting device (stopped={stopped})");
+            device.pending_serial = device.selected.serial_number();
+            device.reboot_result = None;
+            device.operating = Some(client.clone());
+            device.selected.reboot(client, stopped)
+        }
+        Message::RebootDeviceResult(client, result) => {
+            match &result {
+                Ok(()) => debug!("{client} Device reboot initiated successfully"),
+                Err(e) => warn!("{client} Device reboot failed to initiate: {e}"),
+            }
+            device.operating = None;
+            device.reboot_result = Some((client, result.clone()));
+            Task::future(get_usb_device_list_delay(REBOOT_DELAY))
+        }
+        Message::SetUsbRunCapable(capable) => {
+            debug!("Setting device run capable: {capable}");
+            device.usb_run_capable = capable;
+            Task::none()
         }
     }
 }

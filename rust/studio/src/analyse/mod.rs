@@ -57,6 +57,7 @@ pub enum AnalyseState {
     Loading,
     Detecting(DetectState),
     Flashing,
+    Rebooting,
 }
 
 impl std::fmt::Display for AnalyseState {
@@ -66,6 +67,7 @@ impl std::fmt::Display for AnalyseState {
             AnalyseState::Loading => write!(f, "Loading"),
             AnalyseState::Detecting(state) => write!(f, "Detecting ({})", state),
             AnalyseState::Flashing => write!(f, "Flashing"),
+            AnalyseState::Rebooting => write!(f, "Rebooting"),
         }
     }
 }
@@ -88,6 +90,7 @@ impl AnalyseState {
             AnalyseState::Loading => "Loading firmware...".to_string(),
             AnalyseState::Detecting(state) => format!("Trying to detect One ROM {state} ..."),
             AnalyseState::Flashing => "Flashing firmware...".to_string(),
+            AnalyseState::Rebooting => "Rebooting device...".to_string(),
         }
     }
 }

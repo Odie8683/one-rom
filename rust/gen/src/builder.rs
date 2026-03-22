@@ -268,6 +268,13 @@ impl Builder {
                     });
                 }
 
+                if chip.chip_type.is_plugin() && version < &FirmwareVersion::new(0, 6, 7, 0) {
+                    return Err(Error::FirmwareTooOld {
+                        version: *version,
+                        minimum: FirmwareVersion::new(0, 6, 7, 0),
+                    });
+                }
+
                 // Check filename specified for ROMs
                 if chip.file.is_empty() && chip.chip_type.chip_function() != ChipFunction::Ram {
                     return Err(Error::InvalidConfig {

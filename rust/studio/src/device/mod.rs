@@ -153,6 +153,13 @@ pub struct Device {
     probes: Vec<ProbeType>,
     usb_devices: Vec<UsbDeviceType>,
     operating: Option<Client>,
+    running: bool,
+    // Used to track the serial number of the last connected device, for use
+    // in matching with when attempting to reconnect after a reboot that
+    // changes modes - Run -> Stop or Stop -> Run
+    pending_serial: Option<String>,
+    reboot_result: Option<(Client, Result<(), String>)>,
+    usb_run_capable: bool,
 }
 
 impl Default for Device {
@@ -164,6 +171,10 @@ impl Default for Device {
             probes: Vec::new(),
             usb_devices: Vec::new(),
             operating: None,
+            running: false,
+            pending_serial: None,
+            reboot_result: None,
+            usb_run_capable: false,
         }
     }
 }
@@ -172,6 +183,23 @@ impl Device {
     /// Instantiation
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Can the device be running while connected?  Currently is only true for
+    /// Fire 1209/f542 devices
+    pub fn is_usb_run_capable(&self) -> bool {
+        self.usb_run_capable
+    }
+
+    pub fn is_running(&self) -> bool {
+        self.running
+    }
+
+    pub fn is_live_usb_device(&self) -> bool {
+        matches!(
+            &self.selected,
+            DeviceType::Usb(UsbDeviceType::Fire(p)) if p.vid() == usb::FIRE_VID && p.pid() == usb::FIRE_RUN_PID
+        )
     }
 
     /// Is the device ready for operations?
@@ -261,6 +289,8 @@ impl Device {
     // If a device is selected, make sure it still exists.  If there's no
     // device, select one if possible.
     fn check_selected(&mut self) {
+        let mut matched_serial = false;
+
         // See if the existing device is still valid
         let should_clear = match &self.selected {
             DeviceType::Usb(usb) => self.selected_usb_device.as_ref() != Some(usb),
@@ -273,17 +303,47 @@ impl Device {
         }
 
         if self.selected.is_none() {
-            // Prefer USB over debug probe
-            if let Some(usb_device) = &self.selected_usb_device {
-                self.selected = DeviceType::from_usb(usb_device.clone());
-                info!("Auto-selected active device: {}", self.selected);
-            } else if let Some(probe) = &self.selected_probe {
-                self.selected = DeviceType::from_probe(probe.clone());
-                info!("Auto-selected active device: {}", self.selected);
+            // If we have a pending serial, try to match it before auto-selecting
+            if let Some(serial) = &self.pending_serial.clone() {
+                if let Some(usb_device) = self.usb_devices.iter().find(|d| {
+                    matches!(d, UsbDeviceType::Fire(p) if p.serial_number() == Some(serial.as_str()))
+                }).cloned() {
+                    info!("Re-selected device by serial number: {serial}");
+                    self.selected_usb_device = Some(usb_device.clone());
+                    self.selected = DeviceType::from_usb(usb_device);
+                    matched_serial = true;
+                } else {
+                    // Device not yet re-enumerated - don't auto-select anything else
+                    warn!("Device with serial {serial} hasn't re-enumerated");
+                    self.running = false;
+                }
             } else {
-                trace!("No device to auto-select");
+                // Normal auto-select: prefer USB over debug probe
+                if let Some(usb_device) = &self.selected_usb_device {
+                    self.selected = DeviceType::from_usb(usb_device.clone());
+                    info!("Auto-selected active device: {}", self.selected);
+                } else if let Some(probe) = &self.selected_probe {
+                    self.selected = DeviceType::from_probe(probe.clone());
+                    info!("Auto-selected active device: {}", self.selected);
+                } else {
+                    trace!("No device to auto-select");
+                }
             }
         }
+
+        // Set other device properties.
+        // We can't use our usb_run_capable flag accurately, until analyse
+        // gives us the accurate information based on the firmware parsing
+        // later.
+        self.running = self.is_live_usb_device();
+        if matched_serial {
+            // We KNOW it's a run-capable device if we rebooted it and it came
+            // back with the same serial number.  This saves a re-analyse.
+            self.usb_run_capable = true;
+        } else {
+            self.usb_run_capable = self.is_live_usb_device();
+        }
+        self.pending_serial = None;
     }
 
     // Methods called when device is selected
@@ -382,6 +442,17 @@ impl DeviceType {
         }
     }
 
+    pub fn serial_number(&self) -> Option<String> {
+        match &self {
+            DeviceType::Usb(u) => match u {
+                UsbDeviceType::Ice(_) => None,
+                UsbDeviceType::Fire(p) => p.serial_number().map(|s| s.to_string()),
+            },
+            DeviceType::DebugProbe(_) => None,
+            DeviceType::None => None,
+        }
+    }
+
     fn usb_device(&self) -> Option<UsbDeviceType> {
         if let DeviceType::Usb(usb_type) = self {
             Some(usb_type.clone())
@@ -423,6 +494,10 @@ impl DeviceType {
     pub fn flash(&self, client: Client, hw_info: HardwareInfo, data: Vec<u8>) -> Task<AppMessage> {
         Task::future(flash_async(self.clone(), hw_info, client, data))
     }
+
+    pub fn reboot(&self, client: Client, stopped: bool) -> Task<AppMessage> {
+        Task::future(reboot_async(self.clone(), client, stopped))
+    }
 }
 
 // Generic read device method
@@ -460,6 +535,17 @@ async fn flash_async(
             let log = "Attempted to flash None device";
             internal_error!("{log}");
             Message::ReadFailed(client, log.into()).into()
+        }
+    }
+}
+
+async fn reboot_async(device: DeviceType, client: Client, stopped: bool) -> AppMessage {
+    match device {
+        DeviceType::Usb(u) => usb::reboot_async(u.clone(), client, stopped).await,
+        _ => {
+            let log = "Attempted to reboot non-USB device";
+            internal_error!("{log}");
+            Message::RebootDeviceResult(client, Err(log.into())).into()
         }
     }
 }

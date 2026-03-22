@@ -34,6 +34,7 @@ const ora_plugin_header_t ora_plugin_header = {
     .plugin_type = ORA_PLUGIN_TYPE_SYSTEM,
     .sam_usage = 255,
     .overrides1 = ORA_OVERRIDE1_DISABLE_VBUS_DETECT,
+    .properties1 = ORA_PROPERTY1_SUPPORTS_USB_RUNNING,
     .reserved = {0},
 };
 
