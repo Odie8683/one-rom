@@ -246,15 +246,15 @@ fn build_erase_ranges(args: &args::control::ControlEraseArgs) -> Result<Vec<(u32
         args.offset.clone()
     };
 
-    if offsets.len() != args.size.len() {
+    if offsets.len() != args.length.len() {
         return Err(Error::InvalidArgument(format!(
-            "got {} offset/address(es) but {} size(s)",
+            "got {} offset/address(es) but {} length(s)",
             offsets.len(),
-            args.size.len()
+            args.length.len()
         )));
     }
 
-    Ok(offsets.into_iter().zip(args.size.iter().copied()).collect())
+    Ok(offsets.into_iter().zip(args.length.iter().copied()).collect())
 }
 
 fn validate_erase_ranges(ranges: &[(u32, u32)]) -> Result<(), Error> {

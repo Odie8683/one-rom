@@ -190,7 +190,7 @@ pub struct InspectPeekLiveArgs {
     /// Read from the ROM image at this logical address, starting from 0.
     ///
     /// Accepts decimal and hexadecimal (0x prefix) formats.
-    #[arg(long, short, value_name = "ADDRESS", value_parser = parse_u32, default_value = "0")]
+    #[arg(long, short, value_name = "ADDRESS", visible_alias = "addr", value_parser = parse_u32, default_value = "0")]
     pub address: u32,
 
     /// Read this many bytes of data from the ROM image.
@@ -199,7 +199,7 @@ pub struct InspectPeekLiveArgs {
     ///
     /// If not specified the command reads from the --address to the end of
     /// the live ROM image
-    #[arg(long, short, value_name = "LENGTH", value_parser = parse_u32)]
+    #[arg(long, short, visible_aliases = ["len", "size"], value_name = "LENGTH", value_parser = parse_u32)]
     pub length: Option<u32>,
 
     /// Save the image data to this file.
@@ -218,13 +218,13 @@ pub struct InspectPeekMemoryArgs {
     /// Read from this address.
     ///
     /// Accepts decimal and hexadecimal (0x prefix) formats.
-    #[arg(long, short, value_name = "ADDRESS", value_parser = parse_u32)]
+    #[arg(long, short, visible_alias = "addr", value_name = "ADDRESS", value_parser = parse_u32)]
     pub address: u32,
 
     /// Read this many bytes of data.
     ///
     /// Accepts decimal and hexadecimal (0x prefix) formats.
-    #[arg(long, short, value_name = "LENGTH", value_parser = parse_u32)]
+    #[arg(long, short, visible_aliases = ["len", "size"], value_name = "LENGTH", value_parser = parse_u32)]
     pub length: u32,
 
     /// Save the data to this file.

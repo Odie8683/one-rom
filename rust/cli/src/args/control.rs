@@ -136,7 +136,7 @@ pub enum ControlCommands {
     /// can be checked with `inspect peek memory`.
     ///
     /// You can use this command to erase multiple ranges in a single operation
-    /// with multiple --offset/--address and --size arguments.
+    /// with multiple --offset/--address and --length arguments.
     ///
     /// Example:
     ///
@@ -320,25 +320,25 @@ pub struct ControlEraseArgs {
 
     /// Erase at offset(s) relative to flash base (0x10000000).
     ///
-    /// Must be 4096-aligned. Pair each with a --size.
+    /// Must be 4096-aligned. Pair each with a --length.
     /// Can be repeated for multiple ranges.
     /// Mutually exclusive with --address.
-    #[arg(long, short, value_name = "OFFSET", value_parser = parse_u32, action = clap::ArgAction::Append, conflicts_with = "address", requires = "size")]
+    #[arg(long, short, value_name = "OFFSET", value_parser = parse_u32, action = clap::ArgAction::Append, conflicts_with = "address", requires = "length")]
     pub offset: Vec<u32>,
 
     /// Erase at absolute address(es).
     ///
-    /// Must be 4096-aligned. Pair each with a --size.
+    /// Must be 4096-aligned. Pair each with a --length.
     /// Can be repeated for multiple ranges.
     /// Mutually exclusive with --offset.
-    #[arg(long, value_name = "ADDRESS", value_parser = parse_u32, action = clap::ArgAction::Append, conflicts_with = "offset", requires = "size")]
+    #[arg(long, visible_alias = "addr", value_name = "ADDRESS", value_parser = parse_u32, action = clap::ArgAction::Append, conflicts_with = "offset", requires = "length")]
     pub address: Vec<u32>,
 
-    /// Size of each range to erase (paired with --offset or --address).
+    /// Length of each range to erase (paired with --offset or --address).
     ///
     /// Must be 4096-aligned. Specify once per --offset/--address.
-    #[arg(long, value_name = "SIZE", value_parser = parse_u32, action = clap::ArgAction::Append, conflicts_with = "all")]
-    pub size: Vec<u32>,
+    #[arg(long, visible_aliases = ["len", "size"], value_name = "LENGTH", value_parser = parse_u32, action = clap::ArgAction::Append, conflicts_with = "all")]
+    pub length: Vec<u32>,
 
     /// Do not reboot before or after erasing.  This can be risky, if the
     /// device is actively accessing the flash range being erased.
@@ -421,14 +421,14 @@ pub struct ControlPokeMemoryArgs {
     /// Write to this memory address on the device.
     ///
     /// Accepts decimal and hexadecimal (0x prefix) formats.
-    #[arg(long, short, value_name = "ADDRESS", value_parser = parse_u32)]
+    #[arg(long, short, visible_alias = "addr", value_name = "ADDRESS", value_parser = parse_u32)]
     pub address: u32,
 
     /// Write this single byte value.
     ///
     /// Accepts decimal and hexadecimal (0x prefix) formats.
     /// Mutually exclusive with --input.
-    #[arg(long, short, value_name = "BYTE", value_parser = parse_u8, group = "poke_source")]
+    #[arg(long, short, visible_alias = "value", value_name = "BYTE", value_parser = parse_u8, group = "poke_source")]
     pub byte: Option<u8>,
 
     /// Write the contents of this binary file.
@@ -450,7 +450,7 @@ pub struct ControlPokeLiveArgs {
     /// Write to this logical ROM address, starting from 0.
     ///
     /// Accepts decimal and hexadecimal (0x prefix) formats.
-    #[arg(long, short, value_name = "ADDRESS", value_parser = parse_u32, default_value = "0")]
+    #[arg(long, short, visible_alias = "addr", value_name = "ADDRESS", value_parser = parse_u32, default_value = "0")]
     pub address: u32,
 
     /// Write this single byte value.
