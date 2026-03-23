@@ -12,15 +12,24 @@
 #include "include.h"
 
 typedef struct {
-    uint8_t  addr_gpio[32];   // GPIO for each logical address bit
-    uint8_t  num_addr_bits;
-    uint8_t  min_addr_pin;
-    uint8_t  data_gpio[16];   // GPIO for each logical data bit
-    uint8_t  num_data_bits;
-    uint8_t  min_data_pin;
-    uint8_t  x1;
-    uint8_t  x2;
-    uint8_t  cs1;
+    uint8_t addr_gpio[32];   // GPIO for each logical address bit
+    uint8_t num_addr_bits;
+    uint8_t min_addr_pin;
+    uint8_t data_gpio[16];   // GPIO for each logical data bit
+    uint8_t num_data_bits;
+    uint8_t min_data_pin;
+    uint8_t x1;
+    uint8_t x2;
+    uint8_t cs1;
+    uint8_t cs2;
+    uint8_t cs3;
+    sdrr_rom_type_t rom_type;
+    uint8_t chip_pins;
+    uint8_t chip_addr_bits;
+    uint8_t chip_data_bits;
+    sdrr_cs_state_t cs1_state;
+    sdrr_cs_state_t cs2_state;
+    sdrr_cs_state_t cs3_state;
 } rom_pin_layout_t;
 
 const sdrr_rom_set_t *app_get_active_rom_set(const usb_plugin_context_t *ctx);

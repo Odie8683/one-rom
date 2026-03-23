@@ -130,6 +130,10 @@ static pb_status_t app_range_logical_rom_read(
     if (st != PB_STATUS_OK) {
         return st;
     }
+
+    // Strip the base address to get a logical ROM address
+    addr &= 0x0FFFFFFF;
+
     for (uint32_t i = 0; i < len; i++) {
         uint32_t value;
         pb_status_t st = app_get_logical_byte_from_logical_addr(
