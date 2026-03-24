@@ -28,12 +28,12 @@ BUILD_DIR := build
 SRC       := plugin_main.c
 
 ifeq ($(PLUGIN_TYPE),SYSTEM)
-$(info "Building system plugin")
+$(info Building system plugin)
 PLUGIN_BASE := 0x10010000
 PLUGIN_TYPE_NUM := 0
 PLUGIN_PREFIX := plugin_system
 else ifeq ($(PLUGIN_TYPE),USER)
-$(info "Building user plugin)
+$(info Building user plugin)
 PLUGIN_BASE := 0x10020000
 PLUGIN_TYPE_NUM := 1
 PLUGIN_PREFIX := plugin_user
