@@ -72,6 +72,12 @@ pub enum SizeHandling {
     Pad,
 }
 
+impl SizeHandling {
+    pub fn supported_values() -> &'static [Self; 4] {
+        &[SizeHandling::None, SizeHandling::Duplicate, SizeHandling::Truncate, SizeHandling::Pad]
+    }
+}
+
 impl core::fmt::Display for SizeHandling {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
@@ -362,12 +368,20 @@ impl Chip {
                 // File too small - handle with dup/pad
                 match size_handling {
                     SizeHandling::None => {
-                        return Err(Error::ImageTooSmall {
-                            chip_type: *chip_type,
-                            index,
-                            expected: expected_size,
-                            actual: source.len(),
-                        });
+                        if chip_type.is_plugin() {
+                            // Automatically pad a plugin
+                            dest[..source.len()].copy_from_slice(source);
+                            for byte in &mut dest[source.len()..expected_size] {
+                                *byte = PAD_BLANK_BYTE;
+                            }
+                        } else {
+                            return Err(Error::ImageTooSmall {
+                                chip_type: *chip_type,
+                                index,
+                                expected: expected_size,
+                                actual: source.len(),
+                            });
+                        }
                     }
                     SizeHandling::Duplicate => {
                         if !expected_size.is_multiple_of(source.len()) {

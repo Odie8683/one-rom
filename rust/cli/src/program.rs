@@ -10,11 +10,12 @@ use onerom_fw::{assemble_firmware, validate_sizes};
 
 use crate::args;
 use crate::firmware::{
-    acquire_firmware, build_rom_image, resolve_config_json, verify_assembled_firmware,
+    acquire_firmware, build_rom_image, confirm_slot_overrides, resolve_config_json,
+    verify_assembled_firmware,
 };
 use crate::utils::{check_device, resolve_board};
 use onerom_cli::device::select_device;
-use onerom_cli::slot::save_config;
+use onerom_cli::slot::{check_slot_confirmations, save_config};
 use onerom_cli::usb::{RebootArgs, flash_program, flash_program_read, reboot};
 use onerom_cli::{Error, Options};
 
@@ -23,6 +24,7 @@ use onerom_cli::{Error, Options};
 fn validate_program_args(args: &args::program::ProgramArgs) -> Result<(), Error> {
     if args.msd && !args.stopped {
         return Err(Error::InvalidArgument(
+            "program".to_string(),
             "--msd requires --stopped".to_string(),
         ));
     }
@@ -204,6 +206,13 @@ pub async fn cmd_program(
     // for chip type validation when parsing --slot arguments.
     let board = resolve_board(options, &args.board)?;
     let mcu = Variant::RP2350;
+
+    if let Some(b) = &board
+        && !args.slot.is_empty()
+    {
+        let confirmations = check_slot_confirmations(&args.slot, b)?;
+        confirm_slot_overrides(options, &confirmations).await?;
+    }
 
     let data = acquire_program_image(options, args, &board, &mcu).await?;
     verify_assembled_firmware(options, &data, args.force).await?;

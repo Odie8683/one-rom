@@ -132,11 +132,17 @@ impl Device {
         };
     }
 
+    pub fn get_active_rom_set_index(&self) -> Option<u8> {
+        self.onerom
+            .as_ref()
+            .and_then(|o| o.ram.as_ref())
+            .map(|ram| ram.rom_set_index)
+    }
+
     /// Returns the active ROM set if available.
     pub fn get_active_rom_set(&self) -> Option<&sdrr_fw_parser::SdrrRomSet> {
         let flash_info = self.onerom.as_ref().and_then(|o| o.flash.as_ref())?;
-        let ram_info = self.onerom.as_ref().and_then(|o| o.ram.as_ref())?;
-        let active_set_index = ram_info.rom_set_index as usize;
+        let active_set_index = self.get_active_rom_set_index()? as usize;
         flash_info.rom_sets.get(active_set_index)
     }
 

@@ -234,9 +234,10 @@ fn build_erase_ranges(args: &args::control::ControlEraseArgs) -> Result<Vec<(u32
             .iter()
             .map(|&a| {
                 if a < FLASH_BASE {
-                    Err(Error::InvalidArgument(format!(
-                        "address {a:#010x} is below flash base {FLASH_BASE:#010x}"
-                    )))
+                    Err(Error::InvalidArgument(
+                        "erase".to_string(),
+                        format!("Address {a:#010x} is below flash base {FLASH_BASE:#010x}"),
+                    ))
                 } else {
                     Ok(a - FLASH_BASE)
                 }
@@ -247,32 +248,41 @@ fn build_erase_ranges(args: &args::control::ControlEraseArgs) -> Result<Vec<(u32
     };
 
     if offsets.len() != args.length.len() {
-        return Err(Error::InvalidArgument(format!(
-            "got {} offset/address(es) but {} length(s)",
-            offsets.len(),
-            args.length.len()
-        )));
+        return Err(Error::InvalidArgument(
+            "erase".to_string(),
+            format!(
+                "Got {} offset/address(es) but {} length(s)",
+                offsets.len(),
+                args.length.len()
+            ),
+        ));
     }
 
-    Ok(offsets.into_iter().zip(args.length.iter().copied()).collect())
+    Ok(offsets
+        .into_iter()
+        .zip(args.length.iter().copied())
+        .collect())
 }
 
 fn validate_erase_ranges(ranges: &[(u32, u32)]) -> Result<(), Error> {
     for (offset, size) in ranges {
         if offset % SECTOR_SIZE != 0 {
-            return Err(Error::InvalidArgument(format!(
-                "offset {offset:#x} is not {SECTOR_SIZE}-byte aligned"
-            )));
+            return Err(Error::InvalidArgument(
+                "erase".to_string(),
+                format!("Offset {offset:#x} is not {SECTOR_SIZE}-byte aligned"),
+            ));
         }
         if *size == 0 || size % SECTOR_SIZE != 0 {
-            return Err(Error::InvalidArgument(format!(
-                "size {size:#x} must be a non-zero multiple of {SECTOR_SIZE:#x}"
-            )));
+            return Err(Error::InvalidArgument(
+                "erase".to_string(),
+                format!("Size {size:#x} must be a non-zero multiple of {SECTOR_SIZE:#x}"),
+            ));
         }
         if offset + size > FLASH_SIZE {
-            return Err(Error::InvalidArgument(format!(
-                "range {offset:#x}+{size:#x} exceeds flash size {FLASH_SIZE:#x}"
-            )));
+            return Err(Error::InvalidArgument(
+                "erase".to_string(),
+                format!("Range {offset:#x}+{size:#x} exceeds flash size {FLASH_SIZE:#x}"),
+            ));
         }
     }
     Ok(())

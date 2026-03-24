@@ -180,7 +180,7 @@ pub struct FireConfig {
     pub serve_mode: Option<FireServeMode>,
 
     /// Optional DMA ROM preload enable/disable
-    #[serde(default)]
+    #[serde(default = "default_true")]
     pub rom_dma_preload: bool,
 
     /// Optional Force 16 bit mode.  Only supported on One ROM 40, and if set
@@ -200,6 +200,15 @@ pub enum FireServeMode {
     Pio,
     /// CPU mode
     Cpu,
+}
+
+impl core::fmt::Display for FireServeMode {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            FireServeMode::Pio => write!(f, "PIO"),
+            FireServeMode::Cpu => write!(f, "CPU"),
+        }
+    }
 }
 
 /// LED configuration structure
@@ -400,6 +409,19 @@ impl FireCpuFreq {
     pub fn get(&self) -> u16 {
         self.0
     }
+
+    pub fn stock_value() -> Self {
+        Self(150u16)
+    }
+}
+
+impl PartialOrd for FireCpuFreq {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        if self.is_stock() || self.is_none() || other.is_stock() || other.is_none() {
+            return None;
+        }
+        self.0.partial_cmp(&other.0)
+    }
 }
 
 impl Default for FireCpuFreq {
@@ -417,6 +439,16 @@ impl TryFrom<u16> for FireCpuFreq {
             Self::STOCK => Ok(Self::stock()),
             freq if (Self::MIN_MHZ..=Self::MAX_MHZ).contains(&freq) => Ok(Self(freq)),
             _ => Err(InvalidFreq(value)),
+        }
+    }
+}
+
+impl core::fmt::Display for FireCpuFreq {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self.0 {
+            Self::NONE => write!(f, "None"),
+            Self::STOCK => write!(f, "Stock"),
+            freq => write!(f, "{}MHz", freq),
         }
     }
 }
@@ -614,5 +646,73 @@ impl TryFrom<u8> for FireVreg {
             0xFF => Ok(Self::Stock),
             _ => Err(value),
         }
+    }
+}
+
+impl core::fmt::Display for FireVreg {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Stock => write!(f, "Stock"),
+            _ => {
+                let s = serde_json::to_string(self).map_err(|_| core::fmt::Error)?;
+                write!(f, "{}", s.trim_matches('"'))
+            }
+        }
+    }
+}
+
+impl FireVreg {
+    pub fn is_stock(&self) -> bool {
+        matches!(self, Self::Stock)
+    }
+
+    pub fn stock_value() -> Self {
+        Self::V1_10
+    }
+
+    pub fn supported_levels() -> &'static [Self] {
+        &[
+            Self::V0_55,
+            Self::V0_60,
+            Self::V0_65,
+            Self::V0_70,
+            Self::V0_75,
+            Self::V0_80,
+            Self::V0_85,
+            Self::V0_90,
+            Self::V0_95,
+            Self::V1_00,
+            Self::V1_05,
+            Self::V1_10,
+            Self::V1_15,
+            Self::V1_20,
+            Self::V1_25,
+            Self::V1_30,
+            Self::V1_35,
+            Self::V1_40,
+            Self::V1_50,
+            Self::V1_60,
+            Self::V1_65,
+            Self::V1_70,
+            Self::V1_80,
+            Self::V1_90,
+            Self::V2_00,
+            Self::V2_35,
+            Self::V2_50,
+            Self::V2_65,
+            Self::V2_80,
+            Self::V3_00,
+            Self::V3_15,
+            Self::V3_30,
+        ]
+    }
+}
+
+impl PartialOrd for FireVreg {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        if self.is_stock() || other.is_stock() {
+            return None;
+        }
+        (self.clone() as u8).partial_cmp(&(other.clone() as u8))
     }
 }

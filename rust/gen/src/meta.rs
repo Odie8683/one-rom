@@ -524,9 +524,8 @@ impl Metadata {
             if fire_config.serve_mode.is_some() {
                 override_present[0] |= 1 << 7; // Fire serve mode
             }
-            if fire_config.rom_dma_preload {
-                override_present[1] |= 1 << 0; // Fire ROM DMA preload
-            }
+            // Always incude ROM DMA preload
+            override_present[1] |= 1 << 0;
             if fire_config.force_16_bit {
                 override_present[1] |= 1 << 1; // Force 16 bit mode
             }

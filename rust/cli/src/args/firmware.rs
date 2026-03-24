@@ -107,13 +107,22 @@ pub struct FirmwareBuildArgs {
 
     /// ROM slot specification. May be repeated for multiple slots.
     ///
-    /// Format: file=<path_or_url>,type=<romtype>[,cs1=<logic>][,cs2=<logic>][,cs3=<logic>][,size_handling=<handling>]
+    /// Format: file=<path_or_url>,type=<romtype>[,cs1=<logic>][,cs2=<logic>][,cs3=<logic>][,size_handling=<handling>][,cpu-freq=<freq>][,cpu-vreg=<voltage>][,led=<bool>][,force_16bit=<bool>]
     ///
     /// CS logic values: active_low (or 0), active_high (or 1).
     ///
     /// Required CS lines depend on chip type (e.g. 2332 requires cs1 and cs2).
     ///
     /// Size handling values: none, duplicate (or dup), truncate (or trunc), pad.
+    ///
+    /// CPU frequency: e.g. 150, 150mhz, 150MHz. Values above 150MHz require
+    /// confirmation (suppressed with --yes). Sets overclock automatically.
+    ///
+    /// Vreg voltage: e.g. 1.1, 1.10, 1.10v, 1.10V. Values above 1.10V require
+    /// confirmation (suppressed with --yes). Must be a supported voltage level.
+    ///
+    /// Boolean values (led, force_16bit): on/off, true/false, 1/0.
+    /// force_16bit is only valid on 40-pin boards.
     ///
     /// Examples:
     ///
@@ -124,6 +133,12 @@ pub struct FirmwareBuildArgs {
     ///   --slot file=https://example.com/basic.bin,type=2716
     ///
     ///   --slot file=small.bin,type=2364,cs1=active_low,size_handling=duplicate
+    ///
+    ///   --slot file=kernal.bin,type=2364,cs1=active_low,cpu-freq=200MHz,cpu-vreg=1.2V
+    ///
+    ///   --slot file=char.bin,type=2332,cs1=active_low,cs2=active_high,led=off
+    ///
+    ///   --slot file=amiga.bin,type=27C400,force_16bit=true
     ///
     /// Mutually exclusive with --config-file and --no-config.
     #[arg(

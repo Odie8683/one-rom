@@ -4796,7 +4796,7 @@ dependencies = [
  "onerom-config",
  "onerom-fw",
  "onerom-gen",
- "picoboot",
+ "picoboot 0.2.2",
  "reqwest",
  "sdrr-fw-parser",
  "serde",
@@ -4974,7 +4974,7 @@ dependencies = [
  "onerom-fw",
  "onerom-gen",
  "open",
- "picoboot",
+ "picoboot 0.2.1",
  "probe-rs",
  "reqwest",
  "resvg",
@@ -5245,6 +5245,18 @@ name = "picoboot"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3b212a0defcafa7aba5bd4ce6a944026b132ab2c1e8c69f7b44a323e186cf61e"
+dependencies = [
+ "deku 0.20.3",
+ "log",
+ "nusb 0.2.3",
+ "rustix 1.1.4",
+ "serde",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "picoboot"
+version = "0.2.2"
 dependencies = [
  "airfrog-rpc",
  "deku 0.20.3",

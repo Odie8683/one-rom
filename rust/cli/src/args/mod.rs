@@ -163,10 +163,10 @@ fn check_vid_pid_unique(vid_pid_list: &[(u16, u16)]) -> Result<(), Error> {
     let mut seen = std::collections::HashSet::new();
     for (vid, pid) in vid_pid_list {
         if !seen.insert((*vid, *pid)) {
-            return Err(Error::InvalidArgument(format!(
-                "duplicate VID:PID pair '{:04x}:{:04x}'",
-                vid, pid
-            )));
+            return Err(Error::InvalidArgument(
+                "global".to_string(),
+                format!("Duplicate VID:PID pair '{:04x}:{:04x}'", vid, pid),
+            ));
         }
     }
     Ok(())

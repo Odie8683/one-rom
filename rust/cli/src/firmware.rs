@@ -16,7 +16,9 @@ use sdrr_fw_parser::{Parser, SdrrInfo, readers::MemoryReader};
 
 use crate::args;
 use crate::utils::{resolve_board, resolve_firmware_output};
-use onerom_cli::slot::{parse_slots, save_config, slots_to_config_json};
+use onerom_cli::slot::{
+    ConfirmationsRequired, check_slot_confirmations, parse_slots, save_config, slots_to_config_json,
+};
 use onerom_cli::{Error, Options};
 
 // ------------------------------- Config resolution -------------------------------
@@ -220,12 +222,14 @@ fn check_build_args(
 ) -> Result<(), Error> {
     if !args.no_config && args.config_file.is_none() && args.slot.is_empty() {
         return Err(Error::InvalidArgument(
+            "build".to_string(),
             "Either --config-file or --slot must be specified unless --no-config is set"
                 .to_string(),
         ));
     }
     if args.no_config && (!args.slot.is_empty() || args.config_file.is_some()) {
         return Err(Error::InvalidArgument(
+            "build".to_string(),
             "--no-config cannot be used with --slot or --config-file".to_string(),
         ));
     }
@@ -241,6 +245,11 @@ pub async fn cmd_build(
     // Board must be resolved before parsing slots for chip type validation.
     let board = resolve_board(options, &args.board)?.ok_or(Error::NoBoardOrDevice)?;
     let mcu = Variant::RP2350;
+
+    if !args.slot.is_empty() {
+        let confirmations = check_slot_confirmations(&args.slot, &board)?;
+        confirm_slot_overrides(options, &confirmations).await?;
+    }
 
     let config_json = resolve_config_json(
         args.config_file.as_deref(),
@@ -320,6 +329,53 @@ pub async fn accept_license(options: &Options, license: &License) -> Result<(), 
         "y" | "yes" => Ok(()),
         _ => Err(Error::LicenseNotAccepted),
     }
+}
+
+/// Prompt the user for confirmation if any slot overrides require it.
+///
+/// CPU frequencies above 150MHz and vreg voltages above 1.10V each require
+/// separate confirmation. Both are suppressed by `--yes`.
+pub async fn confirm_slot_overrides(
+    options: &Options,
+    confirmations: &ConfirmationsRequired,
+) -> Result<(), Error> {
+    if confirmations.cpu_freq {
+        if options.yes {
+            println!("Auto-accepted above-stock CPU frequency (--yes)");
+        } else {
+            print!("One or more slots specify a CPU frequency above 150MHz. Continue? (y/N): ");
+            std::io::stdout()
+                .flush()
+                .map_err(|e| Error::Other(e.to_string()))?;
+            let mut input = String::new();
+            std::io::stdin()
+                .read_line(&mut input)
+                .map_err(|e| Error::Other(e.to_string()))?;
+            if !matches!(input.trim().to_lowercase().as_str(), "y" | "yes") {
+                return Err(Error::AboveStockNotAccepted("CPU Frequency".to_string()));
+            }
+        }
+    }
+
+    if confirmations.vreg {
+        if options.yes {
+            println!("Auto-accepted above-stock vreg voltage (--yes)");
+        } else {
+            print!("One or more slots specify a vreg above 1.10V. Continue? (y/N): ");
+            std::io::stdout()
+                .flush()
+                .map_err(|e| Error::Other(e.to_string()))?;
+            let mut input = String::new();
+            std::io::stdin()
+                .read_line(&mut input)
+                .map_err(|e| Error::Other(e.to_string()))?;
+            if !matches!(input.trim().to_lowercase().as_str(), "y" | "yes") {
+                return Err(Error::AboveStockNotAccepted("CPU VReg".to_string()));
+            }
+        }
+    }
+
+    Ok(())
 }
 
 // ------------------------------- firmware inspect command -------------------------------

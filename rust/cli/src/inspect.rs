@@ -47,6 +47,7 @@ pub async fn cmd_telemetry(options: &Options, args: &InspectTelemetryArgs) -> Re
 pub async fn cmd_slots(options: &Options, args: &InspectSlotsArgs) -> Result<(), Error> {
     check_device(options, args)?;
     let device = options.device.as_ref().unwrap();
+    let active_rom_set_index = device.get_active_rom_set_index();
 
     println!("{device}");
     if let Some(onerom) = device.onerom.as_ref()
@@ -59,9 +60,47 @@ pub async fn cmd_slots(options: &Options, args: &InspectSlotsArgs) -> Result<(),
             if set_count == 1 { "" } else { "s" }
         );
         for (i, set) in info.rom_sets.iter().enumerate() {
-            println!("  Slot {i}:");
+            let active = if Some(i as u8) == active_rom_set_index {
+                " (active)"
+            } else {
+                ""
+            };
+            println!("  Slot {i}{active}:");
             let set_location = set.data_ptr;
             let set_image_size = set.size;
+            if let Some(overrides) = &set.firmware_overrides {
+                println!("    Firmware overrides:");
+                if let Some(led) = &overrides.led {
+                    println!(
+                        "      Status LED: {}",
+                        if led.enabled { "on" } else { "off" }
+                    );
+                }
+                if let Some(fire) = &overrides.fire {
+                    if let Some(freq) = fire.cpu_freq {
+                        println!("      CPU frequency: {freq}");
+                    }
+                    if let Some(vreg) = &fire.vreg {
+                        println!("      CPU voltage: {vreg}");
+                    }
+                    if let Some(serve_mode) = &fire.serve_mode {
+                        println!("      Serve mode: {serve_mode}");
+                    }
+                    if !fire.rom_dma_preload {
+                        println!("      ROM DMA preload disabled");
+                    }
+                    if fire.force_16_bit {
+                        println!("      Force 16-bit ROM enabled",);
+                    }
+                }
+                if let Some(debug) = &overrides.swd {
+                    println!(
+                        "      SWD: {}",
+                        if debug.swd_enabled { "on" } else { "off" }
+                    );
+                }
+            }
+
             for (j, rom) in set.roms.iter().enumerate() {
                 let mut cs = String::new();
                 if rom.cs1_state != SdrrCsState::NotUsed {
@@ -74,7 +113,7 @@ pub async fn cmd_slots(options: &Options, args: &InspectSlotsArgs) -> Result<(),
                     cs.push_str(&format!("Chip Select 3: {} ", rom.cs3_state));
                 }
                 let rom_type = rom.rom_type;
-                println!("    ROM {j}: {rom_type} {cs}");
+                println!("    Chip {j}: {rom_type} {cs}");
                 if verbose {
                     println!(
                         "      Flash location 0x{set_location:08x} size 0x{set_image_size:08x} bytes"

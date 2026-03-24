@@ -74,10 +74,13 @@ pub enum Error {
     #[error("No latest release found in manifest.\n  This is likely a bug.  Please report it.")]
     NoLatestRelease,
 
-    #[error(
-        "License was not accepted.\n  You must accept the license to proceed with this operation."
-    )]
+    #[error("License was not accepted.\n  You must accept the license to proceed.")]
     LicenseNotAccepted,
+
+    #[error(
+        "Above stock value for {0} was not accepted.\n  You must accept or modify the configuration to proceed."
+    )]
+    AboveStockNotAccepted(String),
 
     #[error(
         "The base firmware image supplied is larger than the maximum supported\n  {0} bytes supplied vs {1} bytes maximum"
@@ -95,8 +98,8 @@ pub enum Error {
     #[error("Flash verification failed at offset {0:#010x}:\n  Expected {1:#04x}, got {2:#04x}")]
     VerifyFailed(usize, u8, u8),
 
-    #[error("Invalid argument found:\n  {0}")]
-    InvalidArgument(String),
+    #[error("Invalid '{0}' argument found:\n  {1}")]
+    InvalidArgument(String, String),
 
     #[error(
         "Cannot program One ROM as no configuration or firmware specified.\n  Use --config, --slot, --firmware, or --base-firmware."
