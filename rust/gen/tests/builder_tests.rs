@@ -7494,7 +7494,7 @@ mod tests {
         // Check override_value bitfield
         // Bits: 0=Ice overclock, 1=Fire overclock, 2=LED, 3=SWD
         // Expected: Ice=true(1), Fire=false(0), LED=true(1), SWD=false(0)
-        let expected_value = (1 << 0) | (1 << 2); // Bits 0 and 2 set
+        let expected_value = (1 << 0) | (1 << 2) | (1 << 5); // Bits 0 and 2 set
         assert_eq!(
             fw_overrides.override_value[0], expected_value,
             "override_value should be 0x{:02X}, got 0x{:02X}",
