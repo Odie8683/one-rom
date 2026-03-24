@@ -145,6 +145,11 @@ pub enum Error {
     },
     Base64,
     Base16,
+    InvalidPluginImage {
+        plugin_type: ChipType,
+        image_file: String,
+        error: String,
+    }
 }
 type Result<T> = core::result::Result<T, Error>;
 
@@ -298,6 +303,14 @@ impl core::fmt::Display for Error {
             ),
             Error::Base64 => write!(f, "Base64 encoding/decoding error"),
             Error::Base16 => write!(f, "Base16 encoding/decoding error"),
+            Error::InvalidPluginImage {
+                plugin_type,
+                image_file,
+                error,
+            } => write!(
+                f,
+                "The provided {plugin_type} image {image_file} is invalid:\n  {error}"
+            ),
         }
     }
 }

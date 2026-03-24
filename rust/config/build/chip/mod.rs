@@ -325,6 +325,7 @@ fn generate_rust_code(config: &ChipTypesConfig) -> String {
     code.push_str("//\n");
     code.push_str("// MIT License\n\n");
     code.push_str("#![allow(dead_code)]\n\n");
+    code.push_str("use crate::fw::FirmwareVersion;\n\n");
 
     // Generate chip function type enum
     code.push_str(generate_chip_function_enum());
@@ -1384,7 +1385,44 @@ fn generate_chip_type_is_supported_fn(config: &ChipTypesConfig) -> String {
             code.push_str(&format!(
                 "            ChipType::{} => {},\n",
                 variant_name(type_name, chip_type),
-                chip_type.supported
+                chip_type.supported.is_some()
+            ));
+        }
+    }
+
+    code.push_str("        }\n");
+    code.push_str("    }\n");
+
+    code.push('\n');
+
+    // Now generate min_supported_firmware_version method
+    code.push_str("    /// Get the minimum firmware version that supports this ChipType\n");
+    code.push_str("    ///\n");
+    code.push_str("    /// Returns `None` if the ChipType is not supported.");
+    code.push_str("    ///\n");
+    code.push_str("    /// # Examples\n");
+    code.push_str("    ///\n");
+    code.push_str("    /// ```\n");
+    code.push_str("    /// use onerom_config::chip::ChipType;\n");
+    code.push_str("    /// use onerom_config::fw::FirmwareVersion;\n");
+    code.push_str("    ///\n");
+    code.push_str("    /// assert_eq!(ChipType::Chip2364.min_supported_firmware_version(), Some(FirmwareVersion::new(0, 4, 4, 0)));\n");
+    code.push_str("    /// assert_eq!(ChipType::try_from_str(\"unknown\").and_then(|t| t.min_supported_firmware_version()), None);\n");
+    code.push_str("    /// ```\n");
+    code.push_str("    pub fn min_supported_firmware_version(&self) -> Option<FirmwareVersion> {\n");
+    code.push_str("        match self {\n");
+
+    for (type_name, _chip_type) in get_sorted_chip_types(config) {
+        if let Some(chip_type) = config.chip_types.get(type_name) {
+            let version_str = if let Some(version_string) = &chip_type.supported {
+                format!("Some(FirmwareVersion::try_from_str(\"{}\").unwrap())", version_string)
+            } else {
+                "None".to_string()
+            };
+            code.push_str(&format!(
+                "            ChipType::{} => {},\n",
+                variant_name(type_name, chip_type),
+                version_str
             ));
         }
     }
@@ -1409,7 +1447,7 @@ fn generate_chip_type_names(config: &ChipTypesConfig) -> String {
             names.extend(aliases.iter().cloned());
         }
 
-        if !chip_type.supported {
+        if chip_type.supported.is_none() {
             continue; // Skip unsupported types
         }
 

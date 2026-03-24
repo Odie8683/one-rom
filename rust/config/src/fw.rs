@@ -47,6 +47,10 @@ impl FirmwareVersion {
         }
     }
 
+    pub const fn min() -> Self {
+        Self::new(0, 0, 0, 0)
+    }
+
     /// Whether this version matches another version, ignoring build number.
     pub fn matches_release(&self, other: &Self) -> bool {
         self.major == other.major && self.minor == other.minor && self.patch == other.patch

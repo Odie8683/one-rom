@@ -4,8 +4,6 @@ All notables changes between versions are documented in this file.
 
 ## v0.6.7 - 2026-??-??
 
-!!! Test other 32 pin ROM types see below
-
 The three headlines in this release are **prototype** support for:
 
 - One ROM CLI - a command line tool for interacting with new and old One ROM Fire devices over USB
@@ -228,7 +226,7 @@ This release adds 28 pin ROM support for the new One ROM Fire 28-pin version, fi
 
 ### Added
 
-- Support for 28 pin ROM types using fire-28-a.  23128 has been tested in a C64C. wotj 2764, 27128, 27256 and 27512 tested in an EEPROM reader.  It is STRONGLY recommended NOT to use an EEPROM reader to read One ROM, as it may apply 12V to pin A9.
+- Support for 28 pin ROM types using fire-28-a.  23128 has been tested in a C64C. with 2764, 27128, 27256 and 27512 tested in an EEPROM reader.  It is STRONGLY recommended NOT to use an EEPROM reader to read One ROM, as it may apply 12V to pin A9.
 
 ## v0.5.7 - 2025-12-09
 

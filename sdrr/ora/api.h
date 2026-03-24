@@ -706,11 +706,33 @@ typedef struct {
     uint8_t properties1;
 
     /**
+     * @brief Minimum major version of the firmware this plugin is compatible with
+     * 
+     * This is used to ensure that a plugin is only run on compatible versions of the
+     * firmware.  If the firmware's major version is less than this, the firmware
+     * refuses to run the plugin.
+     */
+    // offset 24
+    uint16_t min_fw_major_version;
+
+    /**
+     * @brief Minimum minor version of the firmware this plugin is compatible with
+     */
+    // offset 26
+    uint16_t min_fw_minor_version;
+
+    /**
+     * @brief Minimum patch version of the firmware this plugin is compatible with
+     */
+    // offset 28
+    uint16_t min_fw_patch_version;
+
+    /**
      * @brief Reserved for future use
      *
      * This field is reserved for future use and must be set to 0.
      */
-    uint8_t reserved[232];
+    uint8_t reserved[226];
 } ora_plugin_header_t;
 #define ORA_PLUGIN_HEADER_SIZE 256  // Must not change without version bump
 #if !defined(TEST_BUILD)

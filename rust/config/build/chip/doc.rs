@@ -174,7 +174,7 @@ fn generate_family_comparison_table(
             .as_ref()
             .map(|a| a.join(", "))
             .unwrap_or_default();
-        let supported_str = if chip_type.supported { "✓" } else { "✗" };
+        let supported_str = if chip_type.supported.is_some() { "✓" } else { "✗" };
         table.push_str(&format!(
             "| {} | {} | {} | {} | {} | {} | {} |\n",
             type_name, aliases_str, size_str, addr_lines, control_str, prog_str, supported_str

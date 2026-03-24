@@ -18,7 +18,7 @@ mod tests {
         ChipType {
             description: "Test 2316".to_string(),
             function: ChipFunction::Rom,
-            supported: true,
+            supported: Some("0.2.0".to_string()),
             aliases: None,
             bit_modes: vec![8],
             pins: 24,
@@ -51,7 +51,7 @@ mod tests {
         ChipType {
             description: "Test 27128".to_string(),
             function: ChipFunction::Rom,
-            supported: true,
+            supported: Some("0.2.0".to_string()),
             aliases: None,
             pins: 28,
             bit_modes: vec![8, 16],

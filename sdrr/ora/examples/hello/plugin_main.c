@@ -10,9 +10,9 @@
 // Logic to allow this plugin to be built as either a system or user plugin,
 // based on the PLUGIN_TYPE passed in on make.
 #if defined(PLUGIN_TYPE_NUM) && (PLUGIN_TYPE_NUM == ORA_PLUGIN_TYPE_USER)
-ORA_DEFINE_SYSTEM_PLUGIN(plugin_main, 0, 1, 0, 0);
+ORA_DEFINE_SYSTEM_PLUGIN(plugin_main, 0, 1, 0, 0, 0, 6, 7);
 #else // User plugin
-ORA_DEFINE_USER_PLUGIN(plugin_main, 0, 1, 0, 0);
+ORA_DEFINE_USER_PLUGIN(plugin_main, 0, 1, 0, 0, 0, 6, 7);
 #endif // Plugin type check
 
 void plugin_main(

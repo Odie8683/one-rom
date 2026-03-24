@@ -144,8 +144,11 @@
  * @param minor Plugin minor version number
  * @param patch Plugin patch version number
  * @param build Plugin build version number
+ * @param min_fw_major Minimum major version of the firmware this plugin is compatible with
+ * @param min_fw_minor Minimum minor version of the firmware this plugin is compatible with
+ * @param min_fw_patch Minimum patch version of the firmware this plugin is compatible with
  */
-#define ORA_DEFINE_PLUGIN_HEADER(plugin, fn, major, minor, patch, build) \
+#define ORA_DEFINE_PLUGIN_HEADER(plugin, fn, major, minor, patch, build, min_fw_major, min_fw_minor, min_fw_patch) \
     void fn( \
         ora_lookup_fn_t ora_lookup_fn, \
         ora_plugin_type_t plugin_type, \
@@ -163,6 +166,9 @@
         .plugin_type = plugin, \
         .sam_usage = 0, \
         .overrides1 = 0, \
+        .min_fw_major_version = min_fw_major, \
+        .min_fw_minor_version = min_fw_minor, \
+        .min_fw_patch_version = min_fw_patch, \
         .reserved = {0}, \
     }
 
@@ -178,11 +184,14 @@
  * @param minor Plugin minor version number
  * @param patch Plugin patch version number
  * @param build Plugin build version number
+ * @param min_fw_major Minimum major version of the firmware this plugin is compatible with
+ * @param min_fw_minor Minimum minor version of the firmware this plugin is compatible with
+ * @param min_fw_patch Minimum patch version of the firmware this plugin is compatible with
  *
  * @sa ORA_DEFINE_USER_PLUGIN, ORA_DEFINE_PIO_PLUGIN
  */
-#define ORA_DEFINE_SYSTEM_PLUGIN(fn, major, minor, patch, build) \
-    ORA_DEFINE_PLUGIN_HEADER(ORA_PLUGIN_TYPE_SYSTEM, fn, major, minor, patch, build)
+#define ORA_DEFINE_SYSTEM_PLUGIN(fn, major, minor, patch, build, min_fw_major, min_fw_minor, min_fw_patch) \
+    ORA_DEFINE_PLUGIN_HEADER(ORA_PLUGIN_TYPE_SYSTEM, fn, major, minor, patch, build, min_fw_major, min_fw_minor, min_fw_patch)
 
 /**
  * @brief Define the header for a One ROM user plugin
@@ -196,11 +205,14 @@
  * @param minor Plugin minor version number
  * @param patch Plugin patch version number
  * @param build Plugin build version number
+ * @param min_fw_major Minimum major version of the firmware this plugin is compatible with
+ * @param min_fw_minor Minimum minor version of the firmware this plugin is compatible with
+ * @param min_fw_patch Minimum patch version of the firmware this plugin is compatible with
  *
  * @sa ORA_DEFINE_SYSTEM_PLUGIN, ORA_DEFINE_PIO_PLUGIN
  */
-#define ORA_DEFINE_USER_PLUGIN(fn, major, minor, patch, build) \
-    ORA_DEFINE_PLUGIN_HEADER(ORA_PLUGIN_TYPE_USER, fn, major, minor, patch, build)
+#define ORA_DEFINE_USER_PLUGIN(fn, major, minor, patch, build, min_fw_major, min_fw_minor, min_fw_patch) \
+    ORA_DEFINE_PLUGIN_HEADER(ORA_PLUGIN_TYPE_USER, fn, major, minor, patch, build, min_fw_major, min_fw_minor, min_fw_patch)
 
 /**
  * @brief Define the header for a One ROM PIO plugin
@@ -214,10 +226,13 @@
  * @param minor Plugin minor version number
  * @param patch Plugin patch version number
  * @param build Plugin build version number
+ * @param min_fw_major Minimum major version of the firmware this plugin is compatible with
+ * @param min_fw_minor Minimum minor version of the firmware this plugin is compatible with
+ * @param min_fw_patch Minimum patch version of the firmware this plugin is compatible with
  *
  * @sa ORA_DEFINE_SYSTEM_PLUGIN, ORA_DEFINE_USER_PLUGIN
  */
-#define ORA_DEFINE_PIO_PLUGIN(fn, major, minor, patch, build) \
-    ORA_DEFINE_PLUGIN_HEADER(ORA_PLUGIN_TYPE_PIO, fn, major, minor, patch, build)
+#define ORA_DEFINE_PIO_PLUGIN(fn, major, minor, patch, build, min_fw_major, min_fw_minor, min_fw_patch) \
+    ORA_DEFINE_PLUGIN_HEADER(ORA_PLUGIN_TYPE_PIO, fn, major, minor, patch, build, min_fw_major, min_fw_minor, min_fw_patch)
 
 #endif /* ORA_PLUGIN_H */

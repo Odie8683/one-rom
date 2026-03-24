@@ -35,6 +35,9 @@ const ora_plugin_header_t ora_plugin_header = {
     .sam_usage = 255,
     .overrides1 = ORA_OVERRIDE1_DISABLE_VBUS_DETECT,
     .properties1 = ORA_PROPERTY1_SUPPORTS_USB_RUNNING,
+    .min_fw_major_version = 0,
+    .min_fw_minor_version = 6,
+    .min_fw_patch_version = 7,
     .reserved = {0},
 };
 

@@ -8,7 +8,8 @@
             "size": 65536,
             "address": [],
             "data": [],
-            "control": {}
+            "control": {},
+            "supported": "0.6.7"
         },
         "UserPlugin": {
             "description": "One ROM User Plugin",
@@ -18,12 +19,12 @@
             "size": 65536,
             "address": [],
             "data": [],
-            "control": {}
+            "control": {},
+            "supported": "0.6.7"
         },
         "PioPlugin": {
             "description": "One ROM PIO Plugin",
             "function": "Plugin",
-            "supported": false,
             "bit_modes": [],
             "pins": 0,
             "size": 65536,
@@ -34,6 +35,7 @@
         "2316": {
             "description": "2KB mask ROM with 3 configurable CS lines",
             "function": "ROM",
+            "supported": "0.4.4",
             "aliases": [
                 "9316"
             ],
@@ -93,6 +95,7 @@
         "2332": {
             "description": "4KB mask ROM with 2 configurable CS lines",
             "function": "ROM",
+            "supported": "0.4.4",
             "aliases": [
                 "9332",
                 "4732"
@@ -150,6 +153,7 @@
         "2364": {
             "description": "8KB mask ROM with 1 configurable CS line",
             "function": "ROM",
+            "supported": "0.4.4",
             "aliases": [
                 "4764"
             ],
@@ -203,6 +207,7 @@
         "23128": {
             "description": "16KB mask ROM with 3 configurable CS lines",
             "function": "ROM",
+            "supported": "0.5.8",
             "bit_modes": [8],
             "pins": 28,
             "size": 16384,
@@ -262,6 +267,7 @@
         "23256": {
             "description": "32KB mask ROM with 2 configurable CS lines",
             "function": "ROM",
+            "supported": "0.5.8",
             "bit_modes": [8],
             "pins": 28,
             "size": 32768,
@@ -318,6 +324,7 @@
         "23512": {
             "description": "64KB mask ROM with 2 configurable CS lines",
             "function": "ROM",
+            "supported": "0.5.8",
             "bit_modes": [8],
             "pins": 28,
             "size": 65536,
@@ -375,6 +382,7 @@
         "231024": {
             "description": "128KB mask ROM with 1 configurable CS line",
             "function": "ROM",
+            "supported": "0.6.4",
             "aliases": [
                 "TC531000"
             ],
@@ -432,6 +440,7 @@
         "2704": {
             "description": "512B EPROM with multiple supply voltages",
             "function": "ROM",
+            "supported": "0.6.6",
             "bit_modes": [8],
             "pins": 24,
             "size": 512,
@@ -507,6 +516,7 @@
         "2708": {
             "description": "1KB EPROM with multiple supply voltages",
             "function": "ROM",
+            "supported": "0.6.6",
             "bit_modes": [8],
             "pins": 24,
             "size": 1024,
@@ -578,6 +588,7 @@
         "2716": {
             "description": "2KB EPROM with fixed active-low CE/OE",
             "function": "ROM",
+            "supported": "0.5.6",
             "bit_modes": [8],
             "pins": 24,
             "size": 2048,
@@ -640,6 +651,7 @@
         "2732": {
             "description": "4KB EPROM with fixed active-low CE and shared OE/VPP",
             "function": "ROM",
+            "supported": "0.5.6",
             "aliases": [
                 "27C32"
             ],
@@ -706,6 +718,7 @@
         "2764": {
             "description": "8KB EPROM with fixed active-low CE/OE",
             "function": "ROM",
+            "supported": "0.5.8",
             "aliases": [
                 "27C64",
                 "27LC64"
@@ -774,6 +787,7 @@
         "27128": {
             "description": "16KB EPROM with fixed active-low CE/OE",
             "function": "ROM",
+            "supported": "0.5.8",
             "aliases": [
                 "27C128",
                 "27LC128"
@@ -843,6 +857,7 @@
         "27256": {
             "description": "32KB EPROM with fixed active-low CE/OE",
             "function": "ROM",
+            "supported": "0.5.8",
             "aliases": [
                 "27C256",
                 "27LC256",
@@ -914,6 +929,7 @@
         "27512": {
             "description": "64KB EPROM with fixed active-low CE/OE",
             "function": "ROM",
+            "supported": "0.5.8",
             "aliases": [
                 "27C512",
                 "27LC512",
@@ -986,6 +1002,7 @@
         "27C301": {
             "description": "128KB EPROM with fixed active-low CE/OE",
             "function": "ROM",
+            "supported": "0.6.6",
             "aliases": [
                 "27C1000"
             ],
@@ -1057,6 +1074,7 @@
         "27C010": {
             "description": "128KB EPROM with fixed active-low CE/OE",
             "function": "ROM",
+            "supported": "0.6.6",
             "aliases": [
                 "27C1001",
                 "SST39SF010"
@@ -1129,6 +1147,7 @@
         "27C020": {
             "description": "256KB EPROM with fixed active-low CE/OE",
             "function": "ROM",
+            "supported": "0.6.6",
             "aliases": [
                 "27C2001",
                 "SST39SF020"
@@ -1202,6 +1221,7 @@
         "27C040": {
             "description": "512KB EPROM with fixed active-low CE/OE",
             "function": "ROM",
+            "supported": "0.6.6",
             "aliases": [
                 "27C4001"
             ],
@@ -1275,7 +1295,6 @@
         "SST39SF040": {
             "description": "512KB flash with fixed active-low CE/OE and different pinout to 27C040",
             "function": "ROM",
-            "supported": false,
             "aliases": [
             ],
             "bit_modes": [8],
@@ -1344,7 +1363,6 @@
         "27C080": {
             "description": "1MB EPROM with fixed active-low CE/OE",
             "function": "ROM",
-            "supported": false,
             "aliases": [
                 "27C801"
             ],
@@ -1419,6 +1437,7 @@
         "27C400" : {
             "description": "0.5MB EPROM with fixed active-low CE/OE",
             "function": "ROM",
+            "supported": "0.6.5",
             "bit_modes": [8, 16],
             "pins": 40,
             "size": 524288,
@@ -1506,6 +1525,7 @@
         "6116": {
             "description": "2KB (2048 x 8-bit) Static RAM with fixed active-low CE/OE/WE",
             "function": "RAM",
+            "supported": "0.6.2",
             "aliases": [
                 "2016"
             ],

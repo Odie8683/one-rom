@@ -273,20 +273,17 @@ impl Builder {
                     });
                 }
 
-                if chip.chip_type.is_plugin() && version < &FirmwareVersion::new(0, 6, 7, 0) {
-                    return Err(Error::FirmwareTooOld {
-                        feat: "plugins",
-                        version: *version,
-                        minimum: FirmwareVersion::new(0, 6, 7, 0),
-                    });
-                }
-
-                if matches!(chip.chip_type, ChipType::PioPlugin) {
-                    return Err(Error::FirmwareTooOld {
-                        feat: "PIO plugin",
-                        version: *version,
-                        minimum: FirmwareVersion::new(0, 6, 8, 0),
-                    });
+                // Check chip type is supported for this version of firmware
+                if let Some(min_version) = chip.chip_type.min_supported_firmware_version() {
+                    if version < &min_version {
+                        return Err(Error::FirmwareTooOld {
+                            feat: chip.chip_type.name(),
+                            version: *version,
+                            minimum: min_version,
+                        });
+                    }
+                } else {
+                    return Err(Error::UnsupportedToolChipType { chip_type: chip.chip_type })
                 }
 
                 // Check filename specified for ROMs
@@ -688,6 +685,51 @@ impl Builder {
                 }
             }
         }
+
+        // Validate all plugins are built for at least the firmware version
+        // we're building for.  The major, minor and patch fw versions are in
+        // little endian format, at offsets 24, 26 and 28 in the image.  Also
+        // header the magic ("ORA ") at offset 0, and version (1) at offset 4.
+        let mut rom_id = 0;
+        for set in self.config.chip_sets.iter() {
+            for rom in set.chips.iter() {
+                if matches!(rom.chip_type, ChipType::SystemPlugin | ChipType::UserPlugin | ChipType::PioPlugin) {
+                    let file_id = self.file_id_map.get(&rom_id).unwrap();
+                    let data = self.files.get(file_id).unwrap();
+
+                    if data.len() < 256 {
+                        return Err(Error::InvalidPluginImage { plugin_type: rom.chip_type, image_file: rom.file.clone(), error: "Plugin image is smaller than the required plugin header (256 bytes).".to_string() });
+                    }
+
+                    if &data[0..4] != b"ORA " {
+                        return Err(Error::InvalidPluginImage { plugin_type: rom.chip_type, image_file: rom.file.clone(), error: "Invalid magic value in plugin header.".to_string() });
+                        
+                    }
+                    let api_version = u32::from_le_bytes(data[4..8].try_into().unwrap());
+                    if api_version != 1 {
+                        return Err(Error::InvalidPluginImage { plugin_type: rom.chip_type, image_file: rom.file.clone(), error: format!("Invalid API version {api_version} in plugin header - must be 1.") });
+                    }
+
+                    let plugin_fw_major = u16::from_le_bytes([data[24], data[25]]);
+                    let plugin_fw_minor = u16::from_le_bytes([data[26], data[27]]);
+                    let plugin_fw_patch = u16::from_le_bytes([data[28], data[29]]);
+                    let plugin_fw_version = FirmwareVersion::new(plugin_fw_major, plugin_fw_minor, plugin_fw_patch, 0);
+
+                    if plugin_fw_version > props.version() {
+                        return Err(Error::InvalidPluginImage {
+                            plugin_type: rom.chip_type,
+                            image_file: rom.file.clone(),
+                            error: format!(
+                                "Plugin requires at least firmware version {} which is newer than the firmware version being built for ({})",
+                                plugin_fw_version, props.version()
+                            ),
+                        });
+                    }
+                }
+                rom_id += 1;
+            }
+        }
+
 
         Ok(())
     }
