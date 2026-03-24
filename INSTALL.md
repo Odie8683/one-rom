@@ -69,6 +69,7 @@ However, we strongly recommend sticking to a *nix based host (Linux or macOS) fo
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
     source $HOME/.cargo/env
     rustup target install thumbv7em-none-eabihf
+    rustup target install thumbv8m.main-none-eabihf
     cargo install cross
     cargo install wasm-pack   # Only required to build one-rom-wasm
     cargo install cargo-dist  # Only required to build One ROM Studio installers
