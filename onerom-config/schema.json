@@ -419,7 +419,7 @@
                 "rom_dma_preload": {
                     "description": "Optional DMA ROM preload enable/disable",
                     "type": "boolean",
-                    "default": false
+                    "default": true
                 },
                 "serve_mode": {
                     "description": "Optional PIO/CPU override",
