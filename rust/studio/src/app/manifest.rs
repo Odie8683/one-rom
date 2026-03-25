@@ -179,6 +179,7 @@ impl ManifestState {
             ManifestType::FirmwareRelease => &self.current.manifest_urls.fw_release,
             ManifestType::RomConfig => &self.current.manifest_urls.rom_config,
             ManifestType::AppRelease => &self.current.manifest_urls.app_release,
+            ManifestType::Plugin => &self.current.manifest_urls.plugin,
         }
     }
 
@@ -285,7 +286,7 @@ impl Default for Manifest {
     fn default() -> Self {
         Self {
             version: 1,
-            revision: 0,
+            revision: 1,    // Update every time content changes, even if not a breaking change
             latest_app_version: env!("CARGO_PKG_VERSION").to_string(),
             link_urls: LinkUrls::default(),
             manifest_urls: ManifestUrls::default(),
@@ -328,6 +329,9 @@ pub struct ManifestUrls {
 
     /// One ROM Studio app releases manifest
     pub app_release: String,
+
+    /// Plugin manifest
+    pub plugin: String,
 }
 
 impl Default for ManifestUrls {
@@ -336,6 +340,7 @@ impl Default for ManifestUrls {
             fw_release: "https://images.onerom.org/releases.json".to_string(),
             rom_config: "https://images.onerom.org/configs.json".to_string(),
             app_release: "https://images.onerom.org/studio/releases.json".to_string(),
+            plugin: "https://images.onerom.org/plugins/plugins.json".to_string(),
         }
     }
 }
@@ -417,6 +422,12 @@ pub struct Schemas {
 
     /// JSON schema for application release manifest
     pub app_release: String,
+
+    /// JSON schema for plugin manifest
+    pub plugin: String,
+
+    /// JSON schema for plugin release manifest
+    pub plugin_release: String,
 }
 
 impl Default for Schemas {
@@ -426,6 +437,8 @@ impl Default for Schemas {
             rom_config: "https://images.onerom.org/configs/schema.json".to_string(),
             fw_release: "".to_string(),
             app_release: "".to_string(),
+            plugin: "https://images.onerom.org/plugins/plugin-schema.json".to_string(),
+            plugin_release: "https://images.onerom.org/plugins/plugin-release-schema.json".to_string(),
         }
     }
 }
@@ -480,6 +493,8 @@ pub enum ManifestType {
     RomConfig,
     /// Application release manifest
     AppRelease,
+    /// Plugin manifest
+    Plugin,
 }
 
 /// Supported schemas
