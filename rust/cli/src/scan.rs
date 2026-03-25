@@ -38,13 +38,22 @@ pub async fn cmd_scan(options: &Options, args: &args::scan::ScanArgs) -> Result<
         return Ok(());
     }
 
+    let num_devices = devices.len();
     println!(
         "found {} connected device{}:",
-        devices.len(),
-        if devices.len() == 1 { "" } else { "s" }
+        num_devices,
+        if num_devices == 1 { "" } else { "s" }
     );
+
     for d in &devices {
-        println!("  {d}");
+        if args.slots {
+            println!("---");
+            crate::inspect::output_slot_info(d, options, "  ")
+                .inspect_err(|_| log::error!("Failed to read slots"))
+                .ok();
+        } else {
+            println!("  {d}");
+        }
     }
 
     Ok(())

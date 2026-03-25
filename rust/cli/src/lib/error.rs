@@ -14,7 +14,7 @@ pub enum Error {
     #[error("No One ROMs found")]
     NoDevices,
 
-    #[error("Multiple One ROMs found.  Use --device to select one.\n  Found: {}", .0.join(", "))]
+    #[error("Multiple One ROMs found.  Use --serial to select one.\n  Found: {}", .0.join(", "))]
     MultipleDevices(Vec<String>),
 
     #[error("One ROM not found: {0}")]
@@ -30,14 +30,16 @@ pub enum Error {
     InvalidBoard(String, String),
 
     #[error(
-        "You must not specify both --device and --board together.\n  If --device is specified, this is used to determine the board type automatically if possible."
+        "You must not specify both --serial and --board together.\n  If --serial is specified, this is used to determine the board type automatically if possible."
     )]
     DeviceAndBoard,
 
-    #[error("The selected operation does not apply to a device.\n  Do not specify --device.")]
+    #[error("The selected operation does not apply to a One ROM.\n  Do not specify --serial.")]
     Device,
 
-    #[error("No device was specified.\n  Specify a device using --device.")]
+    #[error(
+        "No One ROM was specified.\n  Specify a One ROM using --serial.\n  Use 'onerom scan' to list connected One ROMs."
+    )]
     NoDevice,
 
     #[error("The '{0}' command has not been implemented")]
@@ -65,7 +67,7 @@ pub enum Error {
     )]
     LiveOutOfBounds(SdrrRomType, usize),
 
-    #[error("Cannot determine the board type.\n  Either --board or --device must be specified.")]
+    #[error("Cannot determine the board type.\n  Either --board or --serial must be specified.")]
     NoBoardOrDevice,
 
     #[error("Specified version '{0}' not found.\n  Available releases: {1}")]
@@ -119,6 +121,16 @@ pub enum Error {
         "Could not determine board type from the connected device {0}.\n  It may be an unprogrammed One ROM or have corrupt firmware.\n  Supply the board type with --board"
     )]
     NoBoardFromDevice(String),
+
+    #[error(
+        "The selected One ROM does not support that operation.\n  {0}\n  The firmware may be too old, or the USB system plugin may not be present."
+    )]
+    CannotRun(String),
+
+    #[error(
+        "The selected One ROM does not support being rebooted into running mode.\n  {0}\n  The firmware may be too old, or the USB system plugin may not be present."
+    )]
+    NoRebootIntoRunning(String),
 }
 
 impl Error {

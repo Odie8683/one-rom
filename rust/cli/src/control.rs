@@ -17,7 +17,7 @@ pub async fn cmd_led_on(
     options: &Options,
     args: &args::control::ControlLedOnArgs,
 ) -> Result<(), Error> {
-    check_device(options, args)?;
+    check_device(options, args, true)?;
     let device = options.device.as_ref().unwrap();
     set_led(device, 0, LedSubCmd::On).await?;
     if options.verbose {
@@ -30,7 +30,7 @@ pub async fn cmd_led_off(
     options: &Options,
     args: &args::control::ControlLedOffArgs,
 ) -> Result<(), Error> {
-    check_device(options, args)?;
+    check_device(options, args, true)?;
     let device = options.device.as_ref().unwrap();
     set_led(device, 0, LedSubCmd::Off).await?;
     if options.verbose {
@@ -43,7 +43,7 @@ pub async fn cmd_led_beacon(
     options: &Options,
     args: &args::control::ControlLedBeaconArgs,
 ) -> Result<(), Error> {
-    check_device(options, args)?;
+    check_device(options, args, true)?;
     let device = options.device.as_ref().unwrap();
     set_led(device, 0, LedSubCmd::Beacon).await?;
     if options.verbose {
@@ -56,7 +56,7 @@ pub async fn cmd_led_flame(
     options: &Options,
     args: &args::control::ControlLedFlameArgs,
 ) -> Result<(), Error> {
-    check_device(options, args)?;
+    check_device(options, args, true)?;
     let device = options.device.as_ref().unwrap();
     set_led(device, 0, LedSubCmd::Flame).await?;
     if options.verbose {
@@ -69,7 +69,7 @@ pub async fn cmd_reboot(
     options: &Options,
     args: &args::control::ControlRebootArgs,
 ) -> Result<(), Error> {
-    check_device(options, args)?;
+    check_device(options, args, false)?;
     let device = options.device.as_ref().unwrap();
     assert!(
         !(args.stopped && args.running),
@@ -77,7 +77,7 @@ pub async fn cmd_reboot(
     );
     let reboot_args = args.into();
     if options.verbose {
-        println!("Rebooting device: {device}");
+        println!("Rebooting device:\n  {device}");
     } else {
         println!("Rebooting device...");
     }
@@ -99,7 +99,7 @@ pub async fn cmd_reset(
     options: &Options,
     args: &args::control::ControlResetArgs,
 ) -> Result<(), Error> {
-    check_device(options, args)?;
+    check_device(options, args, true)?;
     let _device = options.device.as_ref().unwrap();
     Err(Error::Unimplemented("control reset".to_string()))
 }
@@ -108,7 +108,7 @@ pub async fn cmd_select(
     options: &Options,
     args: &args::control::ControlSelectArgs,
 ) -> Result<(), Error> {
-    check_device(options, args)?;
+    check_device(options, args, true)?;
     let _device = options.device.as_ref().unwrap();
     Err(Error::Unimplemented("control select".to_string()))
 }
@@ -117,7 +117,7 @@ pub async fn cmd_gpio(
     options: &Options,
     args: &args::control::ControlGpioArgs,
 ) -> Result<(), Error> {
-    check_device(options, args)?;
+    check_device(options, args, true)?;
     let _device = options.device.as_ref().unwrap();
     Err(Error::Unimplemented("control gpio".to_string()))
 }
@@ -140,7 +140,7 @@ pub async fn cmd_poke_memory(
     options: &Options,
     args: &args::control::ControlPokeMemoryArgs,
 ) -> Result<(), Error> {
-    check_device(options, args)?;
+    check_device(options, args, false)?;
     let device = options.device.as_ref().unwrap();
 
     let data = poke_data(args.byte, args.input.as_ref())?;
@@ -157,6 +157,7 @@ pub async fn cmd_poke_live(
     options: &Options,
     args: &args::control::ControlPokeLiveArgs,
 ) -> Result<(), Error> {
+    check_device(options, args, true)?;
     let data = poke_data(args.byte, args.input.as_ref())?;
     let (address, _length) =
         check_live_read_write(options, args.address, Some(data.len() as u32), args)?;
@@ -291,7 +292,7 @@ fn validate_erase_ranges(ranges: &[(u32, u32)]) -> Result<(), Error> {
 fn confirm_erase(options: &Options, device: &Device, ranges: &[(u32, u32)]) -> Result<bool, Error> {
     let total_kb = ranges.iter().map(|(_, s)| s).sum::<u32>() / 1024;
     println!(
-        "This will erase {total_kb}KB across {} range(s) on device: {device}",
+        "This will erase {total_kb}KB across {} range(s) on device:\n  {device}",
         ranges.len()
     );
     if options.verbose {
@@ -381,7 +382,7 @@ pub async fn cmd_erase(
     options: &mut Options,
     args: &args::control::ControlEraseArgs,
 ) -> Result<(), Error> {
-    check_device(options, args)?;
+    check_device(options, args, false)?;
 
     let ranges = build_erase_ranges(args)?;
     validate_erase_ranges(&ranges)?;
@@ -394,7 +395,7 @@ pub async fn cmd_erase(
     if !args.no_reboot {
         ensure_stopped(options).await?;
     } else if options.verbose {
-        println!("BNot rebooting before erase");
+        println!("Not rebooting before erase");
     }
     erase_ranges(options, &ranges).await?;
     if !args.no_reboot {

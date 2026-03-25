@@ -80,6 +80,7 @@ pub async fn enumerate_devices(
             device_info: info,
             onerom: None,
             state: DeviceState::Unknown,
+            usb_can_run: false,
         };
 
         if let Err(e) = read_device_info(&mut device).await {
@@ -181,6 +182,11 @@ pub struct RebootArgs {
     /// Whether to reboot using "fast" mode (i.e. don't wait for USB device
     /// re-enumeration to take place)
     pub fast: bool,
+
+    /// Whether to check that the device is capable of rebooting into running
+    /// mode, before attempting to do so.  Not done for the program command,
+    /// but is done for the reboot command.
+    pub check_usb_can_run: bool,
 }
 
 impl RebootArgs {
@@ -188,13 +194,15 @@ impl RebootArgs {
         Self {
             mode: RebootMode::Stopped { msd },
             fast,
+            check_usb_can_run: false,
         }
     }
 
-    pub fn running(fast: bool) -> Self {
+    pub fn running(fast: bool, check_usb_can_run: bool) -> Self {
         Self {
             mode: RebootMode::Running,
             fast,
+            check_usb_can_run,
         }
     }
 
@@ -202,6 +210,7 @@ impl RebootArgs {
         Self {
             mode: RebootMode::None,
             fast: false,
+            check_usb_can_run: false,
         }
     }
 
@@ -212,6 +221,11 @@ impl RebootArgs {
 
 /// Reboot the chosen One ROM
 pub async fn reboot(device: &Device, args: &RebootArgs) -> Result<(), Error> {
+    // Check we can actually reboot into running mode if requested
+    if args.mode == RebootMode::Running && args.check_usb_can_run && !device.usb_can_run() {
+        return Err(Error::NoRebootIntoRunning(device.to_string()));
+    }
+
     let mut picoboot = get_picoboot(device, false).await?;
 
     // Early return Ok(()) if no reboot requested

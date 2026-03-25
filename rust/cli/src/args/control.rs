@@ -90,8 +90,7 @@ pub enum ControlCommands {
     /// Select the active ROM slot (not yet supported).
     ///
     /// Switches the device to serving the specified image slot. This takes
-    /// effect immediately but does not persist across power cycles unless
-    /// the device firmware is configured to do so.
+    /// effect immediately but does not persist across power cycles unless.
     ///
     /// Example:
     ///
@@ -125,7 +124,7 @@ pub enum ControlCommands {
     /// Use with extreme caution while One ROM is running.  Erasing the core
     /// firmware or the system plugin's flash will cause the USB stack to be
     /// non-functional, requiring manually forcing into BOOTSEL mode using One
-    /// ROM's header pins.  In addition, erasing flash causes the device to
+    /// ROM's header pins.  In addition, erasing flash causes One ROM to
     /// temporarily suspend interrupts and cause flash to become inaccessible.
     /// Anything else running from flash (like a user plugin) may well crash
     /// as a result.
@@ -210,15 +209,16 @@ impl CommandTrait for ControlLedFlameArgs {
 #[derive(Debug, Args, Clone)]
 #[command(group = ArgGroup::new("reboot_mode").required(false).multiple(false))]
 pub struct ControlRebootArgs {
-    /// Reboot the device into stopped (bootloader) state
+    /// Reboot One ROM into stopped (bootloader) state
     #[arg(long, short = 'p', group = "reboot_mode")]
     pub stopped: bool,
 
-    /// Reboot the device into running (byte serving) state (default).
+    /// Reboot One ROM into running (byte serving) state (default).
     #[arg(long, short, group = "reboot_mode")]
     pub running: bool,
 
-    /// Don't pause after reboot for the device to re-enumerate
+    /// Don't pause after reboot for One ROM to re-enumerate (reappear)
+    /// on the USB bus.
     #[arg(long)]
     pub fast: bool,
 
@@ -239,7 +239,7 @@ impl From<&ControlRebootArgs> for RebootArgs {
             RebootArgs::stopped(args.msd, args.fast)
         } else {
             // Default if unspecified
-            RebootArgs::running(args.fast)
+            RebootArgs::running(args.fast, true)
         }
     }
 }
@@ -340,16 +340,16 @@ pub struct ControlEraseArgs {
     #[arg(long, visible_aliases = ["len", "size"], value_name = "LENGTH", value_parser = parse_u32, action = clap::ArgAction::Append, conflicts_with = "all")]
     pub length: Vec<u32>,
 
-    /// Do not reboot before or after erasing.  This can be risky, if the
-    /// device is actively accessing the flash range being erased.
+    /// Do not reboot before or after erasing.  This can be risky, if
+    /// One ROM is actively accessing the flash range being erased.
     #[arg(long, short, conflicts_with = "reboot_mode")]
     pub no_reboot: bool,
 
-    /// Reboot into stopped (bootloader) mode after erasing.
+    /// Reboot One ROM into stopped (bootloader) mode after erasing.
     #[arg(long, short = 'p', conflicts_with = "reboot_running")]
     pub reboot_stopped: bool,
 
-    /// Reboot into running mode after erasing.
+    /// Reboot One ROM into running mode after erasing.
     #[arg(long, short = 'r', conflicts_with = "reboot_stopped")]
     pub reboot_running: bool,
 
@@ -357,7 +357,8 @@ pub struct ControlEraseArgs {
     #[arg(long, short = 'm', requires = "reboot_stopped")]
     pub msd: bool,
 
-    /// Don't pause after reboot for the device to re-enumerate
+    /// Don't pause after reboot for One ROM to re-enumerate (reappear)
+    /// on the USB bus.
     #[arg(long, requires = "reboot_mode")]
     pub fast: bool,
 }
@@ -373,7 +374,7 @@ impl From<&ControlEraseArgs> for RebootArgs {
         if args.reboot_stopped {
             RebootArgs::stopped(args.msd, args.fast)
         } else if args.reboot_running {
-            RebootArgs::running(args.fast)
+            RebootArgs::running(args.fast, true)
         } else {
             RebootArgs::none()
         }
@@ -385,12 +386,18 @@ impl From<&ControlEraseArgs> for RebootArgs {
 pub enum ControlPokeCommands {
     /// Write a single byte or binary file to One ROM's SRAM.
     ///
-    /// Writes data directly to the device's SRAM at the specified address.
+    /// Writes data directly to One ROM's SRAM at the specified address.
     /// This is a transient operation — changes are lost on reboot.
     ///
-    /// The address must be a valid SRAM address. When writing a file, the
-    /// entire file contents are written starting at the given address. When
-    /// writing a single byte, only that byte is written.
+    /// The address must be a valid SRAM address.
+    ///
+    /// If One ROM is running, virtual addresses are available. For example
+    /// 0x90000000 is the start of One ROM's live ROM image.  Prefer 'live'
+    /// over 'memory' for poking the live ROM image.
+    ///
+    /// When writing a file, the entire file contents are written starting
+    /// at the given address. When writing a single byte, only that byte is
+    /// written.
     ///
     /// Note: writing to arbitrary SRAM addresses can corrupt firmware state.
     /// Use with caution.

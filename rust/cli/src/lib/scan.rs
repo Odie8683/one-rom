@@ -35,5 +35,7 @@ pub async fn scan(options: &Options, board_filter: Option<Board>) -> Result<Vec<
         devices.retain(|d| d.serial == device.serial);
     }
 
+    devices.sort_by_key(|d| d.sort_key());
+
     Ok(devices)
 }

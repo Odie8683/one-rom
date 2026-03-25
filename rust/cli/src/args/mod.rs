@@ -76,7 +76,7 @@ pub trait CommandTrait {
 /// Most CLI commands take either --board to identify the One ROM's board
 /// type, or --serial to infer it directly from the specified One ROM.  If only
 /// a single One ROM is connected and it can be identifed automatically,
-/// neither --board or --device are needed.  --board can be supplied to override
+/// neither --board or --serial are needed.  --board can be supplied to override
 /// the current connected One ROM's board type.
 ///
 /// Unprogrammed and unrecognised (e.g. bricked) One ROMs can be managed by
@@ -202,6 +202,7 @@ impl Cli {
         if let Commands::Scan(scan) = &mut self.command {
             // Save off the serial for special handling in the scan case.
             scan.serial = self.serial.clone();
+            return Ok(options);
         } else if let Some(serial) = self.serial.as_ref() {
             if options.verbose {
                 println!("Scanning for device with serial '{}' ...", serial);

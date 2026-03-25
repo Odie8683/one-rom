@@ -20,12 +20,16 @@ use clap::Args;
 #[derive(Debug, Args)]
 pub struct ScanArgs {
     /// Only show devices matching this board type (e.g. fire-24-e).
-    #[arg(long, value_name = "BOARD")]
+    #[arg(long, value_name = "BOARD", conflicts_with = "list_boards")]
     pub board: Option<String>,
 
     /// List all known board types.
-    #[arg(long, conflicts_with = "board")]
+    #[arg(long)]
     pub list_boards: bool,
+
+    /// Show the slot contents for each One ROM found.
+    #[arg(long, visible_alias = "slot", conflicts_with = "list_boards")]
+    pub slots: bool,
 
     // Private argument to pass the serial from the parent command for
     // filtering in the scan command.

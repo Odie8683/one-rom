@@ -190,7 +190,7 @@ impl From<&ProgramArgs> for RebootArgs {
         } else if args.stopped {
             RebootArgs::stopped(args.msd, args.fast)
         } else {
-            RebootArgs::running(args.fast)
+            RebootArgs::running(args.fast, false)
         }
     }
 }

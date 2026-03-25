@@ -14,7 +14,7 @@ use sdrr_fw_parser::SdrrCsState;
 
 pub async fn cmd_info(options: &Options, args: &InspectInfoArgs) -> Result<(), Error> {
     // Print the device summary
-    check_device(options, args)?;
+    check_device(options, args, false)?;
     let device = options.device.as_ref().unwrap();
 
     println!("{device}");
@@ -39,25 +39,30 @@ pub async fn cmd_info(options: &Options, args: &InspectInfoArgs) -> Result<(), E
 }
 
 pub async fn cmd_telemetry(options: &Options, args: &InspectTelemetryArgs) -> Result<(), Error> {
-    check_device(options, args)?;
+    check_device(options, args, true)?;
     let _device = options.device.as_ref().unwrap();
     Err(Error::Unimplemented("inspect telemetry".into()))
 }
 
-pub async fn cmd_slots(options: &Options, args: &InspectSlotsArgs) -> Result<(), Error> {
-    check_device(options, args)?;
-    let device = options.device.as_ref().unwrap();
-    let active_rom_set_index = device.get_active_rom_set_index();
-
+pub fn output_slot_info(device: &Device, options: &Options, prefix: &str) -> Result<(), Error> {
+    print!("{prefix}");
     println!("{device}");
+    let active_rom_set_index = device.get_active_rom_set_index();
     if let Some(onerom) = device.onerom.as_ref()
         && let Some(info) = onerom.flash.as_ref()
     {
         let verbose = options.verbose;
         let set_count = info.rom_set_count;
+        let active_str = if let Some(active_set) = active_rom_set_index {
+            format!(" - Slot {active_set} is active")
+        } else {
+            "".to_string()
+        };
+        print!("{prefix}");
         println!(
-            "Configured with {set_count} slot{}:",
-            if set_count == 1 { "" } else { "s" }
+            "  Configured with {set_count} slot{}{}",
+            if set_count == 1 { "" } else { "s" },
+            active_str
         );
         for (i, set) in info.rom_sets.iter().enumerate() {
             let active = if Some(i as u8) == active_rom_set_index {
@@ -65,12 +70,15 @@ pub async fn cmd_slots(options: &Options, args: &InspectSlotsArgs) -> Result<(),
             } else {
                 ""
             };
+            print!("{prefix}");
             println!("  Slot {i}{active}:");
             let set_location = set.data_ptr;
             let set_image_size = set.size;
             if let Some(overrides) = &set.firmware_overrides {
+                print!("{prefix}");
                 println!("    Firmware overrides:");
                 if let Some(led) = &overrides.led {
+                    print!("{prefix}");
                     println!(
                         "      Status LED: {}",
                         if led.enabled { "on" } else { "off" }
@@ -78,22 +86,28 @@ pub async fn cmd_slots(options: &Options, args: &InspectSlotsArgs) -> Result<(),
                 }
                 if let Some(fire) = &overrides.fire {
                     if let Some(freq) = fire.cpu_freq {
+                        print!("{prefix}");
                         println!("      CPU frequency: {freq}");
                     }
                     if let Some(vreg) = &fire.vreg {
+                        print!("{prefix}");
                         println!("      CPU voltage: {vreg}");
                     }
                     if let Some(serve_mode) = &fire.serve_mode {
+                        print!("{prefix}");
                         println!("      Serve mode: {serve_mode}");
                     }
                     if !fire.rom_dma_preload {
+                        print!("{prefix}");
                         println!("      ROM DMA preload disabled");
                     }
                     if fire.force_16_bit {
+                        print!("{prefix}");
                         println!("      Force 16-bit ROM enabled",);
                     }
                 }
                 if let Some(debug) = &overrides.swd {
+                    print!("{prefix}");
                     println!(
                         "      SWD: {}",
                         if debug.swd_enabled { "on" } else { "off" }
@@ -113,13 +127,16 @@ pub async fn cmd_slots(options: &Options, args: &InspectSlotsArgs) -> Result<(),
                     cs.push_str(&format!("Chip Select 3: {} ", rom.cs3_state));
                 }
                 let rom_type = rom.rom_type;
+                print!("{prefix}");
                 println!("    Chip {j}: {rom_type} {cs}");
                 if verbose {
+                    print!("{prefix}");
                     println!(
                         "      Flash location 0x{set_location:08x} size 0x{set_image_size:08x} bytes"
                     );
                 }
                 if let Some(filename) = &rom.filename {
+                    print!("{prefix}");
                     println!("      Image source: {filename}");
                 }
             }
@@ -132,8 +149,15 @@ pub async fn cmd_slots(options: &Options, args: &InspectSlotsArgs) -> Result<(),
     }
 }
 
+pub async fn cmd_slots(options: &Options, args: &InspectSlotsArgs) -> Result<(), Error> {
+    check_device(options, args, false)?;
+    let device = options.device.as_ref().unwrap();
+
+    output_slot_info(device, options, "")
+}
+
 pub async fn cmd_image(options: &Options, args: &InspectImageArgs) -> Result<(), Error> {
-    check_device(options, args)?;
+    check_device(options, args, false)?;
     let _device = options.device.as_ref().unwrap();
     Err(Error::Unimplemented("inspect image".into()))
 }
@@ -170,13 +194,13 @@ pub async fn cmd_peek_live(options: &Options, args: &InspectPeekLiveArgs) -> Res
 }
 
 pub async fn cmd_peek_memory(options: &Options, args: &InspectPeekMemoryArgs) -> Result<(), Error> {
-    check_device(options, args)?;
+    check_device(options, args, false)?;
     let device = options.device.as_ref().unwrap();
     read_and_output(device, args.address, args.length, 0, args.output.as_ref()).await
 }
 
 pub async fn cmd_gpio(options: &Options, args: &InspectGpioArgs) -> Result<(), Error> {
-    check_device(options, args)?;
+    check_device(options, args, true)?;
     let _device = options.device.as_ref().unwrap();
     Err(Error::Unimplemented("inspect gpio".into()))
 }

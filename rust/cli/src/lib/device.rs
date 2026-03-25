@@ -4,7 +4,7 @@
 
 //! Device selection logic.
 //!
-//! Provides a single entry point for resolving a --device selector (or the
+//! Provides a single entry point for resolving a --serial selector (or the
 //! implicit single-device case) to a connected One ROM device.
 
 use log::debug;
@@ -53,7 +53,11 @@ pub struct Device {
     pub device_info: DeviceInfo,
     /// One ROM device information, if present on the device
     pub onerom: Option<Sdrr>,
+    /// Running or stopped.
     pub state: DeviceState,
+    /// Whether this device is capable of running One ROM firmware while
+    /// plugged into USB
+    pub usb_can_run: bool,
 }
 
 impl std::fmt::Display for Device {
@@ -109,27 +113,51 @@ impl Device {
         self.state == DeviceState::Running
     }
 
+    pub fn usb_can_run(&self) -> bool {
+        self.usb_can_run
+    }
+
     pub fn update_onerom(&mut self, onerom: Sdrr) {
         self.onerom = Some(onerom);
         self.update_state();
     }
 
+    // Figure out the device state from the presence of the One ROM device
+    // information
     fn update_state(&mut self) {
-        // Figure out the device state from the presence of the One ROM device
-        // information
-        self.state = match self.onerom.as_ref() {
-            None => DeviceState::Unknown,
-            Some(onerom) => match onerom.ram.as_ref() {
-                None if onerom.flash.is_some() => DeviceState::Stopped,
-                None => DeviceState::Unknown,
-                Some(runtime_info) => match runtime_info.limp_mode.as_ref() {
-                    Some(limp_mode) if *limp_mode != sdrr_fw_parser::types::LimpMode::None => {
-                        DeviceState::Limp
-                    }
-                    _ => DeviceState::Running,
-                },
-            },
-        };
+        self.usb_can_run = false;
+        self.state = DeviceState::Unknown;
+
+        // Did we retrieve any valid One ROM information?
+        if self.onerom.is_none() {
+            // Nope.
+            return;
+        }
+        let onerom = self.onerom.as_ref().unwrap();
+
+        if onerom.flash.is_none() {
+            // No valid flash information.
+            return;
+        }
+        let flash = onerom.flash.as_ref().unwrap();
+
+        if let Some(runtime_info) = &onerom.ram {
+            // Is it actually running, or is it limping?
+            self.state = match runtime_info.limp_mode.as_ref() {
+                Some(limp_mode) if *limp_mode != sdrr_fw_parser::types::LimpMode::None => {
+                    DeviceState::Limp
+                }
+                _ => DeviceState::Running,
+            }
+        } else {
+            // We have a valid firmware but it is not running.  We don't know
+            // if it's capable of running yet.
+            self.state = DeviceState::Stopped;
+        }
+
+        // Now figure out whether it's capable of running while plugged into
+        // USB.
+        self.usb_can_run = flash.is_usb_run_capable();
     }
 
     pub fn get_active_rom_set_index(&self) -> Option<u8> {
@@ -166,6 +194,21 @@ impl Device {
     /// supports * and ? wildcards
     pub fn matches_serial(&self, pattern: &str) -> bool {
         matches_serial(self.serial.as_deref(), pattern)
+    }
+
+    /// Returns a sort key for this device, which sorts first by board type (with
+    /// unrecognised devices sorted last) and then by serial number (with devices
+    /// with no serial sorted last).
+    pub fn sort_key(&self) -> (String, String) {
+        let board = self
+            .onerom
+            .as_ref()
+            .and_then(|o| o.flash.as_ref())
+            .and_then(|f| f.board.as_ref())
+            .map(|b| b.model().to_string())
+            .unwrap_or_else(|| "~".to_string()); // sorts after Z
+        let serial = self.serial.clone().unwrap_or_else(|| "~".to_string());
+        (board, serial)
     }
 }
 

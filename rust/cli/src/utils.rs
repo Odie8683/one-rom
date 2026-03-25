@@ -57,9 +57,17 @@ pub fn check_device_nand_board(options: &Options, board_arg: &Option<String>) ->
 }
 
 /// Checks that a device is required and present if the command needs one.
-pub fn check_device(options: &Options, args: &impl CommandTrait) -> Result<(), Error> {
+pub fn check_device(
+    options: &Options,
+    args: &impl CommandTrait,
+    must_be_run_capable: bool,
+) -> Result<(), Error> {
     if args.requires_device() && options.device.is_none() {
         return Err(Error::NoDevice);
+    }
+    let device = options.device.as_ref().unwrap();
+    if must_be_run_capable && !device.usb_can_run {
+        return Err(Error::CannotRun(device.to_string()));
     }
     Ok(())
 }
@@ -164,7 +172,7 @@ pub fn check_live_read_write(
     length: Option<u32>,
     args: &impl CommandTrait,
 ) -> Result<(u32, u32), Error> {
-    check_device(options, args)?;
+    check_device(options, args, true)?;
     let device = options.device.as_ref().unwrap();
 
     if device.state != DeviceState::Running {

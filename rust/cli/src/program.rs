@@ -200,7 +200,7 @@ pub async fn cmd_program(
     args: &args::program::ProgramArgs,
 ) -> Result<(), Error> {
     validate_program_args(args)?;
-    check_device(options, args)?;
+    check_device(options, args, false)?;
 
     // Board must be resolved before acquire_program_image so it is available
     // for chip type validation when parsing --slot arguments.
