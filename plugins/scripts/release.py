@@ -276,11 +276,7 @@ def main():
             "sha256":       sha256,
             "api_version":  header["api_version"],
             "plugin_type":  header["plugin_type"],
-            "min_fw_version": {
-                "major": header["min_fw_major"],
-                "minor": header["min_fw_minor"],
-                "patch": header["min_fw_patch"],
-            },
+            "min_fw_version": f"{header['min_fw_major']}.{header['min_fw_minor']}.{header['min_fw_patch']}",
         }
 
         plugin_manifest["releases"].insert(0, new_release)
