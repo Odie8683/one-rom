@@ -1,0 +1,6 @@
+{
+    "name": "usb",
+    "display_name": "One ROM USB",
+    "description": "Adds live USB support to One ROM",
+    "build_output": "build/usb_system_plugin.bin"
+}
