@@ -820,6 +820,11 @@ impl ChipSet {
 
         // Single chip image.
         assert!(self.chips.len() == 1);
+        let chip = &self.chips[0];
+        if chip.chip_type().is_plugin() {
+            // For plugins, the image size is always 64KB.
+            return 65536;
+        }
         match (board_pins, family) {
             (24, McuFamily::Stm32f4) => {
                 assert!(num_addr_pins == 13);
@@ -841,7 +846,6 @@ impl ChipSet {
                     // This firmware supports 18 address pins, but only the
                     // first 16 are used for chip types other than 231024.
                     assert!(num_addr_pins == 18);
-                    let chip = &self.chips[0];
                     match chip.chip_type() {
                         ChipType::Chip231024 => 2_usize.pow(18), // 256KB
                         _ => 2_usize.pow(16),                    // 64KB
