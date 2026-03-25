@@ -232,10 +232,9 @@ pb_status_t app_retrieve_pin_layout(
         layout->min_addr_pin++;
         layout->addr_gpio[16] += 19;
     } else if (layout->chip_pins == 40 && layout->rom_type == CHIP_TYPE_27C400) {
-        // At least with fire-40-a, we need to move addr[0] from pin 18 to 37
-        // (i.e. +19)
-        layout->min_addr_pin++;
-        layout->addr_gpio[0] += 19;
+        // Althought A0(A-1) is not really at the configured GPIO on the
+        // fire-40-a board, it is effectively, as the PIO algorithm works
+        // around this.  So leave the mapping as is.
     }
 
     return PB_STATUS_OK;
