@@ -12,6 +12,7 @@ mod args;
 mod control;
 mod firmware;
 mod inspect;
+mod plugin;
 mod program;
 mod scan;
 mod update;
@@ -55,6 +56,7 @@ async fn sub_main() -> Result<(), Error> {
             FirmwareCommands::Chips(args) => firmware::cmd_chips(&options, args).await,
             FirmwareCommands::Program(args) => program::cmd_program(&mut options, args).await,
         },
+        Commands::Plugin(args) => plugin::cmd_plugin(&options, args).await,
         Commands::Program(args) => program::cmd_program(&mut options, args).await,
         Commands::Inspect(args) => match &args.command {
             InspectCommands::Info(args) => inspect::cmd_info(&options, args).await,

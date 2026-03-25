@@ -25,6 +25,7 @@
 pub mod control;
 pub mod firmware;
 pub mod inspect;
+pub mod plugin;
 pub mod program;
 pub mod scan;
 pub mod update;
@@ -52,6 +53,7 @@ use inspect::{
     InspectPeekArgs, InspectPeekCommands, InspectPeekLiveArgs, InspectPeekMemoryArgs,
     InspectSlotsArgs, InspectTelemetryArgs,
 };
+use plugin::PluginArgs;
 use program::ProgramArgs;
 use scan::ScanArgs;
 use update::{UpdateArgs, UpdateCommands, UpdateCommitArgs, UpdateOtpArgs, UpdateSlotArgs};
@@ -376,9 +378,21 @@ pub enum Commands {
     Reboot(ControlRebootArgs),
 
     /// Build, inspect, and manage One ROM firmware binaries.
+    ///
+    /// Used to build complete One ROM firmware binaries from configuraton files,
+    /// command line configuation, and also inspect firmware binaries.
+    ///
+    /// Use `program` to flash firmware to a One ROM - `program` can also
+    /// build the firmware as part of the programming process.
     #[command(
         subcommand_value_name = "COMMAND",
         subcommand_help_heading = "Commands"
     )]
     Firmware(FirmwareArgs),
+
+    /// List available One ROM plugins.
+    ///
+    /// Displays plugins from the release manifest with version and minimum
+    /// firmware version information.
+    Plugin(PluginArgs),
 }

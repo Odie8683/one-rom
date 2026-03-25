@@ -149,6 +149,24 @@ pub struct FirmwareBuildArgs {
     )]
     pub slot: Vec<String>,
 
+    /// Plugin specification. May be repeated for multiple plugins.
+    ///
+    /// A maximum of one system plugin and one user plugin is supported.
+    /// A user plugin requires a system plugin.
+    /// System plugins are always placed in slot 0, user plugins in slot 1.
+    ///
+    /// Mutually exclusive with --config-file.
+    ///
+    /// Forms:
+    ///   --plugin usb                       latest compatible version by name
+    ///   --plugin system/usb                with explicit type
+    ///   --plugin usb,version=0.1.0         pinned version
+    ///   --plugin file=path/to/plugin.bin   local or remote file
+    ///   --plugin file=https://example.com/plugin.bin
+    ///
+    #[arg(long, value_name = "SPEC", conflicts_with = "config_file")]
+    pub plugin: Vec<String>,
+
     /// Name for the generated ROM configuration.
     ///
     /// Mutually exclusive with --config-file.

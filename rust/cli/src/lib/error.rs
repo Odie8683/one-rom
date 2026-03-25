@@ -131,6 +131,45 @@ pub enum Error {
         "The selected One ROM does not support being rebooted into running mode.\n  {0}\n  The firmware may be too old, or the USB system plugin may not be present."
     )]
     NoRebootIntoRunning(String),
+
+    #[error("Hit a network error accessing URL {0}.\n  {1}")]
+    Network(String, String),
+
+    #[error("Hit an HTTP error accessing URL {0}.\n  Status code {1}")]
+    Http(String, u16),
+
+    #[error("Hit an error parsing JSON from {0}.\n  {1}")]
+    Json(String, String),
+
+    #[error(
+        "A {0} plugin has already been specified.\n  At most one system plugin and one user plugin are supported."
+    )]
+    DuplicatePlugin(String),
+
+    #[error(
+        "A user plugin was specified without a system plugin.\n  A system plugin is required when using a user plugin."
+    )]
+    UserPluginWithoutSystem,
+
+    #[error(
+        "Plugin binary is too large to fit in a plugin slot.\n  {0} bytes supplied vs {1} bytes maximum"
+    )]
+    PluginTooLarge(usize, usize),
+
+    #[error(
+        "Plugin '{0}' not found in the release manifest.\n  Use 'onerom plugin' to list available plugins."
+    )]
+    PluginNotFound(String),
+
+    #[error(
+        "Plugin '{0}' version '{1}' not found in the release manifest.\n  Use 'onerom plugin --all-versions' to list available versions."
+    )]
+    PluginVersionNotFound(String, String),
+
+    #[error(
+        "Plugin '{0}' version '{1}' requires firmware {2} or later.\n  The selected firmware version is {3}."
+    )]
+    PluginIncompatible(String, String, String, String),
 }
 
 impl Error {

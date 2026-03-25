@@ -13,6 +13,7 @@ use clap::ValueEnum;
 pub mod device;
 pub mod error;
 pub mod picobootx;
+pub mod plugin;
 pub mod scan;
 pub mod slot;
 pub mod usb;
