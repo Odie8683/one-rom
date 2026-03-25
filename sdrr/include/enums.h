@@ -64,7 +64,11 @@ const char * const chip_type_strings[NUM_CHIP_TYPES] = {
     "27C080",
     "27C400",
     "6116",
-    "Plugin"
+    "27C301",
+    "System Plugin",
+    "User Plugin",
+    "PIO Plugin",
+    "SST39SF040"
 };
 _Static_assert(sizeof(chip_type_strings)/sizeof(chip_type_strings[0]) == NUM_CHIP_TYPES,
                "chip_type_strings size doesn't match NUM_CHIP_TYPES");

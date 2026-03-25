@@ -4,7 +4,6 @@
 //
 // MIT License
 
-#define RP235X_INCLUDES
 #include "include.h"
 
 #if defined(RP235X)
@@ -1095,48 +1094,5 @@ void setup_xosc(void) {
     while ((CLOCK_REF_SELECTED & CLOCK_REF_SRC_SEL_XOSC) != CLOCK_REF_SRC_SEL_XOSC);
 }
 #endif // !TEST_BUILD
-
-uint8_t initial_plugin_parse(uint8_t *disable_vbus_det) {
-    uint8_t plugins = 0;
-    *disable_vbus_det = 0;
-
-    if (sdrr_info.metadata_header->rom_set_count >= 1) {
-        const sdrr_rom_set_t *set = &sdrr_info.metadata_header->rom_sets[0];
-        if (set->roms[0]->rom_type == CHIP_TYPE_SYSTEM_PLUGIN) {
-            const ora_plugin_header_t *header = (ora_plugin_header_t *)(uintptr_t)(set->data);
-            if (check_plugin_valid(header, ORA_PLUGIN_TYPE_SYSTEM, 0)) {
-                *disable_vbus_det = header->overrides1 & ORA_OVERRIDE1_DISABLE_VBUS_DETECT ? 1 : 0;
-                LOG("Valid plugin detected, disable_vbus_det=%d", *disable_vbus_det);
-            }
-
-            // Have system plugin (1)
-            plugins |= 1;
-        } else {
-            DEBUG("ROM is not a plugin, skipping plugin parsing");
-        }
-
-        if (sdrr_info.metadata_header->rom_set_count > 1) {
-            const sdrr_rom_set_t *other_set = &sdrr_info.metadata_header->rom_sets[1];
-            if (other_set->roms[0]->rom_type == CHIP_TYPE_USER_PLUGIN) {
-                if (plugins & 0x01) {
-                    // Have user plugin (2) so check it
-                    const ora_plugin_header_t *header = (ora_plugin_header_t *)(uintptr_t)(set->data);
-                    if (check_plugin_valid(header, ORA_PLUGIN_TYPE_USER, 1)) {
-                        *disable_vbus_det = header->overrides1 & ORA_OVERRIDE1_DISABLE_VBUS_DETECT ? 1 : 0;
-                        LOG("Valid plugin detected, disable_vbus_det=%d", *disable_vbus_det);
-                    }
-                    DEBUG("User plugin");
-                    plugins |= 2;
-                } else {
-                    ERR("Ignoring user plugin without system plugin");
-                }
-            }
-        }
-    } else {
-        DEBUG("No ROM sets defined, skipping plugin parsing");
-    }
-
-    return plugins;
-}
 
 #endif // RP235X

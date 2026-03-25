@@ -8,51 +8,7 @@
 
 #if defined(RP235X)
 
-#define RP235X_INCLUDES
-
 #include "plugin.h"
-
-uint8_t check_plugin_valid(
-    const ora_plugin_header_t *header,
-    const ora_plugin_type_t expected_type,
-    uint8_t index
-) {
-    if (header->magic != ORA_PLUGIN_MAGIC) {
-        ERR("ORA badmagic 0x%08x", header->magic);
-        return 0;
-    }
-    if (header->api_version != ORA_PLUGIN_VERSION_1) {
-        ERR("ORA version 0x%08x", header->api_version);
-        return 0;
-    }
-    if (header->plugin_type != expected_type) {
-        ERR("ORA type %d, expected %d", header->plugin_type, expected_type);
-        return 0;
-    }
-
-    // A plugin is expected to be located at 0x10010000, 0x10020000, etc based
-    // on the specific ROM set it is.
-    uint32_t expected_launch_region = (0x1001 + index) << 16;
-    uint32_t entry_addr = (uint32_t)(uintptr_t)header->entry;
-    if ((entry_addr & ~expected_launch_region) >= 0x10000) {
-        ERR("ORA 0x%08x vs ep 0x%08x", entry_addr, expected_launch_region);
-        return 0;
-    }
-
-    uint16_t min_fw_major = header->min_fw_major_version;
-    uint16_t min_fw_minor = header->min_fw_minor_version;
-    uint16_t min_fw_patch = header->min_fw_patch_version;
-    if (min_fw_major > sdrr_info.major_version ||
-        (min_fw_major == sdrr_info.major_version && min_fw_minor > sdrr_info.minor_version) ||
-        (min_fw_major == sdrr_info.major_version && min_fw_minor == sdrr_info.minor_version && min_fw_patch > sdrr_info.patch_version)) {
-        ERR("ORA reqd v%d.%d.%d vs v%d.%d.%d",
-            min_fw_major, min_fw_minor, min_fw_patch,
-            sdrr_info.major_version, sdrr_info.minor_version, sdrr_info.patch_version);
-        return 0;
-    }
-
-    return 1;
-}
 
 #if !defined(TEST_BUILD)
 

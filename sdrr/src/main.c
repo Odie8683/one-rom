@@ -257,6 +257,91 @@ void process_firmware_overrides(
     }
 }
 
+uint8_t check_plugin_valid(
+    const ora_plugin_header_t *header,
+    const ora_plugin_type_t expected_type,
+    uint8_t index
+) {
+    if (header->magic != ORA_PLUGIN_MAGIC) {
+        ERR("ORA badmagic 0x%08x", header->magic);
+        return 0;
+    }
+    if (header->api_version != ORA_PLUGIN_VERSION_1) {
+        ERR("ORA version 0x%08x", header->api_version);
+        return 0;
+    }
+    if (header->plugin_type != expected_type) {
+        ERR("ORA type %d, expected %d", header->plugin_type, expected_type);
+        return 0;
+    }
+
+    // A plugin is expected to be located at 0x10010000, 0x10020000, etc based
+    // on the specific ROM set it is.
+    uint32_t expected_launch_region = (0x1001 + index) << 16;
+    uint32_t entry_addr = (uint32_t)(uintptr_t)header->entry;
+    if ((entry_addr & ~expected_launch_region) >= 0x10000) {
+        ERR("ORA 0x%08x vs ep 0x%08x", entry_addr, expected_launch_region);
+        return 0;
+    }
+
+    uint16_t min_fw_major = header->min_fw_major_version;
+    uint16_t min_fw_minor = header->min_fw_minor_version;
+    uint16_t min_fw_patch = header->min_fw_patch_version;
+    if (min_fw_major > sdrr_info.major_version ||
+        (min_fw_major == sdrr_info.major_version && min_fw_minor > sdrr_info.minor_version) ||
+        (min_fw_major == sdrr_info.major_version && min_fw_minor == sdrr_info.minor_version && min_fw_patch > sdrr_info.patch_version)) {
+        ERR("ORA reqd v%d.%d.%d vs v%d.%d.%d",
+            min_fw_major, min_fw_minor, min_fw_patch,
+            sdrr_info.major_version, sdrr_info.minor_version, sdrr_info.patch_version);
+        return 0;
+    }
+
+    return 1;
+}
+
+uint8_t initial_plugin_parse(uint8_t *disable_vbus_det) {
+    uint8_t plugins = 0;
+    *disable_vbus_det = 0;
+
+    if (sdrr_info.metadata_header->rom_set_count >= 1) {
+        const sdrr_rom_set_t *set = &sdrr_info.metadata_header->rom_sets[0];
+        if (set->roms[0]->rom_type == CHIP_TYPE_SYSTEM_PLUGIN) {
+            const ora_plugin_header_t *header = (ora_plugin_header_t *)(uintptr_t)(set->data);
+            if (check_plugin_valid(header, ORA_PLUGIN_TYPE_SYSTEM, 0)) {
+                *disable_vbus_det = header->overrides1 & ORA_OVERRIDE1_DISABLE_VBUS_DETECT ? 1 : 0;
+                LOG("Valid plugin detected, disable_vbus_det=%d", *disable_vbus_det);
+            }
+
+            // Have system plugin (1)
+            plugins |= 1;
+        } else {
+            DEBUG("ROM is not a plugin, skipping plugin parsing");
+        }
+
+        if (sdrr_info.metadata_header->rom_set_count > 1) {
+            const sdrr_rom_set_t *other_set = &sdrr_info.metadata_header->rom_sets[1];
+            if (other_set->roms[0]->rom_type == CHIP_TYPE_USER_PLUGIN) {
+                if (plugins & 0x01) {
+                    // Have user plugin (2) so check it
+                    const ora_plugin_header_t *header = (ora_plugin_header_t *)(uintptr_t)(set->data);
+                    if (check_plugin_valid(header, ORA_PLUGIN_TYPE_USER, 1)) {
+                        *disable_vbus_det = header->overrides1 & ORA_OVERRIDE1_DISABLE_VBUS_DETECT ? 1 : 0;
+                        LOG("Valid plugin detected, disable_vbus_det=%d", *disable_vbus_det);
+                    }
+                    DEBUG("User plugin");
+                    plugins |= 2;
+                } else {
+                    ERR("Ignoring user plugin without system plugin");
+                }
+            }
+        }
+    } else {
+        DEBUG("No ROM sets defined, skipping plugin parsing");
+    }
+
+    return plugins;
+}
+
 // Needs to do the following:
 // - Set up the clock to 68.8Mhz
 // - Set up GPIO ports A, B and C to inputs
@@ -290,14 +375,20 @@ int firmware_main(void) {
         LOG_INIT();
     }
 
-    uint8_t disable_vbus_det = 0;
-    uint8_t plugins = 0;
-#if defined(RP235X)
     // Do initial plugin parsing.  The system plugin can potentially override
     // USB DFU support, which is why we do it now.
+    //
+    // We have to do this on STM32F4 even though plugins aren't supported,
+    // as we need to know if should skip any plugins when dealing with the image
+    // sel pins.
+    uint8_t disable_vbus_det = 0;
+    uint8_t plugins = 0;
     DEBUG("Initial plugin parse");
     plugins = initial_plugin_parse(&disable_vbus_det);
-#endif // RP235X
+#if defined(STM32F4)
+    // Never disable VBUS detect on STM32F4 as the plugin won't run 
+    disable_vbus_det = 0;
+#endif // STM32F4
 
     // Set up VBUS detect interrupt.  Done next, so we can enter DFU mode as 
     // soon as USB plugged in

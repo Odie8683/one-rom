@@ -83,9 +83,7 @@
 #include "constants.h"
 #include "registers.h"
 
-#if defined(RP235X)
 #include "plugin.h"
-#endif // RP235X
 
 #include "functions.h"
 

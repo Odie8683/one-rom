@@ -185,7 +185,7 @@ impl Builder {
 
     fn validate_config(
         version: &FirmwareVersion,
-        _mcu_family: &Family,
+        mcu_family: &Family,
         config: &Config,
     ) -> Result<()> {
         // Validate version
@@ -479,6 +479,16 @@ impl Builder {
                             error: format!("Chip {} location start + length overflows", chip_num),
                         });
                     }
+                }
+
+                // Check for plugins on Ice (not supported)
+                if chip.chip_type.is_plugin() && *mcu_family == Family::Stm32f4 {
+                    return Err(Error::InvalidConfig {
+                        error: format!(
+                            "Plugins are not supported on Ice (Chip {})",
+                            chip_num
+                        ),
+                    });
                 }
 
                 chip_num += 1;
