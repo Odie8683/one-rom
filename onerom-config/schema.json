@@ -140,8 +140,7 @@
                 },
                 "size_handling": {
                     "description": "Optional size handling configuration for this Chip.  Used to specify\nhandling when the image supplied isn't the correct size for this Chip\ntype.",
-                    "$ref": "#/$defs/SizeHandling",
-                    "default": "none"
+                    "$ref": "#/$defs/SizeHandling"
                 },
                 "type": {
                     "description": "Type of ROM",
@@ -405,21 +404,18 @@
                 },
                 "force_16_bit": {
                     "description": "Optional Force 16 bit mode.  Only supported on One ROM 40, and if set\nthis _disables_ of the /BYTE pin to indicate 8-bit mode, forcing the\nROM to always operate in 16-bit mode.  This is a higher performance\nmode, as the algorithm can read the address lines 33% more frequently,\nbut obviously disables the used of 8-bit mode.",
-                    "type": "boolean",
-                    "default": false
+                    "type": "boolean"
                 },
                 "overclock": {
                     "description": "Whether overclocking is enabled",
                     "type": [
                         "boolean",
                         "null"
-                    ],
-                    "default": null
+                    ]
                 },
                 "rom_dma_preload": {
                     "description": "Optional DMA ROM preload enable/disable",
-                    "type": "boolean",
-                    "default": true
+                    "type": "boolean"
                 },
                 "serve_mode": {
                     "description": "Optional PIO/CPU override",
@@ -441,8 +437,7 @@
                         {
                             "type": "null"
                         }
-                    ],
-                    "default": null
+                    ]
                 }
             }
         },
@@ -585,8 +580,7 @@
                     "type": [
                         "boolean",
                         "null"
-                    ],
-                    "default": null
+                    ]
                 }
             }
         },
