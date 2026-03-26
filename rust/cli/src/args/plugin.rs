@@ -6,12 +6,11 @@
 
 use crate::args::CommandTrait;
 use clap::Args;
-use onerom_cli::plugin::canonical_plugin_type;
+use onerom_cli::plugin::PluginType;
 
 // args/plugin.rs
-fn parse_plugin_type(s: &str) -> Result<String, String> {
-    canonical_plugin_type(s)
-        .map(|_| s.to_string())
+fn parse_plugin_type(s: &str) -> Result<PluginType, String> {
+    PluginType::try_from_str(s)
         .ok_or_else(|| format!("invalid plugin type '{s}': expected 'system' or 'user'"))
 }
 
@@ -43,7 +42,7 @@ pub struct PluginArgs {
 
     /// Filter by plugin type.
     #[arg(long, short, value_name = "TYPE", value_parser = parse_plugin_type)]
-    pub r#type: Option<String>,
+    pub r#type: Option<PluginType>,
 
     /// Firmware version to check compatibility against.
     ///

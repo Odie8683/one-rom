@@ -286,7 +286,7 @@ impl Default for Manifest {
     fn default() -> Self {
         Self {
             version: 1,
-            revision: 1,    // Update every time content changes, even if not a breaking change
+            revision: 1, // Update every time content changes, even if not a breaking change
             latest_app_version: env!("CARGO_PKG_VERSION").to_string(),
             link_urls: LinkUrls::default(),
             manifest_urls: ManifestUrls::default(),
@@ -438,7 +438,8 @@ impl Default for Schemas {
             fw_release: "".to_string(),
             app_release: "".to_string(),
             plugin: "https://images.onerom.org/plugins/plugin-schema.json".to_string(),
-            plugin_release: "https://images.onerom.org/plugins/plugin-release-schema.json".to_string(),
+            plugin_release: "https://images.onerom.org/plugins/plugin-release-schema.json"
+                .to_string(),
         }
     }
 }

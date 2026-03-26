@@ -283,7 +283,9 @@ impl Builder {
                         });
                     }
                 } else {
-                    return Err(Error::UnsupportedToolChipType { chip_type: chip.chip_type })
+                    return Err(Error::UnsupportedToolChipType {
+                        chip_type: chip.chip_type,
+                    });
                 }
 
                 // Check filename specified for ROMs
@@ -484,10 +486,7 @@ impl Builder {
                 // Check for plugins on Ice (not supported)
                 if chip.chip_type.is_plugin() && *mcu_family == Family::Stm32f4 {
                     return Err(Error::InvalidConfig {
-                        error: format!(
-                            "Plugins are not supported on Ice (Chip {})",
-                            chip_num
-                        ),
+                        error: format!("Plugins are not supported on Ice (Chip {})", chip_num),
                     });
                 }
 
@@ -703,7 +702,10 @@ impl Builder {
         let mut rom_id = 0;
         for set in self.config.chip_sets.iter() {
             for rom in set.chips.iter() {
-                if matches!(rom.chip_type, ChipType::SystemPlugin | ChipType::UserPlugin | ChipType::PioPlugin) {
+                if matches!(
+                    rom.chip_type,
+                    ChipType::SystemPlugin | ChipType::UserPlugin | ChipType::PioPlugin
+                ) {
                     let file_id = self.file_id_map.get(&rom_id).unwrap();
                     let data = self.files.get(file_id).unwrap();
 
@@ -712,18 +714,28 @@ impl Builder {
                     }
 
                     if &data[0..4] != b"ORA " {
-                        return Err(Error::InvalidPluginImage { plugin_type: rom.chip_type, image_file: rom.file.clone(), error: "Invalid magic value in plugin header.".to_string() });
-                        
+                        return Err(Error::InvalidPluginImage {
+                            plugin_type: rom.chip_type,
+                            image_file: rom.file.clone(),
+                            error: "Invalid magic value in plugin header.".to_string(),
+                        });
                     }
                     let api_version = u32::from_le_bytes(data[4..8].try_into().unwrap());
                     if api_version != 1 {
-                        return Err(Error::InvalidPluginImage { plugin_type: rom.chip_type, image_file: rom.file.clone(), error: format!("Invalid API version {api_version} in plugin header - must be 1.") });
+                        return Err(Error::InvalidPluginImage {
+                            plugin_type: rom.chip_type,
+                            image_file: rom.file.clone(),
+                            error: format!(
+                                "Invalid API version {api_version} in plugin header - must be 1."
+                            ),
+                        });
                     }
 
                     let plugin_fw_major = u16::from_le_bytes([data[24], data[25]]);
                     let plugin_fw_minor = u16::from_le_bytes([data[26], data[27]]);
                     let plugin_fw_patch = u16::from_le_bytes([data[28], data[29]]);
-                    let plugin_fw_version = FirmwareVersion::new(plugin_fw_major, plugin_fw_minor, plugin_fw_patch, 0);
+                    let plugin_fw_version =
+                        FirmwareVersion::new(plugin_fw_major, plugin_fw_minor, plugin_fw_patch, 0);
 
                     if plugin_fw_version > props.version() {
                         return Err(Error::InvalidPluginImage {
@@ -731,7 +743,8 @@ impl Builder {
                             image_file: rom.file.clone(),
                             error: format!(
                                 "Plugin requires at least firmware version {} which is newer than the firmware version being built for ({})",
-                                plugin_fw_version, props.version()
+                                plugin_fw_version,
+                                props.version()
                             ),
                         });
                     }
@@ -739,7 +752,6 @@ impl Builder {
                 rom_id += 1;
             }
         }
-
 
         Ok(())
     }
@@ -1082,6 +1094,7 @@ pub struct Config {
 
     /// Optional name for this configuration.  Is included in the description
     /// output by the builder.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
 
     /// Mandatory description for this configuration.  This is included in the
@@ -1091,6 +1104,7 @@ pub struct Config {
     /// Optional detailed description for this configuration.  This is included
     /// in the description output by the builder, following name and
     /// description.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub detail: Option<String>,
 
     /// Array of chip set configurations.  Note that even if not using complex
@@ -1104,10 +1118,12 @@ pub struct Config {
 
     /// Optional notes for this configuration.  This is included in the
     /// description output by the builder, following the list of images/sets.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub notes: Option<String>,
 
     /// Optional categories for this configuration, to aid in grouping,
     /// sorting, and searching of configurations.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub categories: Option<Vec<String>>,
 }
 
@@ -1129,6 +1145,7 @@ pub struct ChipSetConfig {
 
     /// Optional description for this chip set.  This is included in the
     /// description output by the builder.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 
     /// Array of chip configurations in this set.  Contains 1 member for single
@@ -1138,10 +1155,12 @@ pub struct ChipSetConfig {
 
     /// Optional serving algorithm override for this chip set.  Only valid
     /// when using CPU serving - Ice boards and Fire 24 A/B by default.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub serve_alg: Option<ServeAlg>,
 
     /// Optional firmware overrides when serving this chip set.  Takes
     /// precedence over any global configuration firmware overrides.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub firmware_overrides: Option<FirmwareConfig>,
 }
 
@@ -1157,10 +1176,12 @@ pub struct ChipConfig {
 
     /// Optional license URL/identifier for the ROM.  This is passed to the
     /// generator tool to retrieve and ask the user to accept before building.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub license: Option<String>,
 
     /// Optional description for this configuration.  This is included in the
     /// description output by the builder.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 
     /// Type of ROM
@@ -1168,32 +1189,38 @@ pub struct ChipConfig {
     pub chip_type: ChipType,
 
     /// Optional Chip Select 1 logic - only valid for Chip Types that have CS1
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub cs1: Option<CsLogic>,
 
     /// Optional Chip Select 2 logic - only valid for Chip Types that have CS2
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub cs2: Option<CsLogic>,
 
     /// Optional Chip Select 3 logic - only valid for Chip Types that have CS3
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub cs3: Option<CsLogic>,
 
     /// Optional size handling configuration for this Chip.  Used to specify
     /// handling when the image supplied isn't the correct size for this Chip
     /// type.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "SizeHandling::is_none")]
     pub size_handling: SizeHandling,
 
     /// Optional extract path within an archive (zip/tar) if the file pointed
     /// to is an archive.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub extract: Option<String>,
 
     /// Optional label for this ROM image.  If specified, this is used in
     /// metadata instead of the filename (which itself can be complex if
     /// extracting a file from an image and providing location information)
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub label: Option<String>,
 
     /// Optional location within a larger image file.  Used to specify start
     /// offset and length within the file.  Useful when multiple ROM images
     /// are concatenated into a single file and one needs to be extracted.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<Location>,
 }
 

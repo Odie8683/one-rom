@@ -248,7 +248,7 @@ impl CommandTrait for FirmwareBuildArgs {
 #[derive(Debug, Args)]
 pub struct FirmwareInspectArgs {
     /// Firmware binary file to inspect.
-    #[arg(long, visible_alias = "fw", value_name = "FILE")]
+    #[arg(long, visible_aliases = [ "fw", "in", "input" ], value_name = "FILE")]
     pub firmware: Option<String>,
 
     /// Inspect release firmware for this board type.

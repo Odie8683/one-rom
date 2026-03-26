@@ -74,7 +74,16 @@ pub enum SizeHandling {
 
 impl SizeHandling {
     pub fn supported_values() -> &'static [Self; 4] {
-        &[SizeHandling::None, SizeHandling::Duplicate, SizeHandling::Truncate, SizeHandling::Pad]
+        &[
+            SizeHandling::None,
+            SizeHandling::Duplicate,
+            SizeHandling::Truncate,
+            SizeHandling::Pad,
+        ]
+    }
+
+    pub fn is_none(&self) -> bool {
+        matches!(self, SizeHandling::None)
     }
 }
 

@@ -14,6 +14,10 @@ pub mod image;
 pub mod meta;
 
 pub use builder::{Builder, ChipConfig, ChipSetConfig, Config, FileData, FileSpec, License};
+pub use firmware::{
+    DebugConfig, FireConfig, FireCpuFreq, FireServeMode, FireVreg, FirmwareConfig, IceConfig,
+    IceCpuFreq, LedConfig, ServeAlgParams,
+};
 pub use image::{Chip, ChipSet, ChipSetType, CsConfig, CsLogic, SizeHandling};
 pub use image::{PAD_BLANK_BYTE, PAD_NO_CHIP_BYTE};
 pub use meta::{MAX_METADATA_LEN, Metadata, PAD_METADATA_BYTE};
@@ -149,7 +153,7 @@ pub enum Error {
         plugin_type: ChipType,
         image_file: String,
         error: String,
-    }
+    },
 }
 type Result<T> = core::result::Result<T, Error>;
 

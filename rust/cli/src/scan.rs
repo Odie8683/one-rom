@@ -48,7 +48,7 @@ pub async fn cmd_scan(options: &Options, args: &args::scan::ScanArgs) -> Result<
     for d in &devices {
         if args.slots {
             println!("---");
-            crate::inspect::output_slot_info(d, options, "  ")
+            crate::inspect::output_slot_info(d, options, "")
                 .inspect_err(|_| log::error!("Failed to read slots"))
                 .ok();
         } else {

@@ -5,8 +5,8 @@
 //! Plugin management commands.
 
 use onerom_cli::plugin::{
-    PluginRelease, PluginReleasesManifest, fetch_plugin_releases, fetch_plugins_manifest,
-    short_plugin_type,
+    PluginRelease, PluginReleasesManifest, PluginType, fetch_plugin_releases,
+    fetch_plugins_manifest,
 };
 use onerom_cli::{Error, Options};
 use onerom_config::fw::FirmwareVersion;
@@ -38,11 +38,7 @@ pub async fn cmd_plugin(options: &Options, args: &PluginArgs) -> Result<(), Erro
     let plugins: Vec<_> = manifest
         .plugins
         .iter()
-        .filter(|p| {
-            args.r#type
-                .as_deref()
-                .is_none_or(|t| short_plugin_type(&p.plugin_type) == t)
-        })
+        .filter(|p| args.r#type.is_none_or(|t| p.plugin_type == t))
         .collect();
 
     if plugins.is_empty() {
@@ -61,12 +57,11 @@ pub async fn cmd_plugin(options: &Options, args: &PluginArgs) -> Result<(), Erro
 
     let num_plugins = plugins.len();
     for entry in plugins {
-        let short_type = short_plugin_type(&entry.plugin_type);
-
         // Fetch per-plugin releases manifest
-        let releases = match fetch_plugin_releases(short_type, &entry.name).await {
+        let releases = match fetch_plugin_releases(entry.plugin_type, &entry.name).await {
             Ok(r) => r,
             Err(e) => {
+                let short_type = entry.plugin_type.short();
                 println!(
                     "  {}/{}: failed to fetch releases: {e}",
                     short_type, entry.name
@@ -82,7 +77,7 @@ pub async fn cmd_plugin(options: &Options, args: &PluginArgs) -> Result<(), Erro
         print_plugin(
             options,
             &releases,
-            short_type,
+            entry.plugin_type,
             &entry.name,
             &fw_version,
             args.all_versions,
@@ -96,12 +91,12 @@ pub async fn cmd_plugin(options: &Options, args: &PluginArgs) -> Result<(), Erro
 fn print_plugin(
     options: &Options,
     releases: &PluginReleasesManifest,
-    short_type: &str,
+    plugin_type: PluginType,
     name: &str,
     fw_version: &Option<FirmwareVersion>,
     all_versions: bool,
 ) {
-    println!("{short_type}/{name} - {}", releases.display_name);
+    println!("{}/{name} - {}", plugin_type.short(), releases.display_name);
     println!("  {}", releases.description);
 
     if releases.releases.is_empty() {
@@ -130,7 +125,10 @@ fn print_release(options: &Options, release: &PluginRelease, fw_version: &Option
         _ => "",
     };
     let min_fw = if options.verbose {
-        format!(" - requires One ROM firmware >= v{}", release.min_fw_version)
+        format!(
+            " - requires One ROM firmware >= v{}",
+            release.min_fw_version
+        )
     } else {
         "".to_string()
     };

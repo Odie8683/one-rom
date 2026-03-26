@@ -4,7 +4,10 @@
 
 //! Shared error type for the One ROM CLI library.
 
+use onerom_config::fw::FirmwareVersion;
 use sdrr_fw_parser::SdrrRomType;
+
+use crate::plugin::{PluginType, PluginVersion};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -144,7 +147,7 @@ pub enum Error {
     #[error(
         "A {0} plugin has already been specified.\n  At most one system plugin and one user plugin are supported."
     )]
-    DuplicatePlugin(String),
+    DuplicatePlugin(PluginType),
 
     #[error(
         "A user plugin was specified without a system plugin.\n  A system plugin is required when using a user plugin."
@@ -169,7 +172,33 @@ pub enum Error {
     #[error(
         "Plugin '{0}' version '{1}' requires firmware {2} or later.\n  The selected firmware version is {3}."
     )]
-    PluginIncompatible(String, String, String, String),
+    PluginIncompatible(String, PluginVersion, FirmwareVersion, FirmwareVersion),
+
+    #[error(
+        "Plugin binary from '{0}' is too small to contain a valid header: {1} bytes (minimum {2})"
+    )]
+    PluginBinaryTooSmall(String, usize, usize),
+
+    #[error("Plugin binary from '{0}' has invalid magic: {1:#010x} (expected {2:#010x})")]
+    PluginInvalidMagic(String, u32, u32),
+
+    #[error("Plugin type mismatch for '{0}': manifest says {1}, binary header says {2}")]
+    PluginTypeMismatch(String, String, String),
+
+    #[error("Plugin version mismatch for '{0}': manifest says {1}, binary header says {2}")]
+    PluginVersionMismatch(String, PluginVersion, PluginVersion),
+
+    #[error("SHA256 mismatch for plugin binary '{0}':\n  expected {1}\n  got      {2}")]
+    PluginSha256Mismatch(String, String, String),
+
+    #[error("Plugin binary from '{0}' is a PIO plugin, which is not currently supported")]
+    PluginPioNotSupported(String),
+
+    #[error("Plugin binary from '{0}' has unrecognised plugin type: {1}")]
+    PluginUnknownBinaryType(String, u8),
+
+    #[error("Plugin '{0}' has unrecognised type '{1}' in manifest")]
+    PluginUnknownManifestType(String, String),
 }
 
 impl Error {

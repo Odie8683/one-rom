@@ -16,6 +16,7 @@ use sdrr_fw_parser::{Parser, SdrrInfo, readers::MemoryReader};
 
 use crate::args;
 use crate::utils::{resolve_board, resolve_firmware_output};
+use onerom_cli::plugin::{PluginSpec, ResolvedPlugin, resolve_plugins};
 use onerom_cli::slot::{
     ConfirmationsRequired, check_slot_confirmations, parse_slots, save_config, slots_to_config_json,
 };
@@ -35,14 +36,17 @@ pub fn resolve_config_json(
     board: &Board,
     config_name: Option<&str>,
     config_description: Option<&str>,
+    plugins: &[ResolvedPlugin],
 ) -> Result<String, Error> {
     if let Some(path) = config_file {
+        // --config-file is mutually exclusive with --plugin at the args level,
+        // so plugins is always empty here.
         read_rom_config(path).map_err(Error::from)
     } else if no_config || slots.is_empty() {
-        slots_to_config_json(&[], config_name, config_description)
+        slots_to_config_json(plugins, &[], config_name, config_description)
     } else {
         let parsed = parse_slots(slots, board)?;
-        slots_to_config_json(&parsed, config_name, config_description)
+        slots_to_config_json(plugins, &parsed, config_name, config_description)
     }
 }
 
@@ -242,13 +246,28 @@ pub async fn cmd_build(
 ) -> Result<(), Error> {
     check_build_args(options, args)?;
 
-    // Board must be resolved before parsing slots for chip type validation.
     let board = resolve_board(options, &args.board)?.ok_or(Error::NoBoardOrDevice)?;
     let mcu = Variant::RP2350;
 
     if !args.slot.is_empty() {
         let confirmations = check_slot_confirmations(&args.slot, &board)?;
         confirm_slot_overrides(options, &confirmations).await?;
+    }
+
+    let (firmware_data, version, version_str) =
+        acquire_firmware(options, &args.base_firmware, &args.version, &board, &mcu).await?;
+
+    let plugins = resolve_plugins(&parse_plugin_specs(&args.plugin)?, Some(version)).await?;
+    if options.verbose {
+        for plugin in &plugins {
+            println!(
+                "Resolved plugin: {}/{} v{} ({})",
+                plugin.plugin_type.short(),
+                plugin.name,
+                plugin.version,
+                plugin.file,
+            );
+        }
     }
 
     let config_json = resolve_config_json(
@@ -258,6 +277,7 @@ pub async fn cmd_build(
         &board,
         args.config_name.as_deref(),
         args.config_description.as_deref(),
+        &plugins,
     )?;
 
     if let Some(path) = &args.save_config {
@@ -266,9 +286,6 @@ pub async fn cmd_build(
             println!("Saved ROM configuration to {path}");
         }
     }
-
-    let (firmware_data, version, version_str) =
-        acquire_firmware(options, &args.base_firmware, &args.version, &board, &mcu).await?;
 
     let (fw_props, metadata, image_data, desc) =
         build_rom_image(options, &config_json, version, board, mcu).await?;
@@ -294,6 +311,9 @@ pub async fn cmd_build(
             println!("---\n{desc}");
         }
     } else {
+        if let Some(path) = &args.save_config {
+            println!("Firmware configuration written to {path}");
+        }
         println!("Firmware written to {out}");
     }
 
@@ -627,4 +647,8 @@ pub async fn cmd_download(
     }
 
     Ok(())
+}
+
+fn parse_plugin_specs(raw: &[String]) -> Result<Vec<PluginSpec>, Error> {
+    onerom_cli::plugin::parse_plugins(raw)
 }

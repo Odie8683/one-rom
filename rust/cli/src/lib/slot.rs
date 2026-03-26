@@ -8,16 +8,15 @@
 //! converting them into a One ROM JSON configuration suitable for the builder.
 
 use crate::Error;
+use crate::plugin::{ResolvedPlugin, plugin_to_chip_set_config};
 use onerom_config::chip::{CHIP_TYPE_NAMES_PLUGINS, ChipFunction, ChipType, ControlLineType};
 use onerom_config::hw::Board;
 use onerom_gen::{
-    SizeHandling,
-    firmware::{FireCpuFreq, FireVreg},
+    ChipConfig, ChipSetConfig, ChipSetType, Config, CsLogic, FireConfig, FireCpuFreq, FireVreg,
+    FirmwareConfig, LedConfig, SizeHandling,
 };
-use serde_json::{Value, json};
 
 const DEFAULT_CONFIG_DESCRIPTION: &str = "Created by the One ROM CLI";
-const CONFIG_SCHEMA_URL: &str = "https://images.onerom.org/configs/schema.json";
 
 /// The result of checking whether any slot specifications require user
 /// confirmation before proceeding.
@@ -78,10 +77,10 @@ fn expand_tilde(path: &str) -> std::borrow::Cow<'_, str> {
 pub struct SlotSpec {
     pub file: Option<String>,
     pub chip_type: ChipType,
-    pub cs1: Option<String>,
-    pub cs2: Option<String>,
-    pub cs3: Option<String>,
-    size_handling: Option<String>,
+    pub cs1: Option<CsLogic>,
+    pub cs2: Option<CsLogic>,
+    pub cs3: Option<CsLogic>,
+    size_handling: Option<SizeHandling>,
     pub cpu_freq: Option<FireCpuFreq>,
     pub vreg: Option<FireVreg>,
     pub led: Option<bool>,
@@ -89,10 +88,10 @@ pub struct SlotSpec {
 }
 
 /// Parse a CS logic value, accepting active_low/0 and active_high/1.
-fn parse_cs_logic(slot: &str, key: &str, value: &str) -> Result<String, Error> {
+fn parse_cs_logic(slot: &str, key: &str, value: &str) -> Result<CsLogic, Error> {
     match value {
-        "active_low" | "0" => Ok("active_low".to_string()),
-        "active_high" | "1" => Ok("active_high".to_string()),
+        "active_low" | "0" => Ok(CsLogic::ActiveLow),
+        "active_high" | "1" => Ok(CsLogic::ActiveHigh),
         other => Err(Error::InvalidArgument(
             "--slot".to_string(),
             format!(
@@ -104,31 +103,25 @@ fn parse_cs_logic(slot: &str, key: &str, value: &str) -> Result<String, Error> {
 
 // Use the SizeHandling deserialization to validate the value and get a
 // normalized string.
-fn parse_size_handling(slot: &str, _key: &str, value: &str) -> Result<String, Error> {
-    serde_json::from_str::<SizeHandling>(&format!("\"{value}\""))
-        .map(|sh| {
-            serde_json::to_string(&sh)
-                .unwrap()
-                .trim_matches('"')
-                .to_string()
-        })
-        .map_err(|_| {
-            let variants_err = serde_json::from_str::<SizeHandling>("\"?\"").unwrap_err();
-            let supported_variants = SizeHandling::supported_values()
-                .iter()
-                .map(|v| {
-                    serde_json::to_string(v)
-                        .unwrap()
-                        .trim_matches('"')
-                        .to_string()
-                })
-                .collect::<Vec<_>>()
-                .join(", ");
-            Error::InvalidArgument(
-                "--slot".to_string(),
-                format!("Invalid size_handling '{value}': {variants_err}\n    --slot '{slot}'\n  Supported values {supported_variants}"),
-            )
-        })
+fn parse_size_handling(slot: &str, _key: &str, value: &str) -> Result<SizeHandling, Error> {
+    serde_json::from_str::<SizeHandling>(&format!("\"{value}\"")).map_err(|_| {
+        let supported_variants = SizeHandling::supported_values()
+            .iter()
+            .map(|v| {
+                serde_json::to_string(v)
+                    .unwrap()
+                    .trim_matches('"')
+                    .to_string()
+            })
+            .collect::<Vec<_>>()
+            .join(", ");
+        Error::InvalidArgument(
+            "--slot".to_string(),
+            format!(
+                "Invalid size_handling '{value}'\n    --slot '{slot}'\n  Supported values: {supported_variants}"
+            ),
+        )
+    })
 }
 
 fn parse_bool(slot: &str, key: &str, value: &str) -> Result<bool, Error> {
@@ -318,13 +311,7 @@ fn parse_slot(slot: &str, board: &Board) -> Result<SlotSpec, Error> {
         ));
     }
 
-    validate_cs_lines(
-        slot,
-        &chip_type,
-        cs1.as_deref(),
-        cs2.as_deref(),
-        cs3.as_deref(),
-    )?;
+    validate_cs_lines(slot, &chip_type, cs1, cs2, cs3)?;
 
     if force_16bit.is_some() && board.chip_pins() != 40 {
         return Err(Error::InvalidArgument(
@@ -352,17 +339,21 @@ fn parse_slot(slot: &str, board: &Board) -> Result<SlotSpec, Error> {
 fn validate_cs_lines(
     slot: &str,
     chip_type: &ChipType,
-    cs1: Option<&str>,
-    cs2: Option<&str>,
-    cs3: Option<&str>,
+    cs1: Option<CsLogic>,
+    cs2: Option<CsLogic>,
+    cs3: Option<CsLogic>,
 ) -> Result<(), Error> {
-    let cs_values = [("cs1", cs1), ("cs2", cs2), ("cs3", cs3)];
+    let cs_values = [
+        ("cs1", cs1.is_some()),
+        ("cs2", cs2.is_some()),
+        ("cs3", cs3.is_some()),
+    ];
 
     for line in chip_type.control_lines() {
         let supplied = cs_values
             .iter()
             .find(|(name, _)| *name == line.name)
-            .map(|(_, v)| v.is_some())
+            .map(|(_, v)| *v)
             .unwrap_or(false);
 
         match line.line_type {
@@ -390,8 +381,8 @@ fn validate_cs_lines(
         }
     }
 
-    for (cs_name, cs_val) in &cs_values {
-        if cs_val.is_some() && !chip_type.control_lines().iter().any(|l| l.name == *cs_name) {
+    for (cs_name, has_val) in &cs_values {
+        if *has_val && !chip_type.control_lines().iter().any(|l| l.name == *cs_name) {
             return Err(Error::InvalidArgument(
                 "--slot".to_string(),
                 format!(
@@ -421,35 +412,23 @@ pub fn parse_slots(slots: &[String], board: &Board) -> Result<Vec<SlotSpec>, Err
     slots.iter().map(|s| parse_slot(s, board)).collect()
 }
 
-/// Build a chip JSON object from a [`SlotSpec`].
-fn slot_to_chip_json(slot: &SlotSpec) -> Value {
-    let mut chip = json!({
-        "type": slot.chip_type.name(),
-    });
-
-    let obj = chip.as_object_mut().unwrap();
-    if let Some(file) = &slot.file {
-        obj.insert("file".to_string(), json!(file));
+fn slot_to_chip_config(slot: &SlotSpec) -> ChipConfig {
+    ChipConfig {
+        file: slot.file.clone().unwrap_or_default(),
+        license: None,
+        description: None,
+        chip_type: slot.chip_type,
+        cs1: slot.cs1,
+        cs2: slot.cs2,
+        cs3: slot.cs3,
+        size_handling: slot.size_handling.clone().unwrap_or_default(),
+        extract: None,
+        label: None,
+        location: None,
     }
-    if let Some(cs1) = &slot.cs1 {
-        obj.insert("cs1".to_string(), json!(cs1));
-    }
-    if let Some(cs2) = &slot.cs2 {
-        obj.insert("cs2".to_string(), json!(cs2));
-    }
-    if let Some(cs3) = &slot.cs3 {
-        obj.insert("cs3".to_string(), json!(cs3));
-    }
-    if let Some(sh) = &slot.size_handling {
-        obj.insert("size_handling".to_string(), json!(sh));
-    }
-
-    chip
 }
 
-/// Build a firmware_overrides JSON object from a [`SlotSpec`], if any overrides
-/// are set. Returns None if no overrides are present.
-fn slot_to_firmware_overrides_json(slot: &SlotSpec) -> Option<Value> {
+fn slot_to_firmware_overrides(slot: &SlotSpec) -> Option<FirmwareConfig> {
     let has_fire = slot.cpu_freq.is_some() || slot.vreg.is_some() || slot.force_16bit.is_some();
     let has_led = slot.led.is_some();
 
@@ -457,75 +436,62 @@ fn slot_to_firmware_overrides_json(slot: &SlotSpec) -> Option<Value> {
         return None;
     }
 
-    let mut overrides = json!({});
-    let obj = overrides.as_object_mut().unwrap();
+    let fire = has_fire.then(|| FireConfig {
+        cpu_freq: slot.cpu_freq,
+        overclock: slot.cpu_freq.map(|f| f > FireCpuFreq::stock_value()),
+        vreg: slot.vreg.clone(),
+        force_16_bit: slot.force_16bit.unwrap_or(false),
+        ..Default::default()
+    });
 
-    if has_fire {
-        let mut fire = json!({});
-        let fire_obj = fire.as_object_mut().unwrap();
-        if let Some(freq) = slot.cpu_freq {
-            fire_obj.insert("cpu_freq".to_string(), json!(format!("{}MHz", freq.get())));
-            fire_obj.insert(
-                "overclock".to_string(),
-                json!(freq > FireCpuFreq::stock_value()),
-            );
-        }
-        if let Some(vreg) = &slot.vreg {
-            let vreg_str = serde_json::to_string(vreg)
-                .unwrap()
-                .trim_matches('"')
-                .to_string();
-            fire_obj.insert("vreg".to_string(), json!(vreg_str));
-        }
-        if let Some(f) = slot.force_16bit {
-            fire_obj.insert("force_16_bit".to_string(), json!(f));
-        }
-        obj.insert("fire".to_string(), fire);
-    }
-
-    if let Some(enabled) = slot.led {
-        obj.insert("led".to_string(), json!({ "enabled": enabled }));
-    }
-
-    Some(overrides)
+    Some(FirmwareConfig {
+        ice: None,
+        fire,
+        led: slot.led.map(|enabled| LedConfig { enabled }),
+        swd: None,
+        serve_alg_params: None,
+    })
 }
 
-/// Generate a One ROM JSON configuration string from a list of slot specs.
+/// Generate a One ROM JSON configuration string from resolved plugins and
+/// slot specs.
+///
+/// Plugin chip_sets are inserted first (system plugin at index 0, user plugin
+/// at index 1, matching [`plugin_to_chip_set_json`] semantics).  ROM slot
+/// chip_sets follow from index 0 or 2 onwards depending on how many plugins
+/// are present.
 pub fn slots_to_config_json(
+    plugins: &[ResolvedPlugin],
     slots: &[SlotSpec],
     name: Option<&str>,
     description: Option<&str>,
 ) -> Result<String, Error> {
-    let chip_sets: Vec<Value> = slots
+    let mut chip_sets: Vec<ChipSetConfig> = plugins
         .iter()
-        .map(|slot| {
-            let mut chip_set = json!({
-                "type": "single",
-                "chips": [slot_to_chip_json(slot)]
-            });
-            if let Some(fw) = slot_to_firmware_overrides_json(slot) {
-                chip_set
-                    .as_object_mut()
-                    .unwrap()
-                    .insert("firmware_overrides".to_string(), fw);
-            }
-            chip_set
-        })
-        .collect();
+        .map(|p| plugin_to_chip_set_config(&p.file, p.plugin_type, p.size))
+        .collect::<Result<Vec<_>, _>>()?;
 
-    let mut config = json!({
-        "$schema": CONFIG_SCHEMA_URL,
-        "version": 1,
-        "description": description.unwrap_or(DEFAULT_CONFIG_DESCRIPTION),
-        "chip_sets": chip_sets,
-    });
-
-    if let Some(name) = name {
-        config
-            .as_object_mut()
-            .unwrap()
-            .insert("name".to_string(), json!(name));
+    for slot in slots {
+        chip_sets.push(ChipSetConfig {
+            set_type: ChipSetType::Single,
+            description: None,
+            chips: vec![slot_to_chip_config(slot)],
+            serve_alg: None,
+            firmware_overrides: slot_to_firmware_overrides(slot),
+        });
     }
+
+    let config = Config {
+        version: 1,
+        name: name.map(|s| s.to_string()),
+        description: description
+            .unwrap_or(DEFAULT_CONFIG_DESCRIPTION)
+            .to_string(),
+        detail: None,
+        chip_sets,
+        notes: None,
+        categories: None,
+    };
 
     serde_json::to_string_pretty(&config).map_err(|e| Error::Other(e.to_string()))
 }

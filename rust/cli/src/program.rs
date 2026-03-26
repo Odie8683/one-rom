@@ -15,6 +15,7 @@ use crate::firmware::{
 };
 use crate::utils::{check_device, resolve_board};
 use onerom_cli::device::select_device;
+use onerom_cli::plugin::{parse_plugins, resolve_plugins};
 use onerom_cli::slot::{check_slot_confirmations, save_config};
 use onerom_cli::usb::{RebootArgs, flash_program, flash_program_read, reboot};
 use onerom_cli::{Error, Options};
@@ -89,8 +90,13 @@ async fn build_and_assemble(
     board: &Option<Board>,
     mcu: &Variant,
 ) -> Result<Vec<u8>, Error> {
-    // Board must be resolved before parsing slots for chip type validation.
     let board = board.as_ref().ok_or(Error::NoBoardOrDevice)?;
+
+    // Acquire firmware first — version is needed for plugin compat checking.
+    let (firmware_data, version, _version_str) =
+        acquire_firmware(options, &args.base_firmware, &args.version, board, mcu).await?;
+
+    let plugins = resolve_plugins(&parse_plugins(&args.plugin)?, Some(version)).await?;
 
     let config_json = resolve_config_json(
         args.config_file.as_deref(),
@@ -99,6 +105,7 @@ async fn build_and_assemble(
         board,
         args.config_name.as_deref(),
         args.config_description.as_deref(),
+        &plugins,
     )?;
 
     if let Some(path) = &args.save_config {
@@ -107,9 +114,6 @@ async fn build_and_assemble(
             println!("Saved ROM configuration to {path}");
         }
     }
-
-    let (firmware_data, version, _version_str) =
-        acquire_firmware(options, &args.base_firmware, &args.version, board, mcu).await?;
 
     let (fw_props, metadata, image_data, desc) =
         build_rom_image(options, &config_json, version, *board, *mcu).await?;

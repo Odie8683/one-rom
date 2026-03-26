@@ -1409,13 +1409,18 @@ fn generate_chip_type_is_supported_fn(config: &ChipTypesConfig) -> String {
     code.push_str("    /// assert_eq!(ChipType::Chip2364.min_supported_firmware_version(), Some(FirmwareVersion::new(0, 4, 4, 0)));\n");
     code.push_str("    /// assert_eq!(ChipType::try_from_str(\"unknown\").and_then(|t| t.min_supported_firmware_version()), None);\n");
     code.push_str("    /// ```\n");
-    code.push_str("    pub fn min_supported_firmware_version(&self) -> Option<FirmwareVersion> {\n");
+    code.push_str(
+        "    pub fn min_supported_firmware_version(&self) -> Option<FirmwareVersion> {\n",
+    );
     code.push_str("        match self {\n");
 
     for (type_name, _chip_type) in get_sorted_chip_types(config) {
         if let Some(chip_type) = config.chip_types.get(type_name) {
             let version_str = if let Some(version_string) = &chip_type.supported {
-                format!("Some(FirmwareVersion::try_from_str(\"{}\").unwrap())", version_string)
+                format!(
+                    "Some(FirmwareVersion::try_from_str(\"{}\").unwrap())",
+                    version_string
+                )
             } else {
                 "None".to_string()
             };

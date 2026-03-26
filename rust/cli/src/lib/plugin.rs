@@ -43,9 +43,10 @@
 //! entry for each plugin, ready to be prepended to the chip_sets array before
 //! the ROM slot entries.
 
+use onerom_config::chip::ChipType as OraChipType;
 use onerom_config::fw::FirmwareVersion;
-use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
+use onerom_gen::{ChipConfig, ChipSetConfig, ChipSetType, SizeHandling};
+use serde::Deserialize;
 
 use crate::Error;
 
@@ -58,11 +59,139 @@ const PLUGIN_SITE_BASE: &str = "https://images.onerom.org/plugins";
 /// smaller than this are padded; binaries larger are rejected.
 const PLUGIN_MAX_SIZE: usize = 64 * 1024;
 
-/// Canonical plugin type string for system plugins, as used in JSON configs.
-pub const PLUGIN_TYPE_SYSTEM: &str = "system_plugin";
+// Canonical plugin type string for system plugins, as used in JSON configs.
+const PLUGIN_TYPE_SYSTEM: &str = "system_plugin";
 
-/// Canonical plugin type string for user plugins, as used in JSON configs.
-pub const PLUGIN_TYPE_USER: &str = "user_plugin";
+// Canonical plugin type string for user plugins, as used in JSON configs.
+const PLUGIN_TYPE_USER: &str = "user_plugin";
+
+// ============================================================
+// PluginVersion
+// ============================================================
+
+/// A plugin version with four components as defined in the plugin binary header.
+///
+/// Manifest version strings use three components (e.g. `0.1.0`); `build`
+/// defaults to 0 when deserialising from such strings.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct PluginVersion {
+    pub major: u16,
+    pub minor: u16,
+    pub patch: u16,
+    pub build: u16,
+}
+
+impl PluginVersion {
+    pub fn new(major: u16, minor: u16, patch: u16, build: u16) -> Self {
+        Self {
+            major,
+            minor,
+            patch,
+            build,
+        }
+    }
+
+    pub fn try_from_str(s: &str) -> Option<Self> {
+        let parts: Vec<&str> = s.split('.').collect();
+        match parts.as_slice() {
+            [major, minor, patch] => Some(Self {
+                major: major.parse().ok()?,
+                minor: minor.parse().ok()?,
+                patch: patch.parse().ok()?,
+                build: 0,
+            }),
+            [major, minor, patch, build] => Some(Self {
+                major: major.parse().ok()?,
+                minor: minor.parse().ok()?,
+                patch: patch.parse().ok()?,
+                build: build.parse().ok()?,
+            }),
+            _ => None,
+        }
+    }
+}
+
+impl std::fmt::Display for PluginVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.build == 0 {
+            write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
+        } else {
+            write!(
+                f,
+                "{}.{}.{}.{}",
+                self.major, self.minor, self.patch, self.build
+            )
+        }
+    }
+}
+
+impl serde::Serialize for PluginVersion {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(&self.to_string())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for PluginVersion {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(d)?;
+        PluginVersion::try_from_str(&s)
+            .ok_or_else(|| serde::de::Error::custom(format!("invalid plugin version '{s}'")))
+    }
+}
+
+// ============================================================
+// PluginType
+// ============================================================
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PluginType {
+    System,
+    User,
+}
+
+impl std::fmt::Display for PluginType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.short())
+    }
+}
+
+impl PluginType {
+    pub fn try_from_str(s: &str) -> Option<Self> {
+        match s {
+            "system" | "system_plugin" => Some(PluginType::System),
+            "user" | "user_plugin" => Some(PluginType::User),
+            _ => None,
+        }
+    }
+
+    pub fn canonical(self) -> &'static str {
+        match self {
+            PluginType::System => PLUGIN_TYPE_SYSTEM,
+            PluginType::User => PLUGIN_TYPE_USER,
+        }
+    }
+
+    pub fn short(self) -> &'static str {
+        match self {
+            PluginType::System => "system",
+            PluginType::User => "user",
+        }
+    }
+}
+
+impl serde::Serialize for PluginType {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(self.canonical())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for PluginType {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(d)?;
+        PluginType::try_from_str(&s)
+            .ok_or_else(|| serde::de::Error::custom(format!("unrecognised plugin type '{s}'")))
+    }
+}
 
 /// Recognised keys in a named `--plugin` spec.
 const PLUGIN_SPEC_KEYS: &[&str] = &["version"];
@@ -75,7 +204,7 @@ const PLUGIN_SPEC_KEYS: &[&str] = &["version"];
 ///
 /// Lists all available first-party plugins. Fetched from
 /// `https://images.onerom.org/plugins/plugins.json`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct PluginsManifest {
     /// Manifest schema version.
     pub version: u32,
@@ -84,13 +213,13 @@ pub struct PluginsManifest {
 }
 
 /// A single plugin entry in the top-level manifest.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct PluginEntry {
     /// Plugin slug, matches the directory name in the images repo.
     pub name: String,
-    /// Canonical plugin type string (e.g. `system_plugin`).
+    /// Plugin type.
     #[serde(rename = "type")]
-    pub plugin_type: String,
+    pub plugin_type: PluginType,
     /// Relative path to the plugin directory (e.g. `system/usb`).
     pub path: String,
 }
@@ -99,7 +228,7 @@ pub struct PluginEntry {
 ///
 /// Contains release history for a single plugin. Fetched from
 /// `https://images.onerom.org/plugins/{type}/{name}/releases.json`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct PluginReleasesManifest {
     /// Manifest schema version.
     pub version: u32,
@@ -107,17 +236,17 @@ pub struct PluginReleasesManifest {
     pub display_name: String,
     /// Short description of the plugin.
     pub description: String,
-    /// Latest released version string (e.g. `0.1.0`), or None if no releases.
-    pub latest: Option<String>,
+    /// Latest released version, or None if no releases.
+    pub latest: Option<PluginVersion>,
     /// All releases, newest first.
     pub releases: Vec<PluginRelease>,
 }
 
 /// A single plugin release entry.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct PluginRelease {
-    /// Version string (e.g. `0.1.0`).
-    pub version: String,
+    /// Plugin version.
+    pub version: PluginVersion,
     /// Relative path to the version directory (e.g. `v0.1.0`).
     pub path: String,
     /// Binary filename within the version directory.
@@ -126,8 +255,8 @@ pub struct PluginRelease {
     pub sha256: String,
     /// Plugin API version this release targets.
     pub api_version: u32,
-    /// Canonical plugin type string.
-    pub plugin_type: String,
+    /// Plugin type.
+    pub plugin_type: PluginType,
     /// Minimum One ROM firmware version required to run this plugin.
     #[serde(deserialize_with = "deserialize_fw_version")]
     pub min_fw_version: FirmwareVersion,
@@ -143,10 +272,14 @@ where
 
 impl PluginRelease {
     /// Full URL to the plugin binary for this release.
-    pub fn binary_url(&self, plugin_type: &str, plugin_name: &str) -> String {
+    pub fn binary_url(&self, plugin_type: PluginType, plugin_name: &str) -> String {
         format!(
             "{}/{}/{}/{}/{}",
-            PLUGIN_SITE_BASE, plugin_type, plugin_name, self.path, self.filename
+            PLUGIN_SITE_BASE,
+            plugin_type.short(),
+            plugin_name,
+            self.path,
+            self.filename
         )
     }
 
@@ -167,15 +300,15 @@ pub async fn fetch_plugins_manifest() -> Result<PluginsManifest, Error> {
 }
 
 /// Fetch the per-plugin releases manifest from the images server.
-///
-/// `plugin_type` should be the short form (e.g. `system`, not `system_plugin`).
 pub async fn fetch_plugin_releases(
-    plugin_type: &str,
+    plugin_type: PluginType,
     plugin_name: &str,
 ) -> Result<PluginReleasesManifest, Error> {
     let url = format!(
         "{}/{}/{}/releases.json",
-        PLUGIN_SITE_BASE, plugin_type, plugin_name
+        PLUGIN_SITE_BASE,
+        plugin_type.short(),
+        plugin_name
     );
     fetch_json(&url).await
 }
@@ -201,29 +334,6 @@ async fn fetch_json<T: serde::de::DeserializeOwned>(url: &str) -> Result<T, Erro
 // PluginSpec parsing
 // ============================================================
 
-/// Map a user-supplied type string to the canonical JSON config type string.
-///
-/// Accepts both short forms (`system`, `user`) and canonical forms
-/// (`system_plugin`, `user_plugin`). Returns `None` for unrecognised values.
-pub fn canonical_plugin_type(s: &str) -> Option<&'static str> {
-    match s {
-        "system" | "system_plugin" => Some(PLUGIN_TYPE_SYSTEM),
-        "user" | "user_plugin" => Some(PLUGIN_TYPE_USER),
-        _ => None,
-    }
-}
-
-/// Short form of a canonical plugin type, for use in manifest URLs and display.
-///
-/// e.g. `system_plugin` -> `system`
-pub fn short_plugin_type(canonical: &str) -> &str {
-    match canonical {
-        PLUGIN_TYPE_SYSTEM => "system",
-        PLUGIN_TYPE_USER => "user",
-        other => other,
-    }
-}
-
 /// A parsed plugin specification from a `--plugin` argument.
 ///
 /// Produced by [`parse_plugins`] (phase 1). The plugin type and resolved
@@ -247,8 +357,8 @@ pub enum PluginSpec {
     /// the manifest lookup in phase 2 will confirm it.
     Named {
         name: String,
-        plugin_type: Option<&'static str>,
-        version: Option<String>,
+        plugin_type: Option<PluginType>,
+        version: Option<PluginVersion>,
     },
     /// Use a local or remote file directly.
     ///
@@ -301,13 +411,12 @@ fn parse_plugin(s: &str) -> Result<PluginSpec, Error> {
             }
             match key {
                 "version" => {
-                    if value.is_empty() {
-                        return Err(Error::InvalidArgument(
+                    version = Some(PluginVersion::try_from_str(value).ok_or_else(|| {
+                        Error::InvalidArgument(
                             "--plugin".to_string(),
-                            format!("version must not be empty\n    --plugin '{s}'"),
-                        ));
-                    }
-                    version = Some(value.to_string());
+                            format!("Invalid plugin version format '{value}'\n    --plugin '{s}'"),
+                        )
+                    })?);
                 }
                 other => {
                     let supported = PLUGIN_SPEC_KEYS.join(", ");
@@ -323,10 +432,10 @@ fn parse_plugin(s: &str) -> Result<PluginSpec, Error> {
     }
 
     // Parse optional type/ prefix from the name part.
-    // e.g. "system/usb" -> type=system_plugin, name=usb
-    //      "usb"        -> type=None,          name=usb
+    // e.g. "system/usb" -> type=System, name=usb
+    //      "usb"        -> type=None,   name=usb
     let (plugin_type, name) = if let Some((type_str, name_str)) = name_part.split_once('/') {
-        let canonical = canonical_plugin_type(type_str).ok_or_else(|| {
+        let pt = PluginType::try_from_str(type_str).ok_or_else(|| {
             Error::InvalidArgument(
                 "--plugin".to_string(),
                 format!(
@@ -340,7 +449,7 @@ fn parse_plugin(s: &str) -> Result<PluginSpec, Error> {
                 format!("Plugin name must not be empty\n    --plugin '{s}'"),
             ));
         }
-        (Some(canonical), name_str.to_string())
+        (Some(pt), name_str.to_string())
     } else {
         if name_part.is_empty() {
             return Err(Error::InvalidArgument(
@@ -383,20 +492,19 @@ pub fn parse_plugins(plugins: &[String]) -> Result<Vec<PluginSpec>, Error> {
             ..
         } = spec
         {
-            match *t {
-                PLUGIN_TYPE_SYSTEM => {
+            match t {
+                PluginType::System => {
                     if seen_system {
-                        return Err(Error::DuplicatePlugin("system".to_string()));
+                        return Err(Error::DuplicatePlugin(PluginType::System));
                     }
                     seen_system = true;
                 }
-                PLUGIN_TYPE_USER => {
+                PluginType::User => {
                     if seen_user {
-                        return Err(Error::DuplicatePlugin("user".to_string()));
+                        return Err(Error::DuplicatePlugin(PluginType::User));
                     }
                     seen_user = true;
                 }
-                _ => {}
             }
         }
     }
@@ -409,30 +517,28 @@ pub fn parse_plugins(plugins: &[String]) -> Result<Vec<PluginSpec>, Error> {
 
 /// Validate the full set of resolved plugin types (phase 2).
 ///
-/// Must be called by the caller after all plugin types have been resolved
-/// from the manifest or binary headers. `plugin_types` should be a slice of
-/// canonical type strings (e.g. `["system_plugin", "user_plugin"]`) in the
-/// order the plugins were specified.
+/// Must be called after all plugin types have been resolved from the manifest
+/// or binary headers.
 ///
 /// Checks:
 /// - At most one system plugin
 /// - At most one user plugin
 /// - A user plugin requires a system plugin
-pub fn validate_resolved_plugin_types(plugin_types: &[&str]) -> Result<(), Error> {
+pub fn validate_resolved_plugin_types(plugin_types: &[PluginType]) -> Result<(), Error> {
     let system_count = plugin_types
         .iter()
-        .filter(|&&t| t == PLUGIN_TYPE_SYSTEM)
+        .filter(|&&t| t == PluginType::System)
         .count();
     let user_count = plugin_types
         .iter()
-        .filter(|&&t| t == PLUGIN_TYPE_USER)
+        .filter(|&&t| t == PluginType::User)
         .count();
 
     if system_count > 1 {
-        return Err(Error::DuplicatePlugin("system".to_string()));
+        return Err(Error::DuplicatePlugin(PluginType::System));
     }
     if user_count > 1 {
-        return Err(Error::DuplicatePlugin("user".to_string()));
+        return Err(Error::DuplicatePlugin(PluginType::User));
     }
     if user_count > 0 && system_count == 0 {
         return Err(Error::UserPluginWithoutSystem);
@@ -445,63 +551,311 @@ pub fn validate_resolved_plugin_types(plugin_types: &[&str]) -> Result<(), Error
 // JSON generation
 // ============================================================
 
-/// Determine the appropriate `size_handling` value for a plugin binary.
-///
-/// Plugin binaries must fit within a 64KB slot:
-/// - Exactly 64KB: `"none"` (no padding needed or wanted)
-/// - Less than 64KB: `"pad"` (binary padded to fill the slot)
-/// - Greater than 64KB: error
-pub fn plugin_size_handling(size: usize) -> Result<&'static str, Error> {
+pub fn plugin_size_handling(size: usize) -> Result<SizeHandling, Error> {
     if size > PLUGIN_MAX_SIZE {
         return Err(Error::PluginTooLarge(size, PLUGIN_MAX_SIZE));
     }
     if size == PLUGIN_MAX_SIZE {
-        Ok("none")
+        Ok(SizeHandling::None)
     } else {
-        Ok("pad")
+        Ok(SizeHandling::Pad)
     }
 }
 
-/// Build the `chips` array entry JSON object for a single plugin.
-fn plugin_to_chip_json(
+/// Build a complete chip_set config for a plugin, ready to be inserted into
+/// the chip_sets array. System plugins must be at index 0, user plugins at
+/// index 1.
+pub fn plugin_to_chip_set_config(
     file: &str,
-    plugin_type: &str,
-    description: Option<&str>,
-    size_handling: &str,
-) -> Value {
-    let mut chip = json!({
-        "type":          plugin_type,
-        "file":          file,
-        "size_handling": size_handling,
-    });
-    if let Some(desc) = description {
-        chip.as_object_mut()
-            .unwrap()
-            .insert("description".to_string(), json!(desc));
-    }
-    chip
-}
-
-/// Build a complete chip_set JSON object for a plugin.
-///
-/// The returned value is a single-chip chip_set entry ready to be inserted
-/// into the `chip_sets` array of a One ROM JSON configuration. System plugins
-/// must be inserted at index 0; user plugins at index 1.
-///
-/// Arguments:
-/// - `file`:        resolved path or URL to the plugin binary
-/// - `plugin_type`: canonical type string (`system_plugin` or `user_plugin`)
-/// - `description`: optional human-readable description for the config
-/// - `size`:        binary size in bytes, used to determine `size_handling`
-pub fn plugin_to_chip_set_json(
-    file: &str,
-    plugin_type: &str,
-    description: Option<&str>,
+    plugin_type: PluginType,
     size: usize,
-) -> Result<Value, Error> {
+) -> Result<ChipSetConfig, Error> {
     let size_handling = plugin_size_handling(size)?;
-    Ok(json!({
-        "type": "single",
-        "chips": [plugin_to_chip_json(file, plugin_type, description, size_handling)]
-    }))
+    let chip_type = match plugin_type {
+        PluginType::System => OraChipType::SystemPlugin,
+        PluginType::User => OraChipType::UserPlugin,
+    };
+    Ok(ChipSetConfig {
+        set_type: ChipSetType::Single,
+        description: None,
+        chips: vec![ChipConfig {
+            file: file.to_string(),
+            license: None,
+            description: None,
+            chip_type,
+            cs1: None,
+            cs2: None,
+            cs3: None,
+            size_handling,
+            extract: None,
+            label: None,
+            location: None,
+        }],
+        serve_alg: None,
+        firmware_overrides: None,
+    })
+}
+
+// ============================================================
+// Plugin header parsing
+// ============================================================
+
+const ORA_PLUGIN_MAGIC: u32 = 0x2041524F;
+const ORA_PLUGIN_HEADER_SIZE: usize = 256;
+
+struct PluginHeader {
+    version: PluginVersion,
+    plugin_type: PluginType,
+    min_fw: FirmwareVersion,
+}
+
+fn parse_plugin_header(data: &[u8], source: &str) -> Result<PluginHeader, Error> {
+    if data.len() < ORA_PLUGIN_HEADER_SIZE {
+        return Err(Error::PluginBinaryTooSmall(
+            source.to_string(),
+            data.len(),
+            ORA_PLUGIN_HEADER_SIZE,
+        ));
+    }
+
+    let magic = u32::from_le_bytes(data[0..4].try_into().unwrap());
+    if magic != ORA_PLUGIN_MAGIC {
+        return Err(Error::PluginInvalidMagic(
+            source.to_string(),
+            magic,
+            ORA_PLUGIN_MAGIC,
+        ));
+    }
+
+    let plugin_type = match data[20] {
+        0 => PluginType::System,
+        1 => PluginType::User,
+        2 => return Err(Error::PluginPioNotSupported(source.to_string())),
+        other => return Err(Error::PluginUnknownBinaryType(source.to_string(), other)),
+    };
+
+    Ok(PluginHeader {
+        version: PluginVersion::new(
+            u16::from_le_bytes(data[8..10].try_into().unwrap()),
+            u16::from_le_bytes(data[10..12].try_into().unwrap()),
+            u16::from_le_bytes(data[12..14].try_into().unwrap()),
+            u16::from_le_bytes(data[14..16].try_into().unwrap()),
+        ),
+        plugin_type,
+        min_fw: FirmwareVersion::new(
+            u16::from_le_bytes(data[24..26].try_into().unwrap()),
+            u16::from_le_bytes(data[26..28].try_into().unwrap()),
+            u16::from_le_bytes(data[28..30].try_into().unwrap()),
+            0,
+        ),
+    })
+}
+
+fn check_header_min_fw(
+    header: &PluginHeader,
+    plugin_version: PluginVersion,
+    fw_version: &FirmwareVersion,
+    source: &str,
+) -> Result<(), Error> {
+    if fw_version < &header.min_fw {
+        return Err(Error::PluginIncompatible(
+            source.to_string(),
+            plugin_version,
+            header.min_fw,
+            *fw_version,
+        ));
+    }
+    Ok(())
+}
+
+fn verify_sha256(data: &[u8], expected_hex: &str, source: &str) -> Result<(), Error> {
+    use sha2::{Digest, Sha256};
+    let actual = hex::encode(Sha256::digest(data));
+    if actual != expected_hex.to_lowercase() {
+        return Err(Error::PluginSha256Mismatch(
+            source.to_string(),
+            expected_hex.to_string(),
+            actual,
+        ));
+    }
+    Ok(())
+}
+
+// ============================================================
+// Phase 2: plugin resolution
+// ============================================================
+
+pub struct ResolvedPlugin {
+    pub plugin_type: PluginType,
+    pub name: String,
+    pub file: String,
+    pub size: usize,
+    pub version: PluginVersion,
+}
+
+pub async fn resolve_plugins(
+    specs: &[PluginSpec],
+    fw_version: Option<FirmwareVersion>,
+) -> Result<Vec<ResolvedPlugin>, Error> {
+    if specs.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let manifest = if specs.iter().any(|s| {
+        matches!(
+            s,
+            PluginSpec::Named {
+                plugin_type: None,
+                ..
+            }
+        )
+    }) {
+        Some(fetch_plugins_manifest().await?)
+    } else {
+        None
+    };
+
+    let mut resolved = Vec::with_capacity(specs.len());
+    for spec in specs {
+        resolved.push(resolve_plugin(spec, manifest.as_ref(), fw_version.as_ref()).await?);
+    }
+
+    let types: Vec<PluginType> = resolved.iter().map(|r| r.plugin_type).collect();
+    validate_resolved_plugin_types(&types)?;
+
+    Ok(resolved)
+}
+
+async fn resolve_plugin(
+    spec: &PluginSpec,
+    manifest: Option<&PluginsManifest>,
+    fw_version: Option<&FirmwareVersion>,
+) -> Result<ResolvedPlugin, Error> {
+    match spec {
+        PluginSpec::Named {
+            name,
+            plugin_type,
+            version,
+        } => resolve_named_plugin(name, *plugin_type, *version, manifest, fw_version).await,
+        PluginSpec::File { path } => resolve_file_plugin(path, fw_version).await,
+    }
+}
+
+async fn resolve_named_plugin(
+    name: &str,
+    known_type: Option<PluginType>,
+    version: Option<PluginVersion>,
+    manifest: Option<&PluginsManifest>,
+    fw_version: Option<&FirmwareVersion>,
+) -> Result<ResolvedPlugin, Error> {
+    let plugin_type: PluginType = if let Some(kt) = known_type {
+        kt
+    } else {
+        let m = manifest.expect("manifest must be fetched before resolving bare-name specs");
+        let entry = m
+            .plugins
+            .iter()
+            .find(|p| p.name == name)
+            .ok_or_else(|| Error::PluginNotFound(name.to_string()))?;
+        entry.plugin_type
+    };
+
+    let releases = fetch_plugin_releases(plugin_type, name).await?;
+
+    let release = if let Some(v) = version {
+        releases
+            .releases
+            .iter()
+            .find(|r| r.version == v)
+            .ok_or_else(|| Error::PluginVersionNotFound(name.to_string(), v.to_string()))?
+    } else {
+        releases
+            .releases
+            .first()
+            .ok_or_else(|| Error::PluginNotFound(name.to_string()))?
+    };
+
+    // Fail fast on manifest compatibility before downloading.
+    if let Some(fw) = fw_version
+        && !release.compatible_with_firmware(fw)
+    {
+        return Err(Error::PluginIncompatible(
+            name.to_string(),
+            release.version,
+            release.min_fw_version,
+            *fw,
+        ));
+    }
+
+    let url = release.binary_url(plugin_type, name);
+
+    // Download to verify SHA256, parse header, and cross-check version and type.
+    // Note: builder will download again via get_rom_files_async. Caching is a future optimisation.
+    let (data, _) = onerom_fw::net::fetch_rom_file_async(&url, &[], None, false)
+        .await
+        .map_err(Error::from)?;
+
+    verify_sha256(&data, &release.sha256, &url)?;
+
+    let header = parse_plugin_header(&data, &url)?;
+
+    if header.version != release.version {
+        return Err(Error::PluginVersionMismatch(
+            name.to_string(),
+            release.version,
+            header.version,
+        ));
+    }
+
+    if header.plugin_type != plugin_type {
+        return Err(Error::PluginTypeMismatch(
+            name.to_string(),
+            plugin_type.canonical().to_string(),
+            header.plugin_type.canonical().to_string(),
+        ));
+    }
+
+    // Cross-check header min_fw (manifest already checked above).
+    if let Some(fw) = fw_version {
+        check_header_min_fw(&header, header.version, fw, &url)?;
+    }
+
+    Ok(ResolvedPlugin {
+        plugin_type,
+        name: name.to_string(),
+        file: url,
+        size: data.len(),
+        version: header.version,
+    })
+}
+
+async fn resolve_file_plugin(
+    path: &str,
+    fw_version: Option<&FirmwareVersion>,
+) -> Result<ResolvedPlugin, Error> {
+    // Download/read binary to parse header. Note: builder will fetch again
+    // via get_rom_files_async. Caching is a future optimisation.
+    let (data, _) = onerom_fw::net::fetch_rom_file_async(path, &[], None, false)
+        .await
+        .map_err(Error::from)?;
+
+    let header = parse_plugin_header(&data, path)?;
+
+    if let Some(fw) = fw_version {
+        check_header_min_fw(&header, header.version, fw, path)?;
+    }
+
+    let name = std::path::Path::new(path)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or(path)
+        .to_string();
+
+    Ok(ResolvedPlugin {
+        plugin_type: header.plugin_type,
+        name,
+        file: path.to_string(),
+        size: data.len(),
+        version: header.version,
+    })
 }

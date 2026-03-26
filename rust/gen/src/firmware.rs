@@ -19,18 +19,23 @@ use schemars::{JsonSchema, Schema, SchemaGenerator, json_schema};
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct FirmwareConfig {
     /// Optional Ice specific configuration
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub ice: Option<IceConfig>,
 
     /// Optional Fire specific configuration
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub fire: Option<FireConfig>,
 
     /// Optional LED configuration
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub led: Option<LedConfig>,
 
     /// Optional Debug configuration
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub swd: Option<DebugConfig>,
 
     /// Optional serving algorithm parameters
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub serve_alg_params: Option<ServeAlgParams>,
 }
 
@@ -155,32 +160,41 @@ impl FirmwareConfig {
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct IceConfig {
     /// CPU frequency.  Only specific frequencies are supported
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub cpu_freq: Option<IceCpuFreq>,
 
     /// Whether overclocking is enabled
     #[serde(default)]
+    #[serde(skip_serializing_if = "is_none_or_is_false")]
     pub overclock: Option<bool>,
 }
 
+fn is_none_or_is_false(v: &Option<bool>) -> bool {
+    if let Some(val) = v { !val } else { true }
+}
+
 /// Fire configuration structure
-#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct FireConfig {
     /// CPU frequency.  Only specific frequencies are supported
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub cpu_freq: Option<FireCpuFreq>,
 
     /// Whether overclocking is enabled
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "is_none_or_is_false")]
     pub overclock: Option<bool>,
+
     /// Optional Vreg output voltage setting for RP2350 MCUs.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub vreg: Option<FireVreg>,
 
     /// Optional PIO/CPU override
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub serve_mode: Option<FireServeMode>,
 
     /// Optional DMA ROM preload enable/disable
-    #[serde(default = "default_true")]
+    #[serde(default = "default_true", skip_serializing_if = "is_true")]
     pub rom_dma_preload: bool,
 
     /// Optional Force 16 bit mode.  Only supported on One ROM 40, and if set
@@ -188,8 +202,28 @@ pub struct FireConfig {
     /// ROM to always operate in 16-bit mode.  This is a higher performance
     /// mode, as the algorithm can read the address lines 33% more frequently,
     /// but obviously disables the used of 8-bit mode.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "is_false")]
     pub force_16_bit: bool,
+}
+
+fn is_true(v: &bool) -> bool {
+    *v
+}
+fn is_false(v: &bool) -> bool {
+    !*v
+}
+
+impl Default for FireConfig {
+    fn default() -> Self {
+        Self {
+            cpu_freq: None,
+            overclock: None,
+            vreg: None,
+            serve_mode: None,
+            rom_dma_preload: true,
+            force_16_bit: false,
+        }
+    }
 }
 
 /// Fire serve mode

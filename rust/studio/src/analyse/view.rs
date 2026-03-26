@@ -126,13 +126,11 @@ fn fw_source_control<'a>(analyse: &'a Analyse, device: &'a Device) -> Element<'a
     } else {
         row
     }
-    .push_maybe(
-        if device.is_usb_run_capable() {
-            Some(reboot_button(analyse, device))
-        } else {
-            None
-        },
-    )
+    .push_maybe(if device.is_usb_run_capable() {
+        Some(reboot_button(analyse, device))
+    } else {
+        None
+    })
     .push(source_button)
     .spacing(20)
     .into()
