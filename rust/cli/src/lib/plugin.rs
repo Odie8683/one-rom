@@ -489,34 +489,45 @@ pub fn parse_plugins(plugins: &[String]) -> Result<Vec<PluginSpec>, Error> {
         .map(|s| parse_plugin(s))
         .collect::<Result<_, _>>()?;
 
-    // Best-effort checks on specs with known types only.
-    // Specs with unknown types (file= or bare name) are skipped here.
-    let mut seen_system = false;
-    let mut seen_user = false;
-    for spec in &specs {
-        if let PluginSpec::Named {
-            plugin_type: Some(t),
-            ..
-        } = spec
-        {
-            match t {
-                PluginType::System => {
-                    if seen_system {
-                        return Err(Error::DuplicatePlugin(PluginType::System));
+    // We can't perform a check if we don't yet know the plugin type(s)
+    let any_unknown = specs.iter().any(|s| {
+        matches!(
+            s,
+            PluginSpec::Named {
+                plugin_type: None,
+                ..
+            } | PluginSpec::File { .. }
+        )
+    });
+
+    if !any_unknown {
+        let mut seen_system = false;
+        let mut seen_user = false;
+        for spec in &specs {
+            if let PluginSpec::Named {
+                plugin_type: Some(t),
+                ..
+            } = spec
+            {
+                match t {
+                    PluginType::System => {
+                        if seen_system {
+                            return Err(Error::DuplicatePlugin(PluginType::System));
+                        }
+                        seen_system = true;
                     }
-                    seen_system = true;
-                }
-                PluginType::User => {
-                    if seen_user {
-                        return Err(Error::DuplicatePlugin(PluginType::User));
+                    PluginType::User => {
+                        if seen_user {
+                            return Err(Error::DuplicatePlugin(PluginType::User));
+                        }
+                        seen_user = true;
                     }
-                    seen_user = true;
                 }
             }
         }
-    }
-    if seen_user && !seen_system {
-        return Err(Error::UserPluginWithoutSystem);
+        if seen_user && !seen_system {
+            return Err(Error::UserPluginWithoutSystem);
+        }
     }
 
     Ok(specs)

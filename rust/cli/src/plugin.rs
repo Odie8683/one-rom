@@ -55,7 +55,7 @@ pub async fn cmd_plugin(options: &Options, args: &PluginArgs) -> Result<(), Erro
         }
     }
 
-    let num_plugins = plugins.len();
+    println!("Available plugins ({}):", plugins.len());
     for entry in plugins {
         // Fetch per-plugin releases manifest
         let releases = match fetch_plugin_releases(entry.plugin_type, &entry.name).await {
@@ -70,9 +70,7 @@ pub async fn cmd_plugin(options: &Options, args: &PluginArgs) -> Result<(), Erro
             }
         };
 
-        if num_plugins > 1 || options.verbose {
-            println!("---");
-        }
+        println!("---");
 
         print_plugin(
             options,
