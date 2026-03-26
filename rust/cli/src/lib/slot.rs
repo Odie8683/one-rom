@@ -466,7 +466,11 @@ pub fn slots_to_config_json(
     name: Option<&str>,
     description: Option<&str>,
 ) -> Result<String, Error> {
-    let mut chip_sets: Vec<ChipSetConfig> = plugins
+    // Ensure system plugins alway come first
+    let mut sorted_plugins: Vec<&ResolvedPlugin> = plugins.iter().collect();
+    sorted_plugins.sort_by_key(|p| p.plugin_type.slot_index());
+
+    let mut chip_sets: Vec<ChipSetConfig> = sorted_plugins
         .iter()
         .map(|p| plugin_to_chip_set_config(&p.file, p.plugin_type, p.size))
         .collect::<Result<Vec<_>, _>>()?;

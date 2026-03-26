@@ -177,6 +177,13 @@ impl PluginType {
             PluginType::User => "user",
         }
     }
+
+    pub fn slot_index(self) -> usize {
+        match self {
+            PluginType::System => 0,
+            PluginType::User => 1,
+        }
+    }
 }
 
 impl serde::Serialize for PluginType {

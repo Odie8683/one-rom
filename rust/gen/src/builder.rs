@@ -490,6 +490,26 @@ impl Builder {
                     });
                 }
 
+                if chip.chip_type == ChipType::SystemPlugin && set_id != 0 {
+                    return Err(Error::InvalidConfig {
+                        error: "System plugins must be in the first slot".to_string(),
+                    });
+                }
+                if chip.chip_type == ChipType::UserPlugin {
+                    if set_id != 1 {
+                        return Err(Error::InvalidConfig {
+                            error: "User plugins must be in the second slot".to_string(),
+                        });
+                    } else {
+                        // System plugin must be slot 0
+                        if config.chip_sets[0].chips[0].chip_type != ChipType::SystemPlugin {
+                            return Err(Error::InvalidConfig {
+                                error: "User plugins must be in the second slot, and the first slot must be a system plugin".to_string()
+                            });
+                        }
+                    }
+                }
+
                 chip_num += 1;
             }
 

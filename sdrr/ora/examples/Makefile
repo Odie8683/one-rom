@@ -16,7 +16,7 @@ PLUGIN_MK := ../plugin.mk
 
 EXAMPLES := $(patsubst %/plugin_main.c,%,$(wildcard */plugin_main.c))
 
-.PHONY: help all clean $(EXAMPLES)
+.PHONY: help all clean distclean $(EXAMPLES)
 
 all: $(EXAMPLES)
 
@@ -33,6 +33,8 @@ clean:
 	@for d in $(EXAMPLES); do \
 		$(MAKE) -f $(PLUGIN_MK) BUILD_DIR=$(CURDIR)/$$d/build clean; \
 	done
+
+distclean: clean
 
 help:
 	@echo "Usage:"

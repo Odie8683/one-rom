@@ -1,0 +1,6 @@
+{
+    "name": "blink",
+    "display_name": "One ROM Blink",
+    "description": "Blinks One ROM's status LED",
+    "build_output": "build/plugin_user.bin"
+}
