@@ -745,21 +745,7 @@ uint8_t get_rom_set_index(uint32_t sel_pins, uint32_t sel_mask, uint8_t plugins)
     // Calculate the ROM image index based on the selection bits and number of
     // images installed in this firmware.  For example, if image 4 was selected
     // but there are only 3 images, it will select image 1.
-    rom_index = rom_sel % (rom_set_count - num_plugins);
-
-    // Now, if rom_index is 0, make it 1 to skip the system plug if we have it
-    if (plugins & 1) {
-        if (rom_index == 0) {
-            rom_index++;
-        }
-    }
-
-    // Now skip the user pluging if we have one of those
-    if (plugins & 2) {
-        if (rom_index == 1) {
-            rom_index++;
-        }
-    }
+    rom_index = (rom_sel % (rom_set_count - num_plugins)) + num_plugins;
 
     if (rom_index >= rom_set_count) {
         ERR("ROM set cal error: %d", rom_index);
