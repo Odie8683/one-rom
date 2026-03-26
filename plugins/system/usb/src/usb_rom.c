@@ -174,13 +174,9 @@ pb_status_t app_retrieve_pin_layout(
         // Always uses all 13 address bits (plus X1/X2/CS1 - see later)
         addr_bits_in_space = 13;
     } else if (layout->chip_pins == 28) {
-        // 231024 uses all 16 address bits, but only A0-A12 contribute to offset calculation
-        if (layout->rom_type == CHIP_TYPE_231024) {
-            addr_bits_in_space = 16;
-        } else {
-            // Other 28 pin types only use their address lines
-            addr_bits_in_space = layout->num_addr_bits;
-        }
+        // All 28 pin chips use all 16 address bits in calculation, athough
+        // the 231024 also adds two CS lines in there (later)
+        addr_bits_in_space = 16;
     } else if (layout->chip_pins == 32) {
         // 32 pin types use all 19 address bits (512KB space)
         addr_bits_in_space = 19;
@@ -267,7 +263,7 @@ static pb_status_t app_logical_addr_to_offset(
     }
 
     *offset_out = offset_addr;
-    //DEBUG("Logical address 0x%08x maps to offset 0x%08x in ROM table", logical_addr, offset_addr);
+    DEBUG("Logical address 0x%08x maps to offset 0x%08x in ROM table", logical_addr, offset_addr);
 
     return PB_STATUS_OK;
 }
