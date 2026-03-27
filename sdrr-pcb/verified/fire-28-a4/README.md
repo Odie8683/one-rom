@@ -1,6 +1,6 @@
 # One ROM Fire 28 pin
 
-**Unverified**
+Verified.
 
 A4 revision of the 28 pin Fire ROM board.  Combined USB/Pro version with USB-C and SWD header pins.
 

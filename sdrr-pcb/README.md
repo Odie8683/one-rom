@@ -18,8 +18,9 @@ The following table lists the recommended verified designs.  Each design has bee
 | Fire  | RP2350A | 24 | Micro-B | ✓ | 4 | 2 | [fire-24-d](./verified/fire-24-d/README.md) |
 | Fire  | RP2354A | 24 | C | ✓ | 4 | 2 | [fire-24-e](./verified/fire-24-e/README.md) |
 | Ice   | STM32F4 | 24 | Micro-B | ✓ | 4 | 2 | [ice-24-j](./verified/ice-24-j/README.md) |
-| Fire  | RP2350A or RP2354A | 28 | C | ✓ | 2 | n/a | [fire-28-a3](./verified/fire-28-a3/README.md) |
+| Fire  | RP2350A or RP2354A | 28 | C | ✓ | 2 | n/a | [fire-28-a4](./verified/fire-28-a4/README.md) |
 | Fire  | RP2350A or RP2354A | 28 | C (upright) | ✓ | 2 | n/a | [fire-28-b](./verified/fire-28-b/README.md) |
+| Fire  | RP2350B or RP2354B | 32 | C | ✓ | 4 | n/a | [fire-32-a](./verified/fire-32-a/README.md) |
 | Fire  | RP2350B or RP2354B | 40 | C | ✓ | 4 | n/a | [fire-40-a](./verified/fire-40-a/README.md) |
 
 There may be later, unverified, revisions not in the list above.  These may have improvements over the recommended revisions, but they have not been verified to work.  If you want to use one of these later revisions, read the relevant README before ordering.
@@ -30,11 +31,12 @@ Sometimes your PCB manufacturer/assembler may be out of stock of a particular co
 
 | Original Component | Original LCSC/JLC Part Number | Alternative Component | Alternative LCSC/JLC Part Number | Verified? | Notes |
 |-|-|-|-|-|-|
-| Diodes Inc AP2112K-3.3TRG1 | C51118 | Tech Public AP2112K-3.3TRG1 | C23380830 | No | Jelly bean part, same specs, should be fine |
+| Diodes Inc AP2112K-3.3TRG1 | C51118 | Tech Public AP2112K-3.3TRG1 | C23380830 | Yes | Jelly bean part, same specs |
+| Uniroyal 0201WMF1002TEE | C473048 | Yageo RC0201FR-0710KL | C106225 | No | Jelly bean part, same specs |
 | Raspberry Pi RP2350A | C42411118 | Raspberry Pi RP2354A | C41378174 | Yes | If using RP2354A, do not populate the external flash chip, as the RP2354A has internal flash. |
 | Raspberry Pi RP2350B | C42415655 | Raspberry Pi RP2354B | C39843328 | Yes | If using RP2354B, do not populate the external flash chip, as the RP2354B has internal flash. |
 
-The RP2354A can be replaced with the RP2350A _if the design supported external flash and it is populated_.
+The RP2354A can be replaced with the RP2350A _if the design supports external flash and it is populated_.
 - Some designs, such as fire-24-e, do not support external flash, so the RP2354A cannot be replaced with the RP2350A.
 - Some designs, such as fire-40-a, have hardware support for both external flash plus an RP2354B, so two lots of flash.  Fabricating this option requires the correct 0R resistors to be populated/not populated.  See the board schematic for more details.
 
