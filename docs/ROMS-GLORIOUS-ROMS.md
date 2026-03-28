@@ -2,7 +2,7 @@
 
 Everything you wanted to know about 23 and 27 series ROMs but were afraid to ask.
 
-If you're looking for detailed pin-outs for all of the 23 and 27 series ROMs, you can find them at [ROM-TYPES.md](./ROM-TYPES.md).
+If you're looking for detailed pin-outs for all of the 23 and 27 series ROMs, you can find them at [CHIP-TYPES.md](./CHIP-TYPES.md).
 
 # 23 Series
 
@@ -31,6 +31,7 @@ All 23 series ROMs are powered by 5V.
 | 23256 | 32KB | 28   | 2    | yes             |
 | 23512 | 64KB | 28   | 2    | yes             |
 |231024 | 128KB| 28   | 1    | yes             |
+|TCS531000| 128KB| 28   | 1    | yes             |
 
 # 27 Series
 
@@ -38,9 +39,11 @@ The 27 series ROMs are EPROMS, meaning Erasable Programmable Read Only Memory, c
 
 Some computers of the vintage used a combination of 23 and 27 series ROMs, with 27 series being reserved for ROMs which were more likely to be upgraded later (or 23 series ROMs were replaced with vendor or user updated replacement 27 series ROMs).
 
-Like 23 series ROMs, 27 series ROMs are numbered 27 followed by the number of Kbits - so a 0.5KB ROM is 2704, 64KB 27512, etc.
+Like 23 series ROMs, 27 series ROMs are numbered 27 followed by the number of Kbits - so a 0.5KB ROM is 2704, 64KB 27512, etc.  All but the earliest 27 series EPROMs have letters, like C, LC, SF, etc, between the 27 and the number, which refer to different features of the chip, like access time, voltage requirements, etc.
 
-They also come as 24 and 28 pin packages, depending on the size - 0.5/1/2/4 came as 24 pin, while 8/16/32/64KB came as 28 pin.  Note that 8KB being a 28 pin package - the 8KB 23 series ROM was a 24 pin package.  This was presumably to enable both programming voltage (VPP) and program (PGM) pins to be included on the 8KB chip.
+They also come as 24, 28 and 32 pin packages, depending on the size - 0.5/1/2/4 came as 24 pin, while 8/16/32/64KB came as 28 pin, and the larger ones coming as 32 pin (and even some 40 and 42 pin packages).
+
+For the 27 series EPROMs note that 8KB (2764) is a 28 pin package - the 8KB 23 series ROM was a 24 pin package.  This was presumably to enable both programming voltage (VPP) and program (PGM) pins to be included on the 8KB chip.
 
 It is still possible to buy 27 series EPROMs today, but they are typically pulled from old equipment as they are no longer manufactured.  They are also often repainted and reprinted, often with different brand names/part numbers, which can make it a fiddly business to identify the chip for programming.  It may also mean supported access times are different to those advertised.  This author's experience is that most are relabeled, and around 20% appear to be faulty.
 
@@ -48,14 +51,14 @@ EPROMs should not be confused with EEPROMs, which are Electrically Erasable Prog
 
 Like 23 series ROMs, 27 series ROMs have varying access times.  Specifically in the EPROM case, /CE and /OE access times are specified separately, with /CE typically being more lenient.  The /CE and /OE access times for the fastest ST M2764A(-1) are specified as 180ns/65ns respectively.  This means One ROM needs to act on the /CE line going low and be ready to serve the byte as soon as /OE goes low.
 
-Most, but not all 27 series ROMs were powere solely by 5V.  However, the 2704/2708 models also required -5V (VBB) and +12V (VDD) on pins 21 and 19 respectively, including for read operation.  Therefore, if using a One ROM to replace a 2704/2708, you must ensure that these pins are not populated, as One ROM would be damaged by these voltages.
+Most, but not all 27 series ROMs were powered solely by 5V.  However, the 2704/2708 models also required -5V (VBB) and +12V (VDD) on pins 21 and 19 respectively, including for read operation.  Therefore, if using a One ROM to replace a 2704/2708, you must ensure that these pins are not populated, as One ROM would be damaged by these voltages.
 
 It is also important to note that, as 27 series ROMs were reprogrammable, they accepted a programming voltage on a programming pin.  Again, when using a One ROM to replace a 27 series ROM, you must ensure that the programming pin is not going to receive in excess of 5V, as One ROM would be damaged by this voltage.
 
 | Model | Size | Pins | One ROM Support |
 |-------|------|------|-----------------|
-| 2704  | 0.5KB| 24   | maybe*          |
-| 2708  | 1KB  | 24   | maybe*          |
+| 2704  | 0.5KB| 24   | yes*            |
+| 2708  | 1KB  | 24   | yes*            |
 | 2716  | 2KB  | 24   | yes             |
 | 2732  | 4KB  | 24   | yes             |
 | 2764  | 8KB  | 28   | yes             |
@@ -63,13 +66,14 @@ It is also important to note that, as 27 series ROMs were reprogrammable, they a
 | 27256 | 32KB | 28   | yes             |
 | 27512 | 64KB | 28   | yes             |
 
-(*) It is likely that One ROM can be programmed to emulate these chips by ensuring a compatible ROM image is written, and an appropriate 23 type selected in its config.  Raise a github issue if you'd like to understand how to do this.
+(*) Make sure any non 5V pins are not populated on One ROM before using to replace a 2704/2708, and ensure the programming pin is not going to receive in excess of 5V.
 
 # 23 and 27 compatibility
 
 The 23 and 27 series ROMs are largely but not entirely pin compatible.  The key differences are:
 - 8KB 23 series ROMs are 24 pin, while 8KB 27 series ROMs are 28 pin
 - 23 series have varying numbers of CS lines, with varying active high/low configurations, while 27 series have 2 active low CS lines (/CE and /OE)
+- The 2332 and 2732 have slightly different pinouts.
 
 A very common replacement strategy for 23 series ROMs is to use a 27 series ROM, and an adapter board.  This is a well established practice, and there are many such adapter boards available.  However, you often require different adapter boards, or different hardware versions, for the different sizes and CS configurations of 23 series ROMs.
 
@@ -79,20 +83,32 @@ One ROM (24):
 - 2316
 - 2332
 - 2364
-- 2704 (maybe*)
-- 2708 (maybe*)
+- 2704
+- 2708
 - 2716
 - 2732
 
-One ROM (28) - in progress:
+One ROM (28):
 - 23128
 - 23256
 - 23512
 - 231024
+- TCS531000
 - 2764
 - 27128
 - 27256
 - 27512
+
+One ROM (32):
+- 27C010
+- 27C020
+- 27C040
+- 27C301
+- SST39SF010
+- SST39SF020
+
+One ROM (40):
+- 27C400
 
 # Other Series
 
@@ -101,3 +117,11 @@ The Apple I and early Apple IIs used a 2513 ROM as character ROM.  This was repl
 There are dedicated 2513 replacements available, as well as adapter boards to take 2316/2716 ROMs (which One ROM could emulate).
 
 NEVER connect a One ROM directly into a 2513 ROM socket - you will damage the One ROM.
+
+# Reading One ROM in an EPROM Programmer
+
+This is a risky thing to do.  EPROM programmers by design apply higher voltages than 5V to some of the chip's pins, even when reading.  Those higher voltages can irreparably damage a One ROM.
+
+You _might_ be able to safely read a One ROM by disabling pin checking and ID checking before reading in an EPROM programmer, but it may still damage One ROM.
+
+**NEVER** attempt to program One ROM via an EPROM programmer.  You will damage it.  Use USB and the Web/CLI/Studio tools instead.

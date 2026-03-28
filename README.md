@@ -4,20 +4,21 @@
 
 The most flexible ROM replacement for your retro computer.  It is highly configurable and low-cost.  Get them fabbed at JLC for under $5 each in a quantity of 10 or more.
 
-Based on a Raspberry Pi RP2350 (One ROM Fire 🔥) or STM32F4 (One ROM Ice ❄️).
+Based on a Raspberry Pi RP2350.
 
-One ROM is available as 24 pin, 28 pin and 40 pin variants, emulating nearly all systems' 24 and 28 pin ROMs, plus 16-bit 40 pin ROMs used in systems like the Amiga A500.  One ROM supports any of the possible chip select configurations for 24 and 28 pin with a single hardware variant for that pin count, and can serve different images to multiple ROM sockets simultaneously.
+One ROM is available as 24 pin, 28 pin, 32 pin and 40 pin variants, emulating nearly all systems' 24, 28 and 32 pin ROMs, plus 16-bit 40 pin ROMs used in systems like the Amiga A500.  One ROM supports any of the possible chip select configurations for 24 and 28 pin with a single hardware variant for that pin count, and can serve different images to multiple ROM sockets simultaneously (currently 24 pin only).
 
-Replaces failed ROMs in Commodore 64s, VIC-20s, PETs, Ataris, BBC, TIs, disk drives and many other types of systems, like pinball machines and music synthesizers.
+Replaces failed ROMs in Amiga A500s, Commodore 64s, VIC-20s, PETs, Ataris, BBC, TIs, disk drives, IBM PCs and many other types of systems, like pinball machines, drum machines and music synthesizers.
 
 ROM types replaced:
 - 24 pin: 2704, 2708, 2716, 2732, 2316, 2332, 2364
-- 28 pin: 2764, 27128, 27256, 27512, 23128, 23256, 23512, 231024
+- 28 pin: 27x64, 27x128, 27x256, 27x512, 23128, 23256, 23512, 231024, TCS531000
+- 32 pin: 27C010, 27C020, 27C040, 27C301, SST39SF010, SST39SF020
 - 40 pin: 27C400
 
-One ROM also supports RAM chips of the correct footprint, including the 6116 and 2016 2K SRAM chips.
+One ROM also supports some RAM chips of the correct footprint, including the 6116 and 2016 2K SRAM.
 
-One ROM shares firmware and configuration tools across all of its variants, making it a "one stop shop" for ROM replacement.
+One ROM shares firmware and configuration tools across all of its variants, making it a "one stop shop" for ROM replacement.  Firmware is actively supported and developed, with new features and compatibility improvements being added regularly.
 
 One ROM was formerly known as Software Defined Retro ROM (SDRR).
 
@@ -34,41 +35,45 @@ These are the latest Fire 24 and 28 pin versions.  See [sdrr-pcb](sdrr-pcb/READM
     <img src="docs/images/fire-28-a2-s-iso.jpg" alt="One ROM RP2350 28 pin rev A side on" width="400">
 </div>
 
+All the hardware design files required to manufacture your own One ROMs are available in the [sdrr-pcb](sdrr-pcb) directory
+
+If you'd rather buy them pre-made, see known vendors at https://onerom.org/buy.
+
 ## Key Features
 
-💰 Based on sub-$2 microcontrollers.  **[Choose from Raspberry Pi (Fire 🔥) or STM (Ice ❄️) flavours](docs/MCU-SELECTION.md)**.
+**Cheap** - Based on sub-$2 RP2350 microcontroller.
 
-⚡ **[Fast](docs/STM32-SELECTION.md)** enough for PETs, VIC-20s, C64s, BBCs, Ataris, TI-99, Apple II, 1541s, IEEE drives, etc. Support faster systems with higher end microcontroller.
+**Fast** enough for PETs, VIC-20s, C64s, Amiga A500, BBCs, Ataris, TI-99, Apple II, 1541s, IEEE drives, etc.
 
-📐 **[Same footprint](docs/images/sdrr-24-pin-side.png)** as original 24 and 28 pin ROMs - doesn't overhang the socket like other solutions.
+**Same footprint** as original ROM sockets.
 
-🔌 **[USB Version](https://onerom.org/)** - no programmer required, program from your [browser](https://onerom.org/web) or [native desktop app](https://onerom.org/studio).
+**USB Programming** - no dedicated programmer required, program from your [browser](https://onerom.org/web) or [PC/Mac/Linux](https://onerom.org/cli).
 
-🚀 **[Quick programming](docs/PROGRAMMING.md)** - build and flash in <10 seconds.
+**Quick programming** - flash in <10 seconds.
 
-🛠️ **[Reflash in situ](docs/PROGRAMMING.md)** - no need to remove the ROM from the host when reprogramming.
+**Reflash in situ** - no need to remove the ROM from the host when reprogramming.
 
-⚙️ **[Software configurable](docs/CONFIGURATION.md)** chip select lines - no hardware jumpers required.  Useful for replacing 23xxx series ROMs.
+**Software configurable** chip select lines for mask programmed ROMs - no hardware jumpers required.
 
-💾 Stores up to **[16 ROM images](docs/STM32-SELECTION.md)** of different sizes and chip select configurations.  Image selectable via jumpers.
+Stores up to **16 ROM images** of different sizes and chip select configurations.  Image selectable via jumpers.
 
-📦 **[Replace multiple ROMs with one ROM](docs/MULTI-ROM-SETS.md)** a single One ROM 24 can replace up to 3 original ROMs e.g. all of C64 kernel, BASIC, character set.
+**Replace multiple ROMs with one ROM** - a single One ROM 24 can replace up to 3 original ROMs e.g. all of C64 kernel, BASIC, character set.
 
-🔀 **[Dynamic bank switching](docs/MULTI-ROM-SETS.md)** - switch between ROM images on the fly, e.g. different char ROMs with One ROM 24.
+**Dynamic bank switching** - switch between ROM images on the fly, e.g. different char ROMs with One ROM 24.
 
-💻 **[Hackable at runtime](docs/RUNTIME-ACCESS.md)** - change the ROM images being served and access telemetry from the ROM at runtime using **[Airfrog](https://piers.rocks/u/airfrog)** or other SWD probes.
+**Modifiable at runtime** - change the ROM images being served and access telemetry from the ROM at runtime using USB and the [CLI](https://onerom.org/cli)
 
-🧩 **[Images combined automatically](docs/CONFIGURATION.md)** - no need to manually build up your own larger PROM image containing multiple retro ROMs.
-
-🏭 **[Two layer PCB](sdrr-pcb/README.md)**, component on single-side, limited BOM for low manufacturing cost/complexity.  Panelisable designs available for production quantities.
-
-🔓 **[Open source](LICENSE.md)** software and hardware.
+**Open source** software and hardware.
 
 ## Videos
 
-Videos about One ROM, including demos, how-tos and technical deep-dives:
+Why use One ROM:
 
-[![Video Title](https://img.youtube.com/vi/Jhe4LF5LrZ8/maxresdefault.jpg)](https://www.youtube.com/playlist?list=PLXs34HaWLi12IR0gg25X8uovi9VFkOdlB)
+[![10 reasons to use One ROM](https://img.youtube.com/vi/LjKZ0uKzLO4/maxresdefault.jpg)](https://www.youtube.com/watch?v=LjKZ0uKzLO4)
+
+The hardware family:
+
+[![One ROM hardware family](https://img.youtube.com/vi/GAh021jgGgs/maxresdefault.jpg)](https://www.youtube.com/watch?v=GAh021jgGgs)
 
 ## Documentation
 
@@ -78,48 +83,24 @@ Links to other documentation provided below.
 
 | Topic | Description |
 |-------|-------------|
-| [Getting Started](docs/GETTING-STARTED.md) | Detailed instructions for flashing your One ROM |
-| [Frequently Asked Questions](docs/FAQ.md) | Answers to common questions about One ROM. |
 | [Building from source](ci/docker/README.md) | How to build the firmware from source using the provided Docker container. |
 | [Installation](INSTALL.md) | Manual installation of build system dependencies. |
-| [Programming](docs/PROGRAMMING.md) | How to program One ROM. |
-| [Available Configurations](config/README.md#available-configurations) | Various pre-collated ROM collection configurations. |
-| [MCU Selection](docs/MCU-SELECTION.md) | How to select the appropriate MCU for your application. |
+| [Available Configurations](onerom-config/README.md) | Various pre-collated ROM collection configurations. |
 | [Image Selection](docs/IMAGE-SELECTION.md) | How to tell One ROM which of the installed ROM images to serve. |
 | [Image Sets](docs/MULTI-ROM-SETS.md) | How to use a single One ROM to support multiple ROMs simultaneously or to dynamically switch between images. |
-| [Configuration](docs/CONFIGURATION.md) | One ROM configuration options. |
-| [Runtime Access/Control](docs/RUNTIME-ACCESS.md) | Access and control the One ROM while it is serving ROMs. |
-| [Compatibility](docs/COMPATIBILITY.md) | Compatibility with various retro systems. |
 | [Logging](docs/LOGGING.md) | How to enable and use One ROM logging. |
-| [Technical Summary](docs/TECHNICAL-SUMMARY.md) | Overview of the One ROM architecture, operation and design decisions. |
-| [Technical Details](docs/TECHNICAL-DETAILS.md) | Technical details of the One ROM firmware and hardware. |
 | [ROMs Glorious ROMs](docs/ROMS-GLORIOUS-ROMS.md) | Everything you ever wanted to know about 23/27 series ROMs but were afraid to ask. |
-| [Custom Hardware](docs/CUSTOM-HARDWARE.md) | Guide on designing custom hardware for One ROM. |
-| [Build System](docs/BUILD-SYSTEM.md) | How the One ROM build system works. |
 | [Voltage Levels](docs/VOLTAGE-LEVELS.md) | How the One ROM supports the required logic voltage levels. |
 | [Pi Pico Programmer](docs/PI-PICO-PROGRAMMER.md) | How to use a $5 Raspberry Pi Pico as a programmer for One ROM. |
-| [Manufacturing Test](docs/MANUFACTURING-TEST.md) | Information on testing One ROM during manufacturing. |
-| [STM32 Clones](docs/STM32-CLONES.md) | Information using STM32 clones with One ROM. |
-| [Future Enhancements](docs/FUTURE-ENHANCEMENTS.md) | Possible future enhancements under consideration. |
 | [License](LICENSE.md) | One ROM software and hardware licenses. |
 
-## Debugging
+## Problems
 
-The best place to start with debugging is [`Logging`](docs/LOGGING.md).  This will help you see what the One ROM is doing, and why it may not be working as expected.
+If you hit a problem you'd like help with, raise an issue at [the project issues page](https://github.com/piersfinlayson/one-rom/issues) or open a thread at [GitHub Discussions](https://github.com/piersfinlayson/one-rom/discussions).  Please provide:
 
-If you have an [Airfrog](https://piers.rocks/u/airfrog), you can use it to inspect the One ROM firmware and its current state.
-
-If you'd like a hand, raise an issue on the [GitHub issues page](https://github.com/piersfinlayson/software-defined-retro-rom/issues).  Please provide:
-
-- the MCU you are using and the PCB type/revision
+- your One ROM PCB type and revision (or a photo if you're unsure)
 - the retro system you are trying to One ROM with
-- any logging from One ROM
-- ideally, the firmware image, if you are happy to share.
-
-If you have built the firmware yourself, rather than using a pre-built release image, also provide:
-
-- your build configuration
-- the output from `make info-detail`.
+- details of the problem.
 
 ## License
 

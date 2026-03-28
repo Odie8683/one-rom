@@ -1,6 +1,10 @@
-# Raspberry Pi Pico as a Programmer
+# Raspberry Pi Pico as an SWD Programmer
 
-To use a stock Raspberry Pi Pico as a programmer for One ROM, download the `debugprobe_on_pico.uf2` file from the [Releases](https://github.com/raspberrypi/debugprobe/releases) page of Raspberry Pi's `debugprobe` repository.
+Today's One ROMs are generally programmed using USB and the Web/CLI/Studio tools.
+
+However, developers may find it useful to program One ROMs via SWD (Serial Wire Debug).
+
+To use a stock Raspberry Pi Pico as an SWD programmer for One ROM, download the `debugprobe_on_pico.uf2` file from the [Releases](https://github.com/raspberrypi/debugprobe/releases) page of Raspberry Pi's `debugprobe` repository.
 
 Mount your Raspberry Pi Pico in BOOTSEL mode and copy the `debugprobe_on_pico.uf2` file to the Raspberry Pi Pico's file system.
 

@@ -1,10 +1,14 @@
 # Multiple ROM Sets
 
-One ROM offers two models of run-time multi-ROM image support:
+One ROM 24 offers two models of run-time multi-ROM image support:
 
 - **Dynamic bank switched image sets**.  In this mode, the ROM images in a set can dynamically switched at runtime (requiring no One ROM or host reset).  This is done by using the X1 and X2 pins as bank select lines.
 
 - **Multiple simultaneous ROM image sets**.  A set is a group of up to 3 ROM images, all of which One ROM will serve **simultaneously**.  In this model, extra chip select lines from the extra ROM sockets to be served are connected to One ROM pins X1 and X2.  This allows a single One ROM to serve up to 3 ROM images.  (Restrictions apply, see below.)
+
+Other versions of One ROM do currently not offer these features.
+
+The examples below show how to configure these features building One ROM from source.  A similar approach is taken when using CLI/Studio.  Example the CLI help and the [JSON config file readme](../onerom-config/README.md) for details on how to configure these features using CLI/Studio. 
 
 ## Dynamic Bank Switching
 
@@ -29,7 +33,7 @@ This feature is currently available only for 2364 ROMs, and 2332/2316 ROMs whose
 
 You can find pre-built configurations in [`config`](/config/README.md), named `set-*.mk`.
 
-[STM32 Selection](/docs/STM32-SELECTION.md) gives guidance on the STM32F4 clock speed requirement for serving Multi-ROM sets.
+[STM32 Selection](/docs/STM32-SELECTION.md) gives guidance on the STM32F4 clock speed requirement for serving Multi-ROM sets if using One ROM Ice.
 
 ## Set Configuration
 

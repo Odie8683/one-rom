@@ -1,6 +1,14 @@
 # Logging
 
-There are three types of logging which can be enabled on One ROM.
+This document is targetted at developers.  All logging below is enabled when building One ROM directly from source, using `make`.  For example:
+
+```bash
+HW_REV=fire-24-e BOOT_LOGGING=1 make
+```
+
+The log outputs below are representative of the type of logging that will be produced, but the log examples given are from very old firmware.
+
+The sections below describe different loggig options.  Only `BOOT_LOGGING` and `DEBUG_LOGGING` are actively maintained.
 
 ## `BOOT_LOGGING`
 
