@@ -28,14 +28,14 @@ See https://onerom.org/start/
 
 ## Hardware
 
-These are the latest Fire 24 and 28 pin versions.  See [sdrr-pcb](sdrr-pcb/README.md) for all of the hardware designs and [current recommended revisions](sdrr-pcb/README.md#recommended-revisions).
+These are the latest Fire 24 and 28 pin versions.  See [pcb](hardware/pcb/README.md) for all of the hardware designs and [current recommended revisions](hardware/pcb/README.md#recommended-revisions).
 
 <div style="display: flex; justify-content: center; gap: 20px;">
     <img src="docs/images/fire-24-e-soldered.jpg" alt="One ROM RP2350 24 pin rev A side on" width="400">
     <img src="docs/images/fire-28-a2-s-iso.jpg" alt="One ROM RP2350 28 pin rev A side on" width="400">
 </div>
 
-All the hardware design files required to manufacture your own One ROMs are available in the [sdrr-pcb](sdrr-pcb) directory
+All the hardware design files required to manufacture your own One ROMs are available in the [hardware/pcb](hardware/pcb) directory
 
 If you'd rather buy them pre-made, see known vendors at https://onerom.org/buy.
 

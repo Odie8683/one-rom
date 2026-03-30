@@ -10,7 +10,7 @@ This revision has four key improvements over rev D:
 - Status LED.
 
 <div style="text-align: center;">
-  <a href="/sdrr-pcb/unverified/stm32f4-24-pin-rev-e/sdrr-rev-e.png">
+  <a href="/hardware/pcb/unverified/stm32f4-24-pin-rev-e/sdrr-rev-e.png">
     <img src="sdrr-rev-e.png" alt="SDRR rev E" width="400">
   </a>
 </div>

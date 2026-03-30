@@ -266,7 +266,7 @@ A: In small quantities, expect around $5 per device.  The STM32F4 costs around $
 
 **Q: Where can I get the PCB?**
 
-A: Order the latest revision from [OSH Park](https://oshpark.com) using the provided link for your chosen revision in the [`sdrr-pcb`](/sdrr-pcb/README.md), or manufacture using the open-source design files.  We use JLC PCB to assemble our One ROMs, and are very happy with their service.
+A: Order the latest revision from [OSH Park](https://oshpark.com) using the provided link for your chosen revision in the [`hardware/pcb`](/hardware/pcb/README.md), or manufacture using the open-source design files.  We use JLC PCB to assemble our One ROMs, and are very happy with their service.
 
 **Q: Is One ROM open source?**
 

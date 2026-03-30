@@ -2,7 +2,7 @@
 
 The software and firmware files which are part of this repository are licensed under the [MIT license](#mit-license).
 
-The schematic, PCB files and other hardware files which are part of this repository, in particular those in the [`sdrr-pcb` directory](sdrr-pcb/) are licensed under the [Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0) license](#cc-by-sa-40-license).
+The schematic, PCB files, 3d models and other hardware files which are part of this repository, in particular those in the [hardware directory](hardware/) are licensed under the [Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0) license](#cc-by-sa-40-license).
 
 ## MIT License
 

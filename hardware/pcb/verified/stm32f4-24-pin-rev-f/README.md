@@ -9,7 +9,7 @@ This revision has the following key improvements over rev E:
 - 2 x additional pins are broken out (labelled 'X1' and 'X2' on the underside), to allow a single SDRR to replace up to 3 2364 ROMs simultaneously, by wiring the chip select lines from the additional ROMs directly to these new pins.  
 
 <div style="text-align: center;">
-  <a href="/sdrr-pcb/verified/stm32f4-24-pin-rev-f/sdrr-24-pin-rev-f-side.png">
+  <a href="/hardware/pcb/verified/stm32f4-24-pin-rev-f/sdrr-24-pin-rev-f-side.png">
     <img src="sdrr-24-pin-rev-f-side.png" alt="SDRR STM32F4 24 pin rev F" width="400">
   </a>
 </div>

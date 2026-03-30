@@ -13,7 +13,7 @@ This PCB is designed to replace 23128s, and possibly 23256/23512s, in the later 
 This was dervied from the 24-pin SDRR rev E PCB.
 
 <div style="text-align: center;">
-  <a href="/sdrr-pcb/unverified/stm32f4-28-pin-rev-a/sdrr-28-pin-rev-a.png">
+  <a href="/hardware/pcb/unverified/stm32f4-28-pin-rev-a/sdrr-28-pin-rev-a.png">
     <img src="sdrr-28-pin-rev-a.png" alt="SDRR 28 pin rev A" width="400">
   </a>
 </div>
