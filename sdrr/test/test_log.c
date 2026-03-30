@@ -103,7 +103,16 @@ const char *chip_type[NUM_CHIP_TYPES] = {
     "27C040",
     "27C080",
     "27C400",
-    "6116"
+    "6116",
+    "27C301",
+    "SystemPlugin",
+    "UserPlugin",
+    "PioPlugin",
+    "SST39SF040",
+    "28C16",
+    "28C64",
+    "28C256",
+    "28C512",
 };
 
 const char *transform_to_str[] = {

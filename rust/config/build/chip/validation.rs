@@ -11,7 +11,7 @@ const VALID_DATA_LINE_COUNTS: &[usize] = &[8, 16];
 const MIN_PIN_NUMBER: u8 = 1;
 const VALID_PIN_COUNTS: &[u8] = &[24, 28, 32, 40];
 const VALID_READ_STATES: &[&str] = &["vcc", "high", "low", "chip_select", "x", "word_size"];
-const VALID_CONTROL_LINES: &[&str] = &["cs1", "cs2", "cs3", "ce", "oe", "byte", "write"];
+const VALID_CONTROL_LINES: &[&str] = &["cs1", "cs2", "cs3", "ce", "oe", "byte", "write", "busy"];
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]

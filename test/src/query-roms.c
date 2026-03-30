@@ -147,6 +147,30 @@ static void init_address_mangler(
             mangler->cs2_pin = config->mcu.pins.oe.pin_27c400;
             break;
 
+        case CHIP_TYPE_28C16:
+            mangler->cs1_pin = config->mcu.pins.ce.pin_2704;
+            mangler->cs2_pin = config->mcu.pins.oe.pin_2704;
+            mangler->cs3_pin = config->mcu.pins.cs2.pin_2332;
+            break;
+
+        case CHIP_TYPE_28C64:
+            mangler->cs1_pin = config->mcu.pins.ce.pin_2764;
+            mangler->cs2_pin = config->mcu.pins.oe.pin_2764;
+            mangler->cs3_pin = config->mcu.pins.cs3.pin_23128;
+            break;
+
+        case CHIP_TYPE_28C256:
+            mangler->cs1_pin = config->mcu.pins.ce.pin_2764;
+            mangler->cs2_pin = config->mcu.pins.oe.pin_2764;
+            mangler->cs3_pin = config->mcu.pins.cs3.pin_23128;
+            break;
+
+        case CHIP_TYPE_28C512:
+            mangler->cs1_pin = config->mcu.pins.ce.pin_27c010;
+            mangler->cs2_pin = config->mcu.pins.oe.pin_27c010;
+            mangler->cs3_pin = config->mcu.pins.addr[17];
+            break;
+
         default:
             printf("Error: Unsupported ROM type %d\n", rom_type);
             exit(1);
@@ -169,6 +193,10 @@ static void init_address_mangler(
 #if defined(DEBUG_TEST)
         printf("    Note: Swapped A11 and A12 pins %d/%d for 2732 ROM type\n", pin_a11, pin_a12);
 #endif // DEBUG_TEST
+    } else if (rom_type == CHIP_TYPE_28C256) {
+        uint8_t temp = address_mangler.addr_pins[14];
+        address_mangler.addr_pins[14] = address_mangler.addr_pins[15];
+        address_mangler.addr_pins[15] = temp;
     }
 
     // Special case for 32 pin ROMs, the 27C301.  It has A16 after all the
@@ -310,6 +338,12 @@ void create_address_mangler(const json_config_t* config, const sdrr_rom_type_t r
         for (int ii = 0; ii < MAX_ADDR_LINES; ii++) {
             if (address_mangler.addr_pins[ii] != 255) {
                 address_mangler.addr_pins[ii] -= min_addr_pin;
+            }
+        }
+
+        if (rom_type == CHIP_TYPE_28C512) {
+            if (address_mangler.cs3_pin != 255) {
+                address_mangler.cs3_pin -= min_addr_pin;
             }
         }
     } else {
@@ -487,6 +521,10 @@ const char* rom_type_to_string(sdrr_rom_type_t rom_type) {
         case CHIP_TYPE_27C080: return "27C080";
         case CHIP_TYPE_27C301: return "27C301";
         case CHIP_TYPE_27C400: return "27C400";
+        case CHIP_TYPE_28C16:  return "28C16";
+        case CHIP_TYPE_28C64:  return "28C64";
+        case CHIP_TYPE_28C256: return "28C256";
+        case CHIP_TYPE_28C512: return "28C512";
         default: return "unknown";
     }
 }
@@ -517,6 +555,11 @@ uint8_t get_num_cs(sdrr_rom_type_t rom_type) {
         case CHIP_TYPE_2364:
         case CHIP_TYPE_231024:
             return 1;
+        case CHIP_TYPE_28C16:
+        case CHIP_TYPE_28C64:
+        case CHIP_TYPE_28C256:
+        case CHIP_TYPE_28C512:
+            return 3;
         default:
             printf("Error: Unsupported ROM type %d in get_num_cs\n", rom_type);
             assert(0 && "Unknown ROM type in num_cs");
@@ -581,6 +624,10 @@ size_t get_expected_rom_size(sdrr_rom_type_t rom_type) {
         case CHIP_TYPE_27C080: return 524288;
         case CHIP_TYPE_27C301: return 131072;
         case CHIP_TYPE_27C400: return 524288;
+        case CHIP_TYPE_28C16:  return 2048;
+        case CHIP_TYPE_28C64:  return 8192;
+        case CHIP_TYPE_28C256: return 32768;
+        case CHIP_TYPE_28C512: return 65536;
         default: return 0;
     }
 }
@@ -607,6 +654,10 @@ sdrr_rom_type_t rom_type_from_string(const char* type_str) {
     else if (strcmp(type_str, "27C080") == 0) return CHIP_TYPE_27C080;
     else if (strcmp(type_str, "27C301") == 0) return CHIP_TYPE_27C301;
     else if (strcmp(type_str, "27C400") == 0) return CHIP_TYPE_27C400;
+    else if (strcmp(type_str, "28C16")  == 0) return CHIP_TYPE_28C16;
+    else if (strcmp(type_str, "28C64")  == 0) return CHIP_TYPE_28C64;
+    else if (strcmp(type_str, "28C256") == 0) return CHIP_TYPE_28C256;
+    else if (strcmp(type_str, "28C512") == 0) return CHIP_TYPE_28C512;
     else return -1; // Unknown type
 }
 

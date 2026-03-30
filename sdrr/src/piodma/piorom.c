@@ -1455,6 +1455,10 @@ static void piorom_finish_config(
         case CHIP_TYPE_27128:
         case CHIP_TYPE_27256:
         case CHIP_TYPE_27512:
+        case CHIP_TYPE_28C16:
+        case CHIP_TYPE_28C64:
+        case CHIP_TYPE_28C256:
+        case CHIP_TYPE_28C512:
             config->num_cs_pins = 2;
             break;
 
@@ -1602,6 +1606,10 @@ static void piorom_finish_config(
         case CHIP_TYPE_27C040:
         case CHIP_TYPE_27C301:
         case CHIP_TYPE_27C400:
+        case CHIP_TYPE_28C16:
+        case CHIP_TYPE_28C64:
+        case CHIP_TYPE_28C256:
+        case CHIP_TYPE_28C512:
             ;
             // Use OE/CE instead of CS pins
             uint8_t ce_pin = info->pins->ce;
@@ -1993,10 +2001,28 @@ static void piorom_force_unused_addr_pins_to_zero(
             }
             break;
 
+        case CHIP_TYPE_28C16:
+            // Physical pin 21 is /WRITE
+            if (info->pins->addr[12] < MAX_USED_GPIOS) {
+                APIO_GPIO_FORCE_INPUT_HIGH(info->pins->addr[12]);
+            }
+            break;
+
         case CHIP_TYPE_2732:
             // Physical pin 21 is A11 (not A12), and is used.  No NC.
             break;
 
+        case CHIP_TYPE_28C64:
+            // Pin 1 /BUSY (A15)
+            // PIN 27 /WRITE (A14)
+            if (info->pins->addr[14] < MAX_USED_GPIOS) {
+                APIO_GPIO_FORCE_INPUT_HIGH(info->pins->addr[14]);
+            }
+            if (info->pins->addr[15] < MAX_USED_GPIOS) {
+                APIO_GPIO_FORCE_INPUT_LOW(info->pins->addr[15]);
+            }
+
+        // Fall through
         case CHIP_TYPE_2764:
             // Pin 26 = NC = A13
             if (info->pins->addr[13] < MAX_USED_GPIOS) {
@@ -2020,6 +2046,13 @@ static void piorom_force_unused_addr_pins_to_zero(
             }
             break;
 
+        case CHIP_TYPE_28C256:
+            // Pin 27 /WRITE
+            if (info->pins->addr[14] < MAX_USED_GPIOS) {
+                APIO_GPIO_FORCE_INPUT_HIGH(info->pins->addr[14]);
+            }
+            break;
+
         case CHIP_TYPE_27512:
             // No NC pins - all address lines used.
             break;
@@ -2039,6 +2072,22 @@ static void piorom_force_unused_addr_pins_to_zero(
             // Pin 31 = PGM = A18
             if (info->pins->addr2[18-16] < MAX_USED_GPIOS) {
                 APIO_GPIO_FORCE_INPUT_LOW(info->pins->addr2[18-16]);
+            }
+            break;
+
+        case CHIP_TYPE_28C512:
+            // Pin 31 = NC (A18)
+            // Pin 30 = /WRITE (A17)
+            // Pin 2 = NC (A16)
+            // Pin 1 = NC (A19 = no-op)
+            if (info->pins->addr2[18-16] < MAX_USED_GPIOS) {
+                APIO_GPIO_FORCE_INPUT_LOW(info->pins->addr2[18-16]);
+            }
+            if (info->pins->addr2[17-16] < MAX_USED_GPIOS) {
+                APIO_GPIO_FORCE_INPUT_HIGH(info->pins->addr2[17-16]);
+            }
+            if (info->pins->addr2[16-16] < MAX_USED_GPIOS) {
+                APIO_GPIO_FORCE_INPUT_LOW(info->pins->addr2[16-16]);
             }
             break;
 

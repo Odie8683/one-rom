@@ -31,8 +31,14 @@ There are also some other inconsistencies between types:
 
 - [24-pin Mask ROM Family (23xx)](#24-pin-mask-rom-family-23xx)
 - [28-pin Mask ROM Family (23xxx)](#28-pin-mask-rom-family-23xx)
+- [32-pin Mask ROM Family (23xxx)](#32-pin-mask-rom-family-23xx)
 - [24-pin EPROM Family (27xx)](#24-pin-eprom-family-27xx)
 - [28-pin EPROM Family (2764 and 27xxx)](#28-pin-eprom-family-27xx)
+- [32-pin EPROM Family (27xxx)](#32-pin-eprom-family-27xx)
+- [40-pin EPROM Family (27xxx)](#40-pin-eprom-family-27xx)
+- [24-pin EEPROM Family (28Cxx)](#24-pin-eeprom-family-28cxx)
+- [28-pin EEPROM Family (28Cxx)](#28-pin-eeprom-family-28cxx)
+- [32-pin EEPROM Family (28Cxx)](#32-pin-eeprom-family-28cxx)
 - [RAM Chips](#ram-chips)
 - [Pin Function Comparison](#pin-function-comparison)
 - [Detailed Pinouts](#detailed-pinouts)
@@ -61,6 +67,15 @@ There are also some other inconsistencies between types:
         doc.push('\n');
     }
 
+    if let Some(roms) = families.get("mask_32pin") {
+        doc.push_str(&generate_family_comparison_table(
+            "32-pin Mask ROM Family (23xx)",
+            roms,
+            config,
+        ));
+        doc.push('\n');
+    }
+
     if let Some(roms) = families.get("eprom_24pin") {
         doc.push_str(&generate_family_comparison_table(
             "24-pin EPROM Family (27xx)",
@@ -73,6 +88,51 @@ There are also some other inconsistencies between types:
     if let Some(roms) = families.get("eprom_28pin") {
         doc.push_str(&generate_family_comparison_table(
             "28-pin EPROM Family (27xx)",
+            roms,
+            config,
+        ));
+        doc.push('\n');
+    }
+
+    if let Some(roms) = families.get("eprom_32pin") {
+        doc.push_str(&generate_family_comparison_table(
+            "32-pin EPROM Family (27xx)",
+            roms,
+            config,
+        ));
+        doc.push('\n');
+    }
+
+    if let Some(roms) = families.get("eprom_40pin") {
+        doc.push_str(&generate_family_comparison_table(
+            "40-pin EPROM Family (27xx)",
+            roms,
+            config,
+        ));
+        doc.push('\n');
+    }
+
+    if let Some(roms) = families.get("eeprom_24pin") {
+        doc.push_str(&generate_family_comparison_table(
+            "24-pin EEPROM Family (28Cxx)",
+            roms,
+            config,
+        ));
+        doc.push('\n');
+    }
+
+    if let Some(roms) = families.get("eeprom_28pin") {
+        doc.push_str(&generate_family_comparison_table(
+            "28-pin EEPROM Family (28Cxx)",
+            roms,
+            config,
+        ));
+        doc.push('\n');
+    }
+
+    if let Some(roms) = families.get("eeprom_32pin") {
+        doc.push_str(&generate_family_comparison_table(
+            "32-pin EEPROM Family (28Cxx)",
             roms,
             config,
         ));
@@ -117,14 +177,34 @@ fn group_by_family(config: &ChipTypesConfig) -> BTreeMap<&'static str, Vec<(&Str
         let key = if type_name.starts_with("23") && chip_type.function == ChipFunction::Rom {
             if chip_type.pins == 24 {
                 "mask_24pin"
-            } else {
+            } else if chip_type.pins == 28 {
                 "mask_28pin"
+            } else if chip_type.pins == 32 {
+                "mask_32pin"
+            } else {
+                panic!("Unexpected pin count for 23xx ROM: {}", chip_type.pins);
             }
         } else if type_name.starts_with("27") && chip_type.function == ChipFunction::Rom {
             if chip_type.pins == 24 {
                 "eprom_24pin"
-            } else {
+            } else if chip_type.pins == 28 {
                 "eprom_28pin"
+            } else if chip_type.pins == 32 {
+                "eprom_32pin"
+            } else if chip_type.pins == 40 {
+                "eprom_40pin"
+            } else {
+                panic!("Unexpected pin count for 27xx ROM: {}", chip_type.pins);
+            }
+        } else if type_name.starts_with("28") && chip_type.function == ChipFunction::Rom {
+            if chip_type.pins == 24 {
+                "eeprom_24pin"
+            } else if chip_type.pins == 28 {
+                "eeprom_28pin"
+            } else if chip_type.pins == 32 {
+                "eeprom_32pin"
+            } else {
+                panic!("Unexpected pin count for 28Cxx EEPROM: {}", chip_type.pins);
             }
         } else if chip_type.function == ChipFunction::Ram {
             "ram_chips"

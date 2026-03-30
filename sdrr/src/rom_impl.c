@@ -440,6 +440,14 @@ void SECTION_MAIN_LOOP main_loop(
     }
 #endif // RP235X
 
+    // 28C and CPU mode aren't supported.  We don't need to check larger 28C
+    // types, as they are only supported on One ROM 28+, which doesn't support
+    // CPU mode. and that is checked elsewhere.
+    if (rom->rom_type == CHIP_TYPE_28C16) {
+        ERR("28C16 ROM not supported on Ice or Fire CPU mode");
+        limp_mode(LIMP_MODE_INVALID_CONFIG);
+    }
+
 #if !defined(TEST_BUILD)
 
 #if !defined(C_MAIN_LOOP)

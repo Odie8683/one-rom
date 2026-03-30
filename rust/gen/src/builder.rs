@@ -22,7 +22,7 @@ pub const MAX_SUPPORTED_FIRMWARE_VERSION: FirmwareVersion = FirmwareVersion::new
 
 const UNSUPPORTED_FIRMWARE_VERSIONS: [FirmwareVersion; 1] = [FirmwareVersion::new(0, 6, 3, 0)];
 
-pub const SUPPORTED_CHIP_TYPES: &[ChipType; 25] = &[
+pub const SUPPORTED_CHIP_TYPES: &[ChipType; 31] = &[
     ChipType::Chip2316,
     ChipType::Chip2716,
     ChipType::Chip6116,
@@ -48,6 +48,12 @@ pub const SUPPORTED_CHIP_TYPES: &[ChipType; 25] = &[
     ChipType::SystemPlugin,
     ChipType::UserPlugin,
     ChipType::PioPlugin,
+    ChipType::Chip28C16,
+    ChipType::Chip28C64,
+    ChipType::Chip28C256,
+    ChipType::Chip28C512,
+    ChipType::Chip23C1010,
+    ChipType::Chip27C080,
 ];
 
 pub(crate) use crate::firmware::*;
@@ -796,6 +802,19 @@ impl Builder {
 
         for (set_id, chip_set_config) in self.config.chip_sets.iter().enumerate() {
             let mut set_roms = Vec::new();
+
+            if let Some(overrides) = chip_set_config.firmware_overrides.as_ref() &&
+                let Some(fire) = overrides.fire.as_ref() && fire.serve_mode == Some(FireServeMode::Cpu) {
+                    if props.board().chip_pins() != 24 {
+                        return Err(Error::InvalidConfig {
+                            error: "Fire CPU serving mode is only supported on One ROM 24".to_string(),
+                        });
+                    } else if chip_set_config.chips[0].chip_type == ChipType::Chip28C16 {
+                        return Err(Error::InvalidConfig {
+                            error: "Fire CPU serving mode is not supported with 28C16".to_string(),
+                    });
+                }
+            }
 
             for chip_config in &chip_set_config.chips {
                 let data = if let Some(&file_id) = self.file_id_map.get(&chip_id) {

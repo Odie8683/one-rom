@@ -65,6 +65,7 @@ test_24_all_rom_types() {
     run_no_cs  $hw_rev images/test/rand_8192.rom trunc,type=2708   "$extra_flags"
     run_no_cs  $hw_rev images/test/rand_8192.rom trunc,type=2716   "$extra_flags"
     run_no_cs  $hw_rev images/test/rand_8192.rom trunc,type=2732   "$extra_flags"
+    run_no_cs  $hw_rev images/test/rand_8192.rom trunc,type=28C16   "$extra_flags"
 }
 
 test_28_all_rom_types() {
@@ -79,6 +80,8 @@ test_28_all_rom_types() {
     run_no_cs  $hw_rev images/test/rand_65536.rom trunc,type=27128   "$extra_flags"
     run_no_cs  $hw_rev images/test/rand_65536.rom trunc,type=27256   "$extra_flags"
     run_no_cs  $hw_rev images/test/rand_65536.rom type=27512         "$extra_flags"
+    run_no_cs  $hw_rev images/test/rand_65536.rom trunc,type=28C64    "$extra_flags"
+    run_no_cs  $hw_rev images/test/rand_65536.rom trunc,type=28C256   "$extra_flags"
 }
 
 test_32pin() {
@@ -91,6 +94,7 @@ test_32pin() {
     run_no_cs  $hw_rev images/test/rand_512KB.rom type=27C301,trunc "$extra_flags"
     run_no_cs  $hw_rev images/test/rand_512KB.rom type=27C080,cs1=0 "$extra_flags"
     run_no_cs  $hw_rev images/test/rand_512KB.rom type=27C080,cs1=1 "$extra_flags"
+    run_no_cs  $hw_rev images/test/rand_512KB.rom type=28C512,trunc "$extra_flags"
 }
 
 test_40pin() {

@@ -250,6 +250,13 @@ impl SdrrInfo {
                 pin_to_addr_map[pins.ce as usize] = Some(11);
                 0x07FF // 11-bit address
             }
+            SdrrRomType::Rom28C16 => {
+                assert!(pins.oe < 16, "OE pin for 28C16 must be less than 16");
+                assert!(pins.ce < 16, "CE pin for 28C16 must be less than 16");
+                pin_to_addr_map[pins.oe as usize] = Some(13);
+                pin_to_addr_map[pins.ce as usize] = Some(11);
+                0x07FF // 11-bit address
+            }
             SdrrRomType::Rom2732 => {
                 assert!(pins.oe < 16, "OE pin for 2732 must be less than 16");
                 assert!(pins.ce < 16, "CE pin for 2732 must be less than 16");
@@ -260,6 +267,13 @@ impl SdrrInfo {
             SdrrRomType::Rom2764 => {
                 assert!(pins.oe < 18, "OE pin for 2764 must be less than 18");
                 assert!(pins.ce < 18, "CE pin for 2764 must be less than 18");
+                pin_to_addr_map[pins.oe as usize] = Some(16);
+                pin_to_addr_map[pins.ce as usize] = Some(17);
+                0x1FFF // 13-bit address
+            }
+            SdrrRomType::Rom28C64 => {
+                assert!(pins.oe < 18, "OE pin for 28C64 must be less than 18");
+                assert!(pins.ce < 18, "CE pin for 28C64 must be less than 18");
                 pin_to_addr_map[pins.oe as usize] = Some(16);
                 pin_to_addr_map[pins.ce as usize] = Some(17);
                 0x1FFF // 13-bit address
@@ -294,6 +308,13 @@ impl SdrrInfo {
                 pin_to_addr_map[pins.ce as usize] = Some(17);
                 0x7FFF
             }
+            SdrrRomType::Rom28C256 => {
+                assert!(pins.oe < 18, "OE pin for 28C256 must be less than 18");
+                assert!(pins.ce < 18, "CE pin for 28C256 must be less than 18");
+                pin_to_addr_map[pins.oe as usize] = Some(16);
+                pin_to_addr_map[pins.ce as usize] = Some(17);
+                0x7FFF
+            }
             SdrrRomType::Rom23512 => {
                 assert!(pins.cs1 < 18, "CS1 pin for 23512 must be less than 18");
                 assert!(pins.cs2 < 18, "CS2 pin for 23512 must be less than 18");
@@ -317,6 +338,7 @@ impl SdrrInfo {
             | SdrrRomType::SystemPlugin
             | SdrrRomType::UserPlugin
             | SdrrRomType::PioPlugin
+            | SdrrRomType::Rom28C512
             | SdrrRomType::Rom27C010
             | SdrrRomType::Rom27C020
             | SdrrRomType::Rom27C040

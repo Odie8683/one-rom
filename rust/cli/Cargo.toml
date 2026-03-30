@@ -1,6 +1,6 @@
 [package]
 name = "onerom-cli"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 authors = ["Piers Finlayson <piers@piers.rocks>"]
 license = "MIT"
@@ -20,10 +20,10 @@ name = "onerom"
 path = "src/main.rs"
 
 [dependencies]
-onerom-config = { path="../config", version = "0.4.6" }
-onerom-fw = { path="../fw", version = "0.1.17" }
-onerom-gen = { path="../gen", version = "0.5.5" }
-sdrr-fw-parser = { path="../sdrr-fw-parser", version = "0.6.8" }
+onerom-config = { path="../config", version = "0.4.7" }
+onerom-fw = { path="../fw", version = "0.1.18" }
+onerom-gen = { path="../gen", version = "0.5.6" }
+sdrr-fw-parser = { path="../sdrr-fw-parser", version = "0.6.9" }
 
 picoboot = { version = "0.2.3", features = ["reader", "tokio"] }
 

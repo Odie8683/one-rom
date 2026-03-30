@@ -306,6 +306,22 @@ pub enum SdrrRomType {
     // SST39SF040
     #[deku(id = "25")]
     RomSst39sf040,
+
+    // 28C16
+    #[deku(id = "26")]
+    Rom28C16,
+
+    // 28C64
+    #[deku(id = "27")]
+    Rom28C64,
+
+    // 28C256
+    #[deku(id = "28")]
+    Rom28C256,
+
+    // 28C512
+    #[deku(id = "29")]
+    Rom28C512,
 }
 
 impl fmt::Display for SdrrRomType {
@@ -337,6 +353,10 @@ impl fmt::Display for SdrrRomType {
             SdrrRomType::UserPlugin => write!(f, "User Plugin"),
             SdrrRomType::PioPlugin => write!(f, "PIO Plugin"),
             SdrrRomType::RomSst39sf040 => write!(f, "SST39SF040"),
+            SdrrRomType::Rom28C16 => write!(f, "28C16"),
+            SdrrRomType::Rom28C64 => write!(f, "28C64"),
+            SdrrRomType::Rom28C256 => write!(f, "28C256"),
+            SdrrRomType::Rom28C512 => write!(f, "28C512"),
         }
     }
 }
@@ -379,6 +399,10 @@ impl SdrrRomType {
             SdrrRomType::UserPlugin => 64,
             SdrrRomType::PioPlugin => 64,
             SdrrRomType::RomSst39sf040 => 512,
+            SdrrRomType::Rom28C16 => 2,
+            SdrrRomType::Rom28C64 => 8,
+            SdrrRomType::Rom28C256 => 32,
+            SdrrRomType::Rom28C512 => 64,
         }
     }
 
@@ -410,7 +434,11 @@ impl SdrrRomType {
             SdrrRomType::SystemPlugin => 0,
             SdrrRomType::UserPlugin => 0,
             SdrrRomType::PioPlugin => 0,
-            SdrrRomType::RomSst39sf040 => 512,
+            SdrrRomType::RomSst39sf040 => 32,
+            SdrrRomType::Rom28C16 => 24,
+            SdrrRomType::Rom28C64 => 28,
+            SdrrRomType::Rom28C256 => 28,
+            SdrrRomType::Rom28C512 => 32,
         }
     }
 
@@ -448,6 +476,10 @@ impl SdrrRomType {
             SdrrRomType::UserPlugin => false,
             SdrrRomType::PioPlugin => false,
             SdrrRomType::RomSst39sf040 => false,
+            SdrrRomType::Rom28C16 => false,
+            SdrrRomType::Rom28C64 => false,
+            SdrrRomType::Rom28C256 => false,
+            SdrrRomType::Rom28C512 => false,
         }
     }
 
@@ -480,6 +512,10 @@ impl SdrrRomType {
             SdrrRomType::UserPlugin => false,
             SdrrRomType::PioPlugin => false,
             SdrrRomType::RomSst39sf040 => false,
+            SdrrRomType::Rom28C16 => false,
+            SdrrRomType::Rom28C64 => false,
+            SdrrRomType::Rom28C256 => false,
+            SdrrRomType::Rom28C512 => false,
         }
     }
 }

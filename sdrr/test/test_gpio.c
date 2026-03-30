@@ -80,6 +80,11 @@ static void get_gpio_drive_from_addr_cs(
                 }
             }
             local_addr_pins[16] = highest_addr_pin + 1;
+        } else if (rom_type == CHIP_TYPE_28C256) {
+            // Swap pins 14 and 15
+            uint8_t temp = local_addr_pins[14];
+            local_addr_pins[14] = local_addr_pins[15];
+            local_addr_pins[15] = temp;
         } else if (rom_type == CHIP_TYPE_27C400) {
             assert(num_addr_bits == 19 && "27C400 should have 19 address bits");
 
@@ -151,6 +156,25 @@ static void get_gpio_drive_from_addr_cs(
         case CHIP_TYPE_27C400:
             cs1_pin = ce_pin;
             cs2_pin = oe_pin;
+            break;
+
+        case CHIP_TYPE_28C16:
+            // 24 pin, so swap CS2 and CS3 vs 2332.
+            // CS3 is active high
+            cs2_pin = sdrr_info.pins->cs3;
+            cs3_pin = sdrr_info.pins->cs2;
+            break;
+
+        case CHIP_TYPE_28C64:
+        case CHIP_TYPE_28C256:
+            // No-op, use same pins as 231024, but CS3 active high
+            break;
+
+        case CHIP_TYPE_28C512:
+            // A17, active high
+            cs1_pin = ce_pin;
+            cs2_pin = oe_pin;
+            cs3_pin = sdrr_info.pins->addr2[17-16];
             break;
 
         default:
@@ -300,6 +324,15 @@ void get_gpio_drive(
         if (rom_type == CHIP_TYPE_27C080) {
             cs2 = get_cs_gpio_state(CS_ACTIVE_LOW, cs_active);
             cs3 = get_cs_gpio_state(CS_ACTIVE_LOW, cs_active);
+        }
+
+        if ((rom_type == CHIP_TYPE_28C16) ||
+            (rom_type == CHIP_TYPE_28C64) ||
+            (rom_type == CHIP_TYPE_28C256) ||
+            (rom_type == CHIP_TYPE_28C512)) {
+            // Override CS3 for 28Cxx6 - it's always active high as it's /W
+            cs3 = get_cs_gpio_state(CS_ACTIVE_HIGH, cs_active);
+
         }
     } else if (multi_rom) {
         // There are 3 CS lines - CS1 (ROM 0), X1 (ROM 1) and X2 (ROM 2)

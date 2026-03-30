@@ -238,6 +238,10 @@ void process_firmware_overrides(
             if (overrides->override_present[0] & (1 << 7)) {
                 runtime_info->fire_serve_mode = overrides->override_value[0] & (1 << 4) ? FIRE_SERVE_PIO : FIRE_SERVE_CPU;
                 LOG("Fire serve mode override: %d", runtime_info->fire_serve_mode);
+                if ((runtime_info->fire_serve_mode == FIRE_SERVE_CPU) && (sdrr_info.pins->chip_pins != 24)) {
+                    ERR("Serve mode CPU is only supported on One ROM 24");
+                    limp_mode(LIMP_MODE_INVALID_CONFIG);
+                }
             }
             if (overrides->override_present[1] & (1 << 0)) {
                 runtime_info->rom_dma_copy = overrides->override_value[0] & (1 << 5) ? 1 : 0;

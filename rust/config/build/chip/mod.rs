@@ -120,6 +120,9 @@ fn generate_lib_rs(config: &ChipTypesConfig) -> String {
     let mut eprom_28pin = Vec::new();
     let mut eprom_32pin = Vec::new();
     let mut eprom_40pin = Vec::new();
+    let mut eeprom_24pin = Vec::new();
+    let mut eeprom_28pin = Vec::new();
+    let mut eeprom_32pin = Vec::new();
     let mut ram_chips = Vec::new();
 
     for (type_name, _chip_type) in get_sorted_chip_types(config) {
@@ -173,6 +176,19 @@ fn generate_lib_rs(config: &ChipTypesConfig) -> String {
                 } else {
                     panic!(
                         "Unexpected pin count {} for EPROM {}",
+                        chip_type.pins, type_name
+                    );
+                }
+            } else if type_name.starts_with("28") {
+                if chip_type.pins == 24 {
+                    eeprom_24pin.push(entry);
+                } else if chip_type.pins == 28 {
+                    eeprom_28pin.push(entry);
+                } else if chip_type.pins == 32 {
+                    eeprom_32pin.push(entry);
+                } else {
+                    panic!(
+                        "Unexpected pin count {} for EEPROM {}",
                         chip_type.pins, type_name
                     );
                 }
@@ -245,6 +261,30 @@ fn generate_lib_rs(config: &ChipTypesConfig) -> String {
     if !eprom_40pin.is_empty() {
         code.push_str("//! ## 40-pin EPROMs (27Cxx series)\n");
         for entry in eprom_40pin {
+            code.push_str(&entry);
+        }
+        code.push_str("//!\n");
+    }
+
+    if !eeprom_24pin.is_empty() {
+        code.push_str("//! ## 24-pin EEPROMs (28Cxx series)\n");
+        for entry in eeprom_24pin {
+            code.push_str(&entry);
+        }
+        code.push_str("//!\n");
+    }
+
+    if !eeprom_28pin.is_empty() {
+        code.push_str("//! ## 28-pin EEPROMs (28Cxx series)\n");
+        for entry in eeprom_28pin {
+            code.push_str(&entry);
+        }
+        code.push_str("//!\n");
+    }
+
+    if !eeprom_32pin.is_empty() {
+        code.push_str("//! ## 32-pin EEPROMs (28Cxx series)\n");
+        for entry in eeprom_32pin {
             code.push_str(&entry);
         }
         code.push_str("//!\n");

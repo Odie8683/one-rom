@@ -48,6 +48,10 @@ typedef struct {
     uint8_t pin_27c080;
     uint8_t pin_27c301;
     uint8_t pin_27c400;
+    uint8_t pin_28c16;
+    uint8_t pin_28c64;
+    uint8_t pin_28c256;
+    uint8_t pin_28c512;
 } cs_config_t;
 
 typedef struct {
@@ -64,6 +68,7 @@ typedef struct {
     uint8_t sel[7];
     uint8_t sel_jumper_pull;
     uint8_t status;
+    cs_config_t we;
 } mcu_pins_t;
 
 typedef struct {

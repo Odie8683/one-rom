@@ -619,7 +619,7 @@ impl Chip {
             ChipType::Chip27256 => 12,
             ChipType::Chip27512 => 13,
             ChipType::Chip231024 => 14,
-            ChipType::Chip27C010 => 15,
+            ChipType::Chip23C1010 | ChipType::Chip27C010 => 15,
             ChipType::Chip27C020 => 16,
             ChipType::Chip27C040 => 17,
             ChipType::Chip27C080 => 18,
@@ -630,6 +630,10 @@ impl Chip {
             ChipType::UserPlugin => 23,
             ChipType::PioPlugin => 24,
             ChipType::ChipSST39SF040 => 25,
+            ChipType::Chip28C16 => 26,
+            ChipType::Chip28C64 => 27,
+            ChipType::Chip28C256 => 28,
+            ChipType::Chip28C512 => 29,
         }
     }
 }
@@ -1406,6 +1410,23 @@ fn handle_snowflake_chip_types(
         modified_map.remove(0);
         modified_map.push(None);
         modified_map.push(None);
+
+        if *chip_type == ChipType::Chip28C256 {
+            // Swap A15 and A14
+            let a14_index = modified_map.iter().position(|&x| x == Some(14));
+            let a15_index = modified_map.iter().position(|&x| x == Some(15));
+            if let (Some(i14), Some(i15)) = (a14_index, a15_index) {
+                modified_map[i14] = Some(15);
+                modified_map[i15] = Some(14);
+            } else {
+                // Address lines not found as expected.  Panic, as this is an
+                // internal error and implies a board has been added supporting
+                // the 28C256 but without pins A14 and/or A15.
+                panic!(
+                    "Address lines A14 and/or A15 not found in phys_pin_to_addr_map for 28C256 handling"
+                );
+            }
+        }
     } else if *chip_type == ChipType::Chip27C301 {
         // A16 is an alternate pin
         if let Some(a16_index) = modified_map.iter().position(|&x| x == Some(16)) {

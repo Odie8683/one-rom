@@ -83,6 +83,10 @@ static void parse_cs_config(json_object* cs_obj, cs_config_t* cs_config) {
     cs_config->pin_27c301 = 255;
     cs_config->pin_27c080 = 255;
     cs_config->pin_27c400 = 255;
+    cs_config->pin_28c16 = 255;
+    cs_config->pin_28c64 = 255;
+    cs_config->pin_28c256 = 255;
+    cs_config->pin_28c512 = 255;
     
     json_object* pin_obj;
     if (json_object_object_get_ex(cs_obj, "2364", &pin_obj)) {
@@ -147,6 +151,18 @@ static void parse_cs_config(json_object* cs_obj, cs_config_t* cs_config) {
     }
     if (json_object_object_get_ex(cs_obj, "27c400", &pin_obj)) {
         cs_config->pin_27c400 = json_object_get_int(pin_obj);
+    }
+    if (json_object_object_get_ex(cs_obj, "28c16", &pin_obj)) {
+        cs_config->pin_28c16 = json_object_get_int(pin_obj);
+    }
+    if (json_object_object_get_ex(cs_obj, "28c64", &pin_obj)) {
+        cs_config->pin_28c64 = json_object_get_int(pin_obj);
+    }
+    if (json_object_object_get_ex(cs_obj, "28c256", &pin_obj)) {
+        cs_config->pin_28c256 = json_object_get_int(pin_obj);
+    }
+    if (json_object_object_get_ex(cs_obj, "28c512", &pin_obj)) {
+        cs_config->pin_28c512 = json_object_get_int(pin_obj);
     }
 }
 
@@ -330,6 +346,9 @@ json_config_t* load_json_config(const char* hw_rev) {
                 parse_cs_config(cs_obj, &config->mcu.pins.oe);
             } else {
                 error = "oe";
+            }
+            if (json_object_object_get_ex(pins_obj, "write", &cs_obj)) {
+                parse_cs_config(cs_obj, &config->mcu.pins.we);
             }
             
             json_object* pin_obj;

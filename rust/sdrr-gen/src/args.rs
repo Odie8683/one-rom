@@ -488,6 +488,12 @@ impl Args {
                 "byte" => {
                     // Not specified
                 }
+                "write" => {
+                    // Not specified
+                }
+                "busy" => {
+                    // Not specified
+                }
                 other => {
                     return Err(format!(
                         "ROM type {rom_type:?} has unknown control line: {other}",
