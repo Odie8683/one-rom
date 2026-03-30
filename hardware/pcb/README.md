@@ -7,7 +7,7 @@ Contains One ROM PCB design files.  These are organised into two directories:
 
 ## Recommended Revisions
 
-Last Updated 3rd February 2026.
+Last Updated 26th March 2026.
 
 I recommend Fire over Ice boards for most users.  See [MCU-SELECTION.md](../docs/MCU-SELECTION.md) for a comparison between Fire and Ice capabilities.
 
