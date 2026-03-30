@@ -6,6 +6,8 @@ All notables changes between versions are documented in this file.
 
 - One ROM Fire - Add read support for 28C16 (24), 28C64 (28), 28C256 (28) and 28C512 (32) EEPROMs (#169).
 
+- Added support for 23C1010 mask programmed ROM (which is effectively a 27C010).
+
 - Prevent CPU serve mode from being selected for One ROM 28/32/40.  It can still be configured on One ROM Fire 24, but not any other Fire version.
 
 - Re-instate 27C080 support, supported by the 32 pin One ROM.  This only supports half the total 1MB image with a single One ROM, but two can be stacked and configured high/low to support the full 1MB.

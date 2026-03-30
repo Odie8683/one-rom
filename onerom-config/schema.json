@@ -260,6 +260,11 @@
                     "const": "2716"
                 },
                 {
+                    "description": "2KB EEPROM with fixed active-low CE/OE - 2048 bytes, 24-pin package",
+                    "type": "string",
+                    "const": "28C16"
+                },
+                {
                     "description": "2KB (2048 x 8-bit) Static RAM with fixed active-low CE/OE/WE - 2048 bytes, 24-pin package",
                     "type": "string",
                     "const": "6116"
@@ -285,6 +290,11 @@
                     "const": "2764"
                 },
                 {
+                    "description": "8KB EEPROM with fixed active-low CE/OE - 8192 bytes, 28-pin package",
+                    "type": "string",
+                    "const": "28C64"
+                },
+                {
                     "description": "16KB mask ROM with 3 configurable CS lines - 16384 bytes, 28-pin package",
                     "type": "string",
                     "const": "23128"
@@ -305,6 +315,11 @@
                     "const": "27256"
                 },
                 {
+                    "description": "32KB EEPROM with fixed active-low CE/OE - 32768 bytes, 28-pin package",
+                    "type": "string",
+                    "const": "28C256"
+                },
+                {
                     "description": "64KB mask ROM with 2 configurable CS lines - 65536 bytes, 28-pin package",
                     "type": "string",
                     "const": "23512"
@@ -318,6 +333,16 @@
                     "description": "128KB mask ROM with 1 configurable CS line - 131072 bytes, 28-pin package",
                     "type": "string",
                     "const": "231024"
+                },
+                {
+                    "description": "64KB EEPROM with fixed active-low CE/OE - 65536 bytes, 32-pin package",
+                    "type": "string",
+                    "const": "28C512"
+                },
+                {
+                    "description": "128KB mask ROM with fixed active-low CE/OE - 131072 bytes, 32-pin package",
+                    "type": "string",
+                    "const": "23C1010"
                 },
                 {
                     "description": "128KB EPROM with fixed active-low CE/OE - 131072 bytes, 32-pin package",
