@@ -162,6 +162,41 @@ uint32_t ora_get_chip_size_from_type(uint32_t chip_type) {
     return 0u;
 }
 
+uint8_t ora_is_pin_output(uint8_t pin) {
+    if (pin <= MAX_USED_GPIOS) {
+        return GPIO_IS_OUTPUT(pin);
+    }
+    return 0xFF;
+}
+
+uint8_t ora_get_data_pin_nums(uint8_t *data_pins_out, uint8_t num_pins) {
+    uint8_t got_pins = 0;
+
+    // Stop searching for data pins when the first invalid pin is reached
+
+    // Retrieve first 8 data pins
+    for (uint8_t ii = 0; (ii < 8) && (got_pins < num_pins); ii++) {
+        if (sdrr_info.pins->data[ii] <= MAX_USED_GPIOS) {
+            data_pins_out[got_pins] = sdrr_info.pins->data[ii];
+            got_pins++;
+        } else {
+            return got_pins;
+        }
+    }
+
+    // Retrieve next 8 data pins from data2
+    for (uint8_t ii = 0; (ii < 8) && (got_pins < num_pins); ii++) {
+        if (sdrr_info.pins->data2[ii] <= MAX_USED_GPIOS) {
+            data_pins_out[got_pins] = sdrr_info.pins->data2[ii];
+            got_pins++;
+        } else {
+            return got_pins;
+        }
+    }
+
+    return got_pins;
+}
+
 void *ora_fn_lookup(api_id_t id) {
     switch (id) {
         case ORA_ID_REBOOT_BOOTSEL:
@@ -200,6 +235,10 @@ void *ora_fn_lookup(api_id_t id) {
             return ora_get_runtime_info;
         case ORA_ID_GET_CHIP_SIZE_FROM_TYPE:
             return ora_get_chip_size_from_type;
+        case ORA_ID_IS_PIN_OUTPUT:
+            return ora_is_pin_output;
+        case ORA_ID_GET_DATA_PIN_NUMS:
+            return ora_get_data_pin_nums;
         default:
             return NULL;
     }

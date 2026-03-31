@@ -141,9 +141,21 @@ typedef enum {
 
     /**
      * @brief Get the size of a ROM from its type
-      * @sa ora_get_chip_size_from_type_fn_t
+     * @sa ora_get_chip_size_from_type_fn_t
      */
     ORA_ID_GET_CHIP_SIZE_FROM_TYPE = 0x00000011,
+
+    /**
+     * @brief Check if a pin is configured as an output
+     * @sa ora_is_pin_output_fn_t
+     */
+    ORA_ID_IS_PIN_OUTPUT = 0x00000012,
+
+    /**
+     * @brief Retrieve the first num_pins data pin numbers
+     * @sa ora_get_data_pin_nums_fn_t
+     */
+    ORA_ID_GET_DATA_PIN_NUMS = 0x00000013,
 
     /** Invalid API identifier */
     ORA_ID_INVALID = 0xFFFFFFFF,
@@ -550,6 +562,7 @@ typedef const void *(*ora_get_runtime_info_fn_t)(void);
 
 /**
  * @brief Get the size of a chip type
+ * @sa ORA_ID_GET_CHIP_SIZE_FROM_TYPE
  *
  * This is used by plugins to get the size of a chip type in bytes, for use in
  * memory management and bounds checking.
@@ -559,6 +572,36 @@ typedef const void *(*ora_get_runtime_info_fn_t)(void);
  * is invalid
  */
 typedef uint32_t (*ora_get_chip_size_from_type_fn_t)(uint32_t chip_type);
+
+/**
+ * @brief Check if a pin is configured as an output
+ * @sa ORA_ID_IS_PIN_OUTPUT
+ *
+ * This is used by plugins to check if a specific pin is currently configured as an output.
+ *
+ * @param pin The pin to check
+ * @return 1 if the pin is configured as an output, 0 otherwise or 0xFF for an invalid pin
+ */
+typedef uint8_t (*ora_is_pin_output_fn_t)(uint8_t pin);
+
+/**
+ * @brief Retrieve the first num_pins data pin numbers
+ * @sa ORA_ID_GET_DATA_PIN_NUMS
+ * 
+ * This is used by plugins to retrieve the pin numbers for the data pins,
+ * which is useful for plugins that want to monitor or interact with the data
+ * lines.
+ * 
+ * The data pin numbers are returned in the data_pins_out array, which must be
+ * allocated by the caller and have space for at least num_pins elements.  The
+ * function returns the number of data pins actually returned, which may be less
+ * than num_pins if there are not that many data pins available.
+ * 
+ * @param data_pins_out Output array to be filled with the data pin numbers
+ * @param num_pins The maximum number of data pin numbers to return
+ * @return The number of data pin numbers returned in data_pins_out
+ */
+typedef uint8_t (*ora_get_data_pin_nums_fn_t)(uint8_t *data_pins_out, uint8_t num_pins);
 
 /** @} */ // plugin_api_functions
 

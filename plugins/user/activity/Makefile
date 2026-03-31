@@ -10,8 +10,8 @@
 # Usage:
 #   make
 
-PLUGIN_NAME := user/blink
-PLUGIN_SRC := src/blink_main.c
+PLUGIN_NAME := user/activity
+PLUGIN_SRC := src/activity_main.c
 PLUGIN_TYPE := USER
 PLUGIN_SRC_DIR := src
 
