@@ -120,6 +120,9 @@
 #define GPIO_SPACING        0x008
 
 #define GPIO_STATUS_INFROMPAD_BIT  17
+#define GPIO_STATUS_OETOPAD_BIT    13
+
+#define GPIO_IS_OUTPUT(pin)  ((GPIO_STATUS(pin) >> GPIO_STATUS_OETOPAD_BIT) & 1)
 
 #define GPIO_STATUS(pin)    (*(volatile uint32_t*)(IO_BANK0_BASE + GPIO_STATUS_OFFSET + pin*GPIO_SPACING))
 #define GPIO_CTRL(pin)      (*(volatile uint32_t*)(IO_BANK0_BASE + GPIO_CTRL_OFFSET + pin*GPIO_SPACING))
