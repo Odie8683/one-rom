@@ -11,8 +11,6 @@
 #include "usb_picobootx.h"
 
 // Optimisations:
-// - Reduce USB_MAX_ENDPOINTS to minimum
-// - Remove need to include pico sdk header (need pico.h)
 // - Move timer handler to library and see if it can be better optimised
 // - Add IRQ prioritisation a la SDK
 
