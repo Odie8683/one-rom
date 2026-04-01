@@ -2,6 +2,8 @@
 //
 // MIT License
 
+use crossterm::event::{self, Event, KeyEvent};
+use crossterm::terminal;
 use log::debug;
 use std::io::Write;
 
@@ -263,4 +265,15 @@ pub fn resolve_firmware_output(
     } else {
         default_filename
     }
+}
+
+pub fn read_char() -> Result<KeyEvent, Error> {
+    terminal::enable_raw_mode().map_err(|e| Error::io("terminal", e))?;
+    let key = loop {
+        if let Event::Key(key) = event::read().unwrap() {
+            break key;
+        }
+    };
+    terminal::disable_raw_mode().map_err(|e| Error::io("terminal", e))?;
+    Ok(key)
 }

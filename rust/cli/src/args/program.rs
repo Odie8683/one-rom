@@ -200,6 +200,14 @@ pub struct ProgramArgs {
     /// Don't pause after final reboot for the device to re-enumerate.
     #[arg(long, conflicts_with = "no_reboot")]
     pub fast: bool,
+
+    /// Program multiple devices, with a pause for user confirmation between
+    /// each one.
+    ///
+    /// Note that each board will be progammed with the same firmware config,
+    /// including board config, as the first board.
+    #[arg(long, visible_aliases = ["multiple", "multi"])]
+    pub batch: bool,
 }
 
 impl CommandTrait for ProgramArgs {

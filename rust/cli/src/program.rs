@@ -221,19 +221,45 @@ pub async fn cmd_program(
     let data = acquire_program_image(options, args, &board, &mcu).await?;
     verify_assembled_firmware(options, &data, args.force).await?;
 
-    if let Some(out) = &args.output {
-        write_firmware_file(out, &data)?;
+    loop {
+        if let Some(out) = &args.output {
+            write_firmware_file(out, &data)?;
+        }
+
+        println!("Programming device - DO NOT DISCONNECT");
+        flash_device(options, &data).await?;
+
+        if args.verify {
+            verify_flash(options, &data).await?;
+        }
+
+        reboot_and_rescan(options, &args.into()).await?;
+        println!("Programming complete");
+
+        if !args.batch {
+            break;
+        }
+
+        println!("Press any key to program next device, q to exit...");
+        let key = crate::utils::read_char()?;
+        if key.code == crossterm::event::KeyCode::Char('q') {
+            println!("Exiting batch programming mode");
+            break;
+        }
+
+        // Try and get a new device
+        match onerom_cli::device::select_device(None, options.unrecognised, &options.vid_pid).await
+        {
+            Ok(device) => {
+                options.device = Some(device);
+            }
+            Err(e) => {
+                eprintln!("Error selecting next device for programming:\n  {e}");
+                println!("Exiting batch programming mode");
+                break;
+            }
+        }
     }
-
-    println!("Programming device - DO NOT DISCONNECT");
-    flash_device(options, &data).await?;
-
-    if args.verify {
-        verify_flash(options, &data).await?;
-    }
-
-    reboot_and_rescan(options, &args.into()).await?;
-    println!("Programming complete");
 
     Ok(())
 }
