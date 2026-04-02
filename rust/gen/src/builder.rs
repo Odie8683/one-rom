@@ -320,7 +320,7 @@ impl Builder {
                         "cs3" => chip.cs3,
                         // Clumsy code to ignore these
                         "ce" | "oe" => Some(CsLogic::Ignore),
-                        "write" | "byte" => Some(CsLogic::Ignore),
+                        "write" | "byte" | "busy" => Some(CsLogic::Ignore),
                         _ => {
                             return Err(Error::InvalidConfig {
                                 error: format!("Unknown control line {}", line.name),
