@@ -1,6 +1,10 @@
 # Changelog
 
-## v0.1.16 - 2026-??-??
+## v0.1.17 - 2026-04-02
+
+- Add 27C080, 28C16, 28C64, 28C256 and 28C512 ROM support.
+
+## v0.1.16 - 2026-03-26
 
 - Pulls in new boards and chip types (including chip type alias support)
 - Adds a "reload" button next to selected config, to streamline config update workflow
