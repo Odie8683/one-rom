@@ -22,9 +22,9 @@
             "roms": [
                 {
                     "description": "27C080 high half",
-                    "file": "images/test/rand_512KB.rom",
+                    "file": "images/test/rand_512KB_alt.rom",
                     "type": "27C080",
-                    "cs1": "active_low"
+                    "cs1": "active_high"
                 }
             ]
         }
