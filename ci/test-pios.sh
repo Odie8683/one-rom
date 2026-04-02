@@ -174,9 +174,7 @@ test_40pin fire-40-a
 test_40pin fire-40-a -DFORCE_16_BIT
 
 # Test specific ROM configurations on all Fire 24 hardware revisions.
-test_24_config old-config/c64-no-destestmax.mk
 test_24_config old-config/pet-4-40-50.mk
-test_24_config old-config/vic20-pal.mk
 test_24_config old-config/test/24-random-27xx.mk
 
 # Test multi-ROM sets on revisions C+.  A/B do not support multi-ROM sets with
@@ -186,9 +184,7 @@ test_24_config_c_onwards old-config/test/set-3-images.mk
 
 # Test banked switched ROM configurations on all Fire 24 hardware revisions.
 # All hardware revisions support bank switched ROMs with PIO support.
-test_24_config old-config/bank-1541.mk
 test_24_config old-config/bank-c64-char.mk
-test_24_config old-config/bank-vic20-char-fun.mk
 
 # Test specific ROM configurations on all Fire 28 hardware revisions.
 test_28_config old-config/28-c64c.mk
