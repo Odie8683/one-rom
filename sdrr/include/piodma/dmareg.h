@@ -53,6 +53,9 @@ typedef struct dma_ch_reg {
 // Macro to access DMA channel X's WRITE_ADDR_TRIG register
 #define DMA_CH_WRITE_ADDR_TRIG(X)   (*(volatile uint32_t *)(DMA_BASE + ((X) * 0x40) + DMA_WRITE_ADDR_TRIG_OFFSET))
 
+#define DMA_CTRL_RING_SIZE(X)    (((X) & 0xF) << 8)
+#define DMA_CTRL_RING_SEL        (1 << 12)
+
 // Macro to enable the DMA controller
 #if !TEST_BUILD
 #define DMA_ENABLE()    RESET_RESET &= ~RESET_DMA;        \

@@ -26,6 +26,7 @@ $(EXAMPLES):
 		SRC=$(CURDIR)/$@/plugin_main.c \
 		BUILD_DIR=$(CURDIR)/$@/build \
 		ORA_INCLUDE=$(CURDIR)/.. \
+		EXTRA_C_FLAGS="-I $(CURDIR)/../../include -I $(CURDIR)/../../apio/include" \
 		$(if $(PLUGIN_TYPE),PLUGIN_TYPE=$(PLUGIN_TYPE),)
 
 clean:

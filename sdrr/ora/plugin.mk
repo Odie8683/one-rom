@@ -23,6 +23,7 @@ OBJCOPY := $(if $(TOOLCHAIN),$(TOOLCHAIN)/arm-none-eabi-objcopy,arm-none-eabi-ob
 OBJDUMP := $(if $(TOOLCHAIN),$(TOOLCHAIN)/arm-none-eabi-objdump,arm-none-eabi-objdump)
 
 ORA_INCLUDE ?= .
+EXTRA_C_FLAGS ?=
 
 BUILD_DIR := build
 SRC       := plugin_main.c
@@ -48,7 +49,7 @@ CFLAGS  := -mcpu=cortex-m33 -mthumb -mfloat-abi=hard -mfpu=fpv5-sp-d16 \
            -nostdlib -O2 -Wall -Wextra -Werror \
            -ffunction-sections -fdata-sections \
            -DPLUGIN_TYPE_NUM=$(PLUGIN_TYPE_NUM) \
-           -I $(ORA_INCLUDE)
+           -I $(ORA_INCLUDE) $(EXTRA_C_FLAGS)
 
 LDFLAGS := -nostdlib \
            -T $(ORA_INCLUDE)/plugin.ld \

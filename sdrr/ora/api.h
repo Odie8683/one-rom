@@ -376,7 +376,7 @@ typedef void *(*ora_alloc_fn_t)(size_t size);
 
 /**
  * @brief Get One ROM information
- * @sa ORA_ID_ONEROM_INFO
+ * @sa ORA_ID_GET_FIRMWARE_INFO
  *
  * @return A pointer to a structure containing information about the One ROM
  * firmware, the device it is running on, configured ROM sets, and runtime
