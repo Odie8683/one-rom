@@ -1,5 +1,7 @@
 # One ROM Fire 40 pin 
 
+**REQUIRES COMPONENTS ON TOP AND BOTTOM**
+
 **Verified** - The "rp2354-and-flash" design has been verified serving a 27C400 16-bit 40-pin ROM on an Amiga A500.
 
 The "rp2354-no-ext-flash" has not yet been verified.

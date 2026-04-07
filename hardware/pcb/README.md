@@ -23,6 +23,8 @@ The following table lists the recommended verified designs.  Each design has bee
 | Fire  | RP2350B or RP2354B | 32 | C | ✓ | 4 | n/a | [fire-32-a](./verified/fire-32-a/README.md) |
 | Fire  | RP2350B or RP2354B | 40 | C | ✓ | 4 | n/a | [fire-40-a](./verified/fire-40-a/README.md) |
 
+**One ROM 32 and 40 require components on the top and bottom of the PCB**
+
 There may be later, unverified, revisions not in the list above.  These may have improvements over the recommended revisions, but they have not been verified to work.  If you want to use one of these later revisions, read the relevant README before ordering.
 
 ## Alternative Components
