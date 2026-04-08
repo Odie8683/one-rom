@@ -157,6 +157,108 @@ typedef enum {
      */
     ORA_ID_GET_DATA_PIN_NUMS = 0x00000013,
 
+    /**
+     * @brief Set up the address monitor PIO and DMA
+     * @sa ora_setup_address_monitor_fn_t
+     */
+    ORA_ID_SETUP_ADDRESS_MONITOR = 0x00000014,
+
+    /**
+     * @brief Remap a logical address to its physical GPIO/PIO representation
+     * @sa ora_map_addr_to_phys_fn_t
+     */
+    ORA_ID_MAP_ADDR_TO_PHYS = 0x00000015,
+
+    /**
+     * @brief Remap a logical data byte to its physical GPIO/PIO representation
+     * @sa ora_map_data_to_phys_fn_t
+     */
+    ORA_ID_MAP_DATA_TO_PHYS = 0x00000016,
+
+    /**
+     * @brief Demangle a captured physical address back to a logical address
+     * @sa ora_demangle_addr_fn_t
+     */
+    ORA_ID_DEMANGLE_ADDR = 0x00000017,
+
+    /**
+     * @brief Initialise a knock sequence
+     * @sa ora_init_knock_fn_t
+     */
+    ORA_ID_INIT_KNOCK = 0x00000018,
+
+    /**
+     * @brief Wait for a knock sequence to be detected
+     * @sa ora_wait_for_knock_fn_t
+     */
+    ORA_ID_WAIT_FOR_KNOCK = 0x00000019,
+
+    /** 
+     * @brief Reprogram a RAM ROM slot with new data
+     * @sa ora_reprogram_ram_rom_slot_fn_t
+     */
+    ORA_ID_REPROGRAM_RAM_ROM_SLOT = 0x0000001A,
+
+    /**
+     * @brief Start the address monitor PIO state machines
+     * @sa ora_start_address_monitor_fn_t
+     */
+    ORA_ID_START_ADDRESS_MONITOR = 0x0000001B,
+
+    /**
+     * @brief Get a pointer to the address monitor ring buffer write position
+     * @sa ora_get_address_monitor_ring_write_pos_fn_t
+     */
+    ORA_ID_GET_ADDRESS_MONITOR_RING_WRITE_POS = 0x0000001C,
+
+    /**
+     * @brief Get the number of RAM slots available for the current ROM type
+     * @sa ora_get_ram_slot_count_fn_t
+     */
+    ORA_ID_GET_RAM_SLOT_COUNT = 0x0000001D,
+
+    /**
+     * @brief Get the SRAM address and size of a RAM slot
+     * @sa ora_get_ram_slot_info_fn_t
+     */
+    ORA_ID_GET_RAM_SLOT_INFO = 0x0000001E,
+
+    /**
+     * @brief Get the index of the currently active RAM slot
+     * @sa ora_get_active_ram_slot_fn_t
+     */
+    ORA_ID_GET_ACTIVE_RAM_SLOT = 0x0000001F,
+
+    /**
+     * @brief Atomically switch the active RAM slot
+     * @sa ora_set_active_ram_slot_fn_t
+     */
+    ORA_ID_SET_ACTIVE_RAM_SLOT = 0x00000020,
+
+    /**
+     * @brief Get the number of flash slots available
+     * @sa ora_get_flash_slot_count_fn_t
+     */
+    ORA_ID_GET_FLASH_SLOT_COUNT = 0x00000021,
+
+    /**
+     * @brief Get information about a flash slot
+     * @sa ora_get_flash_slot_info_fn_t
+     */
+    ORA_ID_GET_FLASH_SLOT_INFO = 0x00000022,
+
+    /**
+     * @brief Get extended information about a flash slot
+     * @sa ora_get_flash_slot_ext_info_fn_t
+     */
+    ORA_ID_GET_FLASH_SLOT_EXT_INFO = 0x00000023,
+
+    /**
+     * @brief Copy a flash slot into a RAM slot
+     * @sa ora_copy_flash_slot_to_ram_slot_fn_t
+     */
+    ORA_ID_COPY_FLASH_SLOT_TO_RAM_SLOT = 0x00000024,
+
     /** Invalid API identifier */
     ORA_ID_INVALID = 0xFFFFFFFF,
 } api_id_t;
@@ -207,6 +309,99 @@ typedef enum {
 _Static_assert(sizeof(ora_irq_t) == 1, "ora_irq_t must be 1 byte");
 #endif // !TEST_BUILD
 
+/**
+ * @brief Knock sequence state structure
+ *
+ * Holds the precomputed mask and match values for a knock sequence as
+ * initialised by @ref ora_init_knock_fn_t. The matches array is a flexible
+ * array member — this structure must never be declared directly. Instead, use
+ * @ref ORA_KNOCK_DECLARE to declare a correctly sized instance on the stack or
+ * as a static, or allocate sufficient space via @ref ora_alloc_fn_t using
+ * @ref ORA_KNOCK_SIZE.
+ *
+ * The contents of this structure must not be modified directly after
+ * initialisation.
+ */
+typedef struct {
+    /** @brief Mask to apply to each captured GPIO value */
+    uint32_t mask;
+
+    /** @brief Number of entries in the knock sequence */
+    uint8_t len;
+
+    /** @brief Number of low-order address bits used for matching */
+    uint8_t bits;
+
+    uint8_t reserved[2];
+
+    /**
+     * @brief Precomputed match values, one per knock sequence entry.
+     * Length determined at declaration time via @ref ORA_KNOCK_DECLARE or
+     * @ref ORA_KNOCK_SIZE.
+     */
+    uint32_t matches[];
+} ora_knock_t;
+
+/**
+ * @brief Calculate the size in bytes of an ora_knock_t for a given sequence length
+ *
+ * For use when allocating dynamically via @ref ora_alloc_fn_t.
+ *
+ * @param knock_len Number of entries in the knock sequence
+ */
+#define ORA_KNOCK_SIZE(knock_len) \
+    (sizeof(ora_knock_t) + ((knock_len) * sizeof(uint32_t)))
+
+/**
+ * @brief Declare a correctly sized knock structure and a pointer to it
+ *
+ * Declares a backing store named @p name##_storage of the correct size for
+ * @p knock_len entries, zero-initialised, and an @ref ora_knock_t pointer
+ * named @p name pointing to it. The pointer is suitable for passing to
+ * @ref ora_init_knock_fn_t and @ref ora_wait_for_knock_fn_t.
+ *
+ * Example:
+ * @code
+ * ORA_KNOCK_DECLARE(knock, 7);
+ * init_knock(seq, 7, 8, knock);
+ * @endcode
+ *
+ * @param name      Name for the pointer variable and backing store
+ * @param knock_len Number of entries in the knock sequence
+ */
+#define ORA_KNOCK_DECLARE(name, knock_len)                          \
+    uint8_t name##_storage[ORA_KNOCK_SIZE(knock_len)];              \
+    ora_knock_t *name = (ora_knock_t *)name##_storage
+
+/**
+ * @brief Calculate the size in bytes of a ring buffer for a given log2 entry count
+ *
+ * @param ring_entries_log2 Log2 of the number of entries in the ring buffer
+ */
+#define ORA_RING_BUF_SIZE(ring_entries_log2) \
+    ((1u << (ring_entries_log2)) * sizeof(uint32_t))
+
+/**
+ * @brief Declare a correctly sized and aligned ring buffer
+ *
+ * Declares a static volatile uint32_t array of the correct size and alignment
+ * for use with @ref ora_setup_address_monitor_fn_t. The buffer is placed in
+ * static storage and must remain valid for the lifetime of the monitor.
+ *
+ * Example:
+ * @code
+ * ORA_RING_BUF_DECLARE(ring_buf, 6);  // 64 entry ring buffer
+ * setup_address_monitor(ring_buf, 6, ORA_MONITOR_MODE_CONTROL, NULL);
+ * @endcode
+ *
+ * @param name              Name for the ring buffer array
+ * @param ring_entries_log2 Log2 of the number of entries, e.g. 6 for 64 entries
+ */
+#define ORA_RING_BUF_DECLARE(name, ring_entries_log2)                        \
+    static volatile uint32_t __attribute__((aligned(                         \
+        ORA_RING_BUF_SIZE(ring_entries_log2)                                 \
+    ))) name[1u << (ring_entries_log2)]
+    
 /**
  * @brief IRQ handler function type
  *
@@ -308,6 +503,59 @@ typedef struct {
 } ora_entry_args_t;
 
 /**
+ * @brief Monitor mode
+ *
+ * This enumeration defines the modes in which the address monitor can
+ * operate, determining how One ROM responds to detected knock sequences.
+ */
+typedef enum {
+    /**
+     * @brief Observe mode - passive monitoring only
+     *
+     * The plugin observes address bus activity without affecting ROM serving.
+     * The ROM image is untouched and the host is unaware of the plugin's
+     * presence.
+     */
+    ORA_MONITOR_MODE_OBSERVE  = 0,
+
+    /**
+     * @brief Control mode - plugin controls ROM image content
+     *
+     * The plugin takes control of what One ROM serves, modifying or replacing
+     * the ROM image. The host must be running from RAM or another ROM and be
+     * tolerant of the ROM image changing underneath it.
+     */
+    ORA_MONITOR_MODE_CONTROL  = 1,
+
+    /**
+     * @brief Override mode - plugin overrides ROM serving entirely
+     *
+     * The plugin will take over individual read cycles in real time, deciding
+     * the value of every byte served to the host. The autonomous PIO serving
+     * mechanism will be disabled and replaced by the plugin.
+     * 
+     * Note yet implemented.
+     */
+    //ORA_MONITOR_MODE_OVERRIDE = 2,
+} ora_monitor_mode_t;
+
+/**
+ * @brief Return code for One ROM API functions
+ */
+typedef enum {
+    ORA_RESULT_OK    = 0,
+    ORA_RESULT_ERROR = 1,
+    ORA_RESULT_INVALID_SIZE = 2,
+    ORA_RESULT_INVALID_ARG = 3,
+    ORA_RESULT_INTERNAL_ERROR = 4,
+    ORA_RESULT_CONTROL_PIN_ACTIVE = 5,
+    ORA_RESULT_INSUFFICIENT_FREE_MEM = 6,
+    ORA_RESULT_SLOT_ACTIVE = 7,
+    ORA_RESULT_INVALID_SLOT = 8,
+    ORA_RESULT_NO_SLOT_ACTIVE = 9,
+} ora_result_t;
+
+/**
  * @brief Lookup an API function pointer by its identifier
  *
  * This function takes an API function identifier and returns a pointer
@@ -387,8 +635,15 @@ typedef void *(*ora_alloc_fn_t)(size_t size);
  * Some of the data resides on flash, and other data in SRAM.  However, the
  * firmware itself may rely on the immutability of any data contained within.
  * 
+ * Prefer provided calls to access specific firmware information to this
+ * function.  This function is provided for accessing details firmware
+ * information before specific API calls have been implemented to expose it.
+ * You should raise an enhancement issue if you find yourself needing to use
+ * this function.
+ *  
  * This function may be deprecated in a future version of the API with
- * additional targetted API calls replacing it.
+ * additional targetted API calls replacing it, and the format of the
+ * returned data might change in a non-backwards compatible way.
  */
 typedef const void *(*ora_get_firmware_info_fn_t)(void);
 
@@ -505,11 +760,11 @@ typedef void (*ora_set_plugin_context_fn_t)(ora_plugin_type_t plugin, void *cont
  *
  * This is used by plugins to get a pointer to their context structure, which
  * the One ROM firmware stores and makes available to the plugin when it calls
- * into it.  This is useful for storing RAM dynamically allocated by the plugin
  * and accessing it from elsewhere, like an IRQ handler.
  *
  * @param plugin The type of plugin (system or user) for which to get the context
  * @return A pointer to the plugin's context structure, or NULL if no context
+ * into it.  This is useful for storing RAM dynamically allocated by the plugin
  * has been set.
  */
 typedef void *(*ora_get_plugin_context_fn_t)(ora_plugin_type_t plugin);
@@ -553,10 +808,20 @@ typedef uint32_t (*ora_get_clkref_mhz_fn_t)(void);
  * about the current state of the firmware and device that may be useful for
  * plugins. The exact structure of this data is defined by the One ROM firmware
  * - see `sdrr_runtime_info_t` in `sdrr/include/config_base.h` for details.
- *
+ * 
  * Plugins must consider this data and any data pointed to it as read-only.
  * Some of the data resides on flash, and other data in SRAM.  However, the
  * firmware itself may rely on the immutability of any data contained within.
+ *
+ * Prefer provided calls to access specific firmware information to this
+ * function.  This function is provided for accessing details firmware
+ * information before specific API calls have been implemented to expose it.
+ * You should raise an enhancement issue if you find yourself needing to use
+ * this function.
+ *  
+ * This function may be deprecated in a future version of the API with
+ * additional targetted API calls replacing it, and the format of the
+ * returned data might change in a non-backwards compatible way.
  */
 typedef const void *(*ora_get_runtime_info_fn_t)(void);
 
@@ -602,6 +867,477 @@ typedef uint8_t (*ora_is_pin_output_fn_t)(uint8_t pin);
  * @return The number of data pin numbers returned in data_pins_out
  */
 typedef uint8_t (*ora_get_data_pin_nums_fn_t)(uint8_t *data_pins_out, uint8_t num_pins);
+
+/**
+ * @brief Set up the address monitor PIO and DMA
+ * @sa ORA_ID_SETUP_ADDRESS_MONITOR
+ *
+ * Sets up the PIO state machines and DMA channel required to capture address
+ * bus activity into the plugin-allocated ring buffer. The firmware uses its
+ * internal knowledge of pin assignments to configure the PIO correctly for
+ * the current hardware variant.
+ *
+ * The ring buffer must be allocated by the caller, aligned to its own size
+ * in bytes (i.e. aligned to 2^ring_size_log2 * sizeof(uint32_t) bytes), and
+ * remain valid for the lifetime of the monitor. Each entry is a uint32_t
+ * containing a raw capture of the GPIO pins at the point a CS-active address
+ * was detected. Upper bytes will be zero for hardware variants with fewer
+ * than 32 address pins.
+ *
+ * The DMA write pointer can be read directly from the DMA channel registers
+ * to determine how many entries have been captured since the last read.
+ *
+ * @param ring_buf        Pointer to the plugin-allocated ring buffer
+ * @param ring_entries_log2  Log2 of the number of entries in the ring buffer,
+ *                        e.g. 6 for 64 entries
+ * @param mode            The monitor mode to operate in
+ * @param reserved        Reserved for future use, must be NULL
+ */
+typedef ora_result_t (*ora_setup_address_monitor_fn_t)(
+    volatile uint32_t *ring_buf,
+    uint8_t ring_entries_log2,
+    ora_monitor_mode_t mode,
+    void *reserved
+);
+
+/**
+ * @brief Calculate knock sequence match values
+ * @sa ORA_ID_CALC_KNOCK_MATCHES
+ *
+ * Precomputes the mask and per-entry match values required to detect a knock
+ * sequence from raw GPIO captures in the ring buffer. This must be called
+ * once at init time before the main monitoring loop.
+ *
+ * The mask covers the physical GPIO bits corresponding to the knock_bits
+ * lowest order address lines, as mapped by the firmware's internal pin
+ * configuration. The match values are the physical GPIO representations of
+ * each logical address in the knock sequence.
+ *
+ * Both mask_out and matches_out contain raw GPIO bit patterns suitable for
+ * direct comparison against values captured in the ring buffer.
+ *
+ * @param knock_seq     Pointer to the knock sequence as logical addresses
+ * @param knock_len     Number of entries in the knock sequence
+ * @param knock_bits    Number of low-order address bits to include in the
+ *                      mask. Must not exceed the number of address pins
+ *                      configured for the current hardware variant.
+ * @param mask_out      Output mask to apply to each captured GPIO value
+ * @param matches_out   Output array of match values, one per knock sequence
+ *                      entry. Must be allocated by the caller with space for
+ *                      at least knock_len entries.
+ * @return ORA_RESULT_OK on success, or an error code on failure
+ */
+typedef ora_result_t (*ora_calc_knock_matches_fn_t)(
+    const uint32_t *knock_seq,
+    uint8_t knock_len,
+    uint8_t knock_bits,
+    uint32_t *mask_out,
+    uint32_t *matches_out
+);
+
+/**
+ * @brief Map a logical address to its physical GPIO/PIO representation
+ * @sa ORA_ID_MAP_ADDR_TO_PHYS
+ *
+ * Converts a logical ROM address to the physical bit pattern as it appears
+ * in the GPIO capture, based on the firmware's internal pin mapping for the
+ * current hardware variant. This is the offset into the SRAM table where the
+ * byte at this logical address is stored and served by One ROM.
+ *
+ * @param logical_addr  The logical ROM address to remap
+ * @return The physical GPIO/PIO bit pattern corresponding to the logical address
+ */
+typedef uint32_t (*ora_map_addr_to_phys_fn_t)(uint32_t logical_addr);
+
+/**
+ * @brief Map a logical data byte to its physical GPIO/PIO representation
+ * @sa ORA_ID_REMAP_DATA_TO_PHYS
+ *
+ * Converts a logical data byte to the physical bit pattern as it must be
+ * stored in SRAM, based on the firmware's internal pin mapping for the
+ * current hardware variant.
+ *
+ * @param logical_data  The logical data byte to remap
+ * @return The physical GPIO bit pattern corresponding to the logical data byte
+ */
+typedef uint8_t (*ora_map_data_to_phys_fn_t)(uint8_t logical_data);
+
+/**
+ * @brief Demangle a captured physical address back to a logical address
+ * @sa ORA_ID_DEMANGLE_ADDR
+ *
+ * Converts a raw GPIO capture from the ring buffer back to the logical ROM
+ * address it represents, based on the firmware's internal pin mapping for the
+ * current hardware variant.
+ *
+ * If check_control_pins is non-zero, the function will validate that the
+ * control pins (X1, X2, CS1) are inactive in the capture. If any are active,
+ * the function returns ORA_RESULT_CONTROL_PIN_ACTIVE and logical_addr_out is
+ * left unchanged.
+ *
+ * @param physical_addr         Raw GPIO capture from the ring buffer
+ * @param logical_addr_out      Output logical ROM address
+ * @param check_control_pins    If non-zero, fail if any control pins are active
+ * @return ORA_RESULT_OK on success, ORA_RESULT_CONTROL_PIN_ACTIVE if
+ *         check_control_pins is set and a control pin is found to be active,
+ *         or ORA_RESULT_ERROR on failure
+ */
+typedef ora_result_t (*ora_demangle_addr_fn_t)(
+    uint32_t physical_addr,
+    uint32_t *logical_addr_out,
+    uint8_t check_control_pins
+);
+
+/**
+ * @brief Initialise a knock sequence
+ * @sa ORA_ID_INIT_KNOCK
+ *
+ * Precomputes the mask and per-entry match values required to detect a knock
+ * sequence from raw GPIO captures in the ring buffer, storing the results in
+ * the caller-allocated @ref ora_knock_t structure. This must be called once
+ * before passing the structure to @ref ora_wait_for_knock_fn_t.
+ *
+ * Use @ref ORA_KNOCK_DECLARE to declare a correctly sized @ref ora_knock_t on
+ * the stack, or @ref ORA_KNOCK_SIZE with @ref ora_alloc_fn_t to allocate one
+ * dynamically.
+ *
+ * @param knock_seq   Pointer to the knock sequence as logical addresses
+ * @param knock_len   Number of entries in the knock sequence
+ * @param knock_bits  Number of low-order address bits to include in the mask.
+ *                    Must not exceed the number of address pins configured for
+ *                    the current hardware variant
+ * @param knock       Pointer to a caller-allocated @ref ora_knock_t structure
+ *                    to be filled in by this function. Must have been declared
+ *                    with @ref ORA_KNOCK_DECLARE or allocated with
+ *                    @ref ORA_KNOCK_SIZE
+ * @return ORA_RESULT_OK on success, ORA_RESULT_INVALID_ARG if any pointer is
+ *         NULL or knock_len is zero, or ORA_RESULT_INTERNAL_ERROR if the pin
+ *         configuration is invalid
+ */
+typedef ora_result_t (*ora_init_knock_fn_t)(
+    const uint32_t *knock_seq,
+    uint8_t knock_len,
+    uint8_t knock_bits,
+    ora_knock_t *knock
+);
+
+/**
+ * @brief Flag to enable CS debounce filtering in @ref ora_wait_for_knock_fn_t
+ *
+ * When set, captured entries where CS is inactive are discarded, preventing
+ * spurious matches against addresses captured during very short CS pulses.
+ */
+#define ORA_WAIT_FOR_KNOCK_FLAG_DEBOUNCE_CS 0x00000001
+
+/**
+ * @brief Wait for a knock sequence to be detected
+ * @sa ORA_ID_WAIT_FOR_KNOCK
+ *
+ * Blocks until the knock sequence described by @p knock is detected in the
+ * ring buffer, then collects @p payload_len further address captures and
+ * returns them in @p payload_out. The read pointer is initialised from the
+ * current DMA write pointer on entry, discarding any captures that occurred
+ * before the call.
+ *
+ * Behaviour can be modified via @p flags. Pass 0 for default behaviour.
+ * @sa ORA_WAIT_FOR_KNOCK_FLAG_DEBOUNCE_CS
+ *
+ * Payload captures are returned as raw physical addresses. Use
+ * @ref ora_demangle_addr_fn_t to convert to logical addresses if required.
+ *
+ * @param knock              Pointer to an initialised @ref ora_knock_t
+ *                           structure
+ * @param ring_buf           Pointer to the ring buffer, as passed to
+ *                           @ref ora_setup_address_monitor_fn_t
+ * @param ring_entries_log2  Log2 of the number of entries in the ring buffer,
+ *                           as passed to @ref ora_setup_address_monitor_fn_t
+ * @param flags              Behavioural flags. Pass 0 for default behaviour.
+ *                           @sa ORA_WAIT_FOR_KNOCK_FLAG_DEBOUNCE_CS
+ * @param payload_out        Output array to receive address captures collected
+ *                           after the knock sequence is detected. May be NULL
+ *                           if @p payload_len is 0
+ * @param payload_len        Number of address captures to collect after the
+ *                           knock sequence is detected. Pass 0 to return
+ *                           immediately after detection
+ * @return ORA_RESULT_OK on success, ORA_RESULT_INVALID_ARG if @p knock or
+ *         @p ring_buf is NULL, or @p payload_out is NULL when @p payload_len
+ *         is non-zero
+ */
+typedef ora_result_t (*ora_wait_for_knock_fn_t)(
+    const ora_knock_t *knock,
+    volatile uint32_t *ring_buf,
+    uint8_t ring_entries_log2,
+    uint32_t flags,
+    uint32_t *payload_out,
+    uint8_t payload_len
+);
+
+/**
+ * @brief Reprogram a region of the selected RAM ROM slot using logical
+ * addresses and bytes
+ * @sa ORA_ID_REPROGRAM_RAM_ROM_SLOT
+ *
+ * Updates a contiguous logical region of the ROM image currently being
+ * served from SRAM, remapping addresses and data bytes according to the
+ * firmware's internal pin configuration.
+ * 
+ * This function guarantees to write bytes in an ascending logical address
+ * order.
+ * 
+ * This is not atomic.  For an atomic update, you must switch in a new region
+ * of SRAM using the appropriate function (not yet supported). 
+ *
+ * @param slot    RAM ROM slot to update
+ * @param offset  Logical start address within the ROM image to update
+ * @param buf     Pointer to the logical data bytes to write
+ * @param len     Number of bytes to write
+ * @param allow_active If non-zero, allow writing to the region currently
+ * being served by One ROM. If zero, fail with ORA_RESULT_SLOT_ACTIVE if the
+ * active rom slot is selected.
+ * @return ORA_RESULT_OK on success, ORA_RESULT_INVALID_ARG if @p buf is NULL
+ *         or @p len is zero
+ */
+typedef ora_result_t (*ora_reprogram_ram_rom_slot_fn_t)(
+    uint8_t slot,
+    uint32_t offset,
+    const uint8_t *buf,
+    uint32_t len,
+    uint8_t allow_active
+);
+
+/**
+ * @brief Start the address monitor PIO state machines
+ * @sa ORA_ID_START_ADDRESS_MONITOR
+ *
+ * Enables the PIO state machines configured by @ref ora_setup_address_monitor_fn_t,
+ * beginning capture of address bus activity into the ring buffer. This must be
+ * called after @ref ora_setup_address_monitor_fn_t and after any other
+ * initialisation the plugin needs to perform before monitoring begins, to
+ * avoid missing captures during setup.
+ */
+typedef void (*ora_start_address_monitor_fn_t)(void);
+
+/**
+ * @brief Get a pointer to the address monitor ring buffer write position
+ * @sa ORA_ID_GET_ADDRESS_MONITOR_RING_WRITE_POS
+ *
+ * Returns a pointer to the location that holds the current write position
+ * within the ring buffer passed to @ref ora_setup_address_monitor_fn_t. The
+ * value at this location advances as new address captures are written by the
+ * DMA engine.
+ *
+ * This function is intended to be called once during initialisation. The
+ * returned pointer may then be dereferenced directly in the monitoring loop
+ * to read the current write position without any function call overhead.
+ *
+ * The returned pointer remains valid for the lifetime of the address monitor.
+ * The plugin must not write to this location.
+ *
+ * @return Pointer to the current ring buffer write position, or NULL if the
+ *         address monitor has not been set up via
+ *         @ref ora_setup_address_monitor_fn_t
+ */
+typedef volatile uint32_t * volatile *(*ora_get_address_monitor_ring_write_pos_fn_t)(void);
+
+/**
+ * @brief Get the number of RAM slots available for the current ROM type
+ * @sa ORA_ID_GET_RAM_SLOT_COUNT
+ *
+ * Returns the total number of RAM slots available for the ROM type currently
+ * being served. Slot 0 is always the primary slot, pre-populated by the
+ * firmware on boot. The number of available slots varies by ROM type, for
+ * example, the number of slots _might_ be as follows, but plugins must not
+ * rely on these exact numbers and instead use this function to query the
+ * number of slots at runtime:
+ * - 64KB ROM image on flash:  up to 7 slots
+ * - 128KB ROM image on flash: up to 3 slots
+ * - 256KB ROM image on flash: up to 2 slots
+ * - 512KB ROM image on flash: 1 slot only
+ * 
+ * Note that sizes above are the size of the ROM image slot on flash, which is
+ * normally larger than the actual ROM type being served.
+ *
+ * @return Total number of RAM slots available
+ */
+typedef uint8_t (*ora_get_ram_slot_count_fn_t)(void);
+
+/**
+ * @brief Get the SRAM address and size of a RAM slot
+ * @sa ORA_ID_GET_RAM_SLOT_INFO
+ *
+ * Returns the absolute SRAM address and size in bytes of the specified RAM
+ * slot. This is provided for plugins that need direct access to the slot's
+ * backing memory. Most plugins should use @ref ora_reprogram_ram_slot_fn_t
+ * instead.
+ *
+ * @param ram_slot   Index of the RAM slot to query
+ * @param addr_out   Output pointer to receive the SRAM address of the slot
+ * @param size_out   Output pointer to receive the size of the slot in bytes
+ * @return ORA_RESULT_OK on success, ORA_RESULT_INVALID_SLOT if ram_slot is
+ *         out of range, ORA_RESULT_INVALID_ARG if any pointer is NULL
+ */
+typedef ora_result_t (*ora_get_ram_slot_info_fn_t)(
+    uint8_t ram_slot,
+    uint32_t *addr_out,
+    uint32_t *size_out
+);
+
+/**
+ * @brief Get the index of the currently active RAM slot
+ * @sa ORA_ID_GET_ACTIVE_RAM_SLOT
+ *
+ * Returns the index of the RAM slot currently being served to the host. In
+ * normal operation this is slot 0, pre-populated by the firmware on boot.
+ *
+ * If no slot is currently active (for example if a plugin has suppressed
+ * firmware ROM loading), returns ORA_RESULT_NO_SLOT_ACTIVE and
+ * @p ram_slot_out is left unchanged.
+ *
+ * @param ram_slot_out  Output pointer to receive the active RAM slot index
+ * @return ORA_RESULT_OK on success, ORA_RESULT_NO_SLOT_ACTIVE if no slot is
+ *         currently active, ORA_RESULT_INVALID_ARG if ram_slot_out is NULL
+ */
+typedef ora_result_t (*ora_get_active_ram_slot_fn_t)(uint8_t *ram_slot_out);
+
+/**
+ * @brief Atomically switch the active RAM slot
+ * @sa ORA_ID_SET_ACTIVE_RAM_SLOT
+ *
+ * Atomically switches the ROM image being served to the host to the specified
+ * RAM slot. If no slot is currently active, this activates the specified slot
+ * without requiring an atomic transition.
+ *
+ * The target slot must have been populated with a valid ROM image before
+ * calling this function, either via @ref ora_reprogram_ram_slot_fn_t or
+ * @ref ora_copy_flash_slot_to_ram_slot_fn_t or by some other means, as
+ * otherwise it contains uninitialised data.
+ *
+ * @param ram_slot  Index of the RAM slot to make active
+ * @return ORA_RESULT_OK on success, ORA_RESULT_INVALID_SLOT if ram_slot is
+ *         out of range
+ */
+typedef ora_result_t (*ora_set_active_ram_slot_fn_t)(uint8_t ram_slot);
+
+/** @brief Exclude plugin slots from flash slot enumeration */
+#define ORA_FLASH_SLOT_FLAG_EXCLUDE_PLUGINS      0x00000001
+
+/** @brief Exclude non-plugin slots from flash slot enumeration */
+#define ORA_FLASH_SLOT_FLAG_EXCLUDE_NON_PLUGINS  0x00000002
+
+/**
+ * @brief Get the number of flash slots available
+ * @sa ORA_ID_GET_FLASH_SLOT_COUNT
+ *
+ * Returns the number of ROM images stored in flash, optionally filtered to
+ * exclude plugin or non-plugin slots.
+ *
+ * Indices returned by this function are stable across calls with the same
+ * flags, and are suitable for use as handles to pass to
+ * @ref ora_get_flash_slot_info_fn_t and
+ * @ref ora_copy_flash_slot_to_ram_slot_fn_t.
+ *
+ * @param flags  Filtering flags. Pass 0 for all slots.
+ *               @sa ORA_FLASH_SLOT_FLAG_EXCLUDE_PLUGINS
+ *               @sa ORA_FLASH_SLOT_FLAG_EXCLUDE_NON_PLUGINS
+ * @return Number of flash slots matching the specified filter
+ */
+typedef uint8_t (*ora_get_flash_slot_count_fn_t)(uint32_t flags);
+
+/**
+ * @brief Get information about a flash slot
+ * @sa ORA_ID_GET_FLASH_SLOT_INFO
+ *
+ * Returns information about the specified flash slot, optionally filtered
+ * to exclude plugin or non-plugin slots. The index must be within the range
+ * returned by @ref ora_get_flash_slot_count_fn_t with the same flags.
+ *
+ * @p name_out receives a pointer directly into flash memory — no allocation
+ * is required. If the slot has no associated name, @p name_out is set to
+ * NULL.
+ *
+ * @param flash_slot    Index of the flash slot to query
+ * @param flags         Filtering flags, must match those passed to
+ *                      @ref ora_get_flash_slot_count_fn_t
+ *                      @sa ORA_FLASH_SLOT_FLAG_EXCLUDE_PLUGINS
+ *                      @sa ORA_FLASH_SLOT_FLAG_EXCLUDE_NON_PLUGINS
+ * @param name_out      Output pointer to receive a pointer to the slot's name
+ *                      string, or NULL if no name is available. May be NULL
+ *                      if the name is not required.
+ * @param rom_type_out  Output pointer to receive the ROM type of the slot.
+ *                      May be NULL if not required.
+ * @param rom_count_out Output pointer to receive the number of ROM images in
+ *                      this slot. May be NULL if not required.
+ * @return ORA_RESULT_OK on success, ORA_RESULT_INVALID_SLOT if flash_slot is
+ *         out of range for the given flags
+ */
+typedef ora_result_t (*ora_get_flash_slot_info_fn_t)(
+    uint8_t flash_slot,
+    uint32_t flags,
+    const char **name_out,
+    uint32_t *rom_type_out,
+    uint8_t *rom_count_out
+);
+
+/**
+ * @brief Get extended information about a flash slot
+ * @sa ORA_ID_GET_FLASH_SLOT_EXT_INFO
+ *
+ * @warning This function is not yet implemented. Calling it is undefined
+ * behaviour. It is reserved for future use to expose per-ROM details within
+ * multi-ROM flash slots, such as individual ROM filenames, types, and CS
+ * states. Its parameter list and behaviour are subject to change without
+ * notice.
+ *
+ * @param flash_slot    Index of the flash slot to query
+ * @param flags         Filtering flags
+ * // TBD - multi-ROM detail parameters
+ */
+typedef ora_result_t (*ora_get_flash_slot_ext_info_fn_t)(
+    uint8_t flash_slot,
+    uint32_t flags
+    // TBD - multi-ROM detail
+);
+
+/** @brief Perform the copy asynchronously via DMA */
+#define ORA_COPY_FLAG_ASYNC  0x00000001
+
+/**
+ * @brief Copy a flash slot into a RAM slot
+ * @sa ORA_ID_COPY_FLASH_SLOT_TO_RAM_SLOT
+ *
+ * Copies the ROM image from the specified flash slot into the specified RAM
+ * slot. The flash data is already in physical layout so is copied directly.
+ * The RAM slot may then be activated via @ref ora_set_active_ram_slot_fn_t.
+ *
+ * This function does not activate the RAM slot. To serve the copied image,
+ * call @ref ora_set_active_ram_slot_fn_t after this function returns.
+ *
+ * If @ref ORA_COPY_FLAG_ASYNC is set, the copy is performed via DMA and the
+ * function returns immediately. The caller must not activate the RAM slot or
+ * assume the copy is complete until @ref ora_copy_complete_fn_t returns
+ * ORA_RESULT_OK.
+ *
+ * @param flash_slot  Index of the flash slot to copy from, relative to the
+ *                    filtered set specified by @p flags
+ * @param flags       Filtering flags, must match those passed to
+ *                    @ref ora_get_flash_slot_count_fn_t and
+ *                    @ref ora_get_flash_slot_info_fn_t
+ *                    @sa ORA_FLASH_SLOT_FLAG_EXCLUDE_PLUGINS
+ *                    @sa ORA_FLASH_SLOT_FLAG_EXCLUDE_NON_PLUGINS
+ * @param ram_slot    Index of the RAM slot to copy into
+ * @param copy_flags  Copy behaviour flags. Pass 0 for synchronous copy.
+ *                    @sa ORA_COPY_FLAG_ASYNC.  Currently unsupported.
+ * @return ORA_RESULT_OK on success, ORA_RESULT_INVALID_SLOT if either index
+ *         is out of range for the given flags, ORA_RESULT_INVALID_SIZE if
+ *         the flash slot's ROM image size does not match the currently active
+ *         ROM type
+ */
+typedef ora_result_t (*ora_copy_flash_slot_to_ram_slot_fn_t)(
+    uint8_t flash_slot,
+    uint32_t flags,
+    uint8_t ram_slot,
+    uint32_t copy_flags
+);
 
 /** @} */ // plugin_api_functions
 

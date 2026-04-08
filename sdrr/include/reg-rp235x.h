@@ -23,6 +23,8 @@
 #error "RAM size mismatch"
 #endif
 
+#define SRAM_BASE 0x20000000u
+
 // Register base addresses
 #define FLASH_BASE          0x10000000
 #define XIP_CACHE_BASE      0x18000000

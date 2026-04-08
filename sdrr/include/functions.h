@@ -98,6 +98,47 @@ extern int pioram(
     sdrr_runtime_info_t *runtime,
     uint32_t rom_table_addr
 );
+extern ora_result_t pio_setup_address_monitor(
+    volatile uint32_t *ring_buf,
+    uint8_t ring_entries_log2,
+    ora_monitor_mode_t mode,
+    void *reserved
+);
+uint32_t pio_map_addr_to_phys(uint32_t logical_addr);
+uint32_t pio_map_data_to_phys(uint32_t logical_data);
+ora_result_t pio_demangle_addr(
+    uint32_t physical_addr,
+    uint32_t *logical_addr_out,
+    uint8_t check_control_pins
+);
+ora_result_t pio_init_knock(
+    const uint32_t *knock_seq,
+    uint8_t knock_len,
+    uint8_t knock_bits,
+    ora_knock_t *knock
+);
+ora_result_t pio_wait_for_knock(
+    const ora_knock_t *knock,
+    volatile uint32_t *ring_buf,
+    uint8_t ring_entries_log2,
+    uint32_t flags,
+    uint32_t *payload_out,
+    uint8_t payload_len
+);
+ora_result_t pio_reprogram_ram_rom_slot(
+    uint8_t slot,
+    uint32_t offset,
+    const uint8_t *data,
+    uint32_t len,
+    uint8_t allow_active
+);
+ora_result_t pio_start_address_monitor(void);
+volatile uint32_t **pio_get_address_monitor_ring_write_pos(void);
+ora_result_t pio_get_new_rom_ram_region(uint32_t *addr_out, uint32_t *size_out);
+uint8_t pio_get_effective_addr_pins(void);
+uint32_t pio_get_rom_region_size(void);
+ora_result_t pio_switch_rom_region(uint32_t new_region_addr);
+
 // plugin.c
 extern uint8_t check_plugin_valid(
     const ora_plugin_header_t *header,
@@ -107,6 +148,8 @@ extern uint8_t check_plugin_valid(
 extern void ora_launch_plugins(const sdrr_info_t *info);
 extern void irq_handler_timer0_irq_0(void);
 extern void irq_handler_usbctrl_irq(void);
+ora_result_t ora_get_ram_slot_info(uint8_t ram_slot, uint32_t *addr_out, uint32_t *size_out);
+ora_result_t ora_get_active_ram_slot(uint8_t *ram_slot_out);
 #endif // RP235X
 
 // rom_impl.c

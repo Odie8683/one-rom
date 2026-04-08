@@ -1,0 +1,6 @@
+{
+    "name": "host-control",
+    "display_name": "Host Control of One ROM",
+    "description": "Allows hosts to control One ROM using the ROM Bus Control Protocol",
+    "build_output": "build/plugin_user.bin"
+}

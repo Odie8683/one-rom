@@ -342,141 +342,6 @@
 #define NUM_DATA_LINES    8
 #define NUM_ADDR_LINES    16
 
-// PIO ROM serving configuration structure
-typedef struct piorom_config {
-    // How many CS pins are used (1-3), and which ones to invert, as they are
-    // active high.  This inversion is done in hardware before the PIOs read
-    // the pins.
-    uint8_t invert_cs[4];
-    uint8_t num_cs_pins;
-
-    // 5 bytes to here
-
-    // Base CS pin.  Note that a single break in otherwise contiguous pins is
-    // allows - see contiguous_cs_pins and cs_pin_2nd_match below.
-    uint8_t cs_base_pin;
-
-    // Base data pin.  Data pins must be contiguous.
-    uint8_t data_base_pin;
-
-    // Number of data pins (typically 8, but will be 16 as/when 40 pin ROMs
-    // are supported).
-    uint8_t num_data_pins;
-
-    // 8 bytes to here
-    
-    // Lowest address pin.  For 24 pin ROMs, this includes all CS and X pins.
-    uint8_t addr_base_pin;
-
-    // Number of address pins.  This is 16 for a Fire 24 board - as
-    // they include X and CS pins.  For a Fire 28 board is is also, normally,
-    // 16 (as 2^16 is 512Kbits = 64KB), as CS lines are _not_ part of the
-    // address space.  However, the 231024 is a 28 pin board and requires 17-18
-    // pins, depending on layout, to allow the full 128KB to be addressed.
-    uint8_t num_addr_pins;
-
-    // Whether to use IRQ from CS handler to address read SM (0 = don't use)
-    uint8_t addr_read_irq;
-
-    // Number of PIO cycles to delay between address reads (in addition to any
-    // delay from the instructions themselves)
-    uint8_t addr_read_delay;
-
-    // 12 bytes to here
-
-    // Number of cycles to wait after detecting CS going active before setting
-    // data pins to outputs.
-    uint8_t cs_active_delay;
-
-    // Number of cycles to wait after CS goes inactive before setting data
-    // pins back to inputs.
-    uint8_t cs_inactive_delay;
-
-    // Whether to use DMA (0 = use)
-    uint8_t no_dma;
-
-    // /BYTE pin number (16 bit only)
-    uint8_t byte_pin;
-
-    // A-1 pin number (16 bit only)
-    uint8_t a_minus_1_pin;
-
-    // Pin to use to signal A-1 state to data output SM
-    uint8_t a_minus_1_signal_pin;
-
-    // Ignore /BYTE in 16 bit mode
-    uint8_t force_16_bit;
-
-    uint8_t pad7;
-
-    // 20 bytes to here
-
-    // ROM table base address in RAM
-    uint32_t rom_table_addr;
-
-    // 24 bytes to here
-
-    uint16_t addr_reader_read_clkdiv_int;
-    uint8_t addr_reader_read_clkdiv_frac;
-    uint8_t pad2;
-
-    uint16_t a_minus_1_clkdiv_int;
-    uint8_t a_minus_1_clkdiv_frac;
-    uint8_t pad3;
-
-    uint16_t data_io_clkdiv_int;
-    uint8_t data_io_clkdiv_frac;
-    uint8_t pad4;
-    
-    uint16_t data_out_clkdiv_int;
-    uint8_t data_out_clkdiv_frac;
-    uint8_t pad5;
-
-    // 40 bytes to here
-
-    // The PIO CS algorithm supports up to a single break between otherwise
-    // contiguous CS pins.  This is handled via a variant of the algorithm
-    // which tests for both zero and another value ("2nd match").
-    //
-    // Consider CS lines ac, being arranged abc.  Here, CS lines are all
-    // active if the read value is 000 or 010 - i.e. for both values of b.
-    // In this case the "2nd match" value is 2.
-    // 
-    // The algorithm will hence check for 0 or for 2, and consider CS to be
-    // active in either case.
-    //
-    // This algorithm is slightly less performant (one additional cycle in
-    // some cases = 6.67ns), but in reality, the CS algorithm is so quick, it
-    // is not likely to be the limiting factor, and hence is not expected to
-    // have any impacts.
-    //
-    // While it might appear to be a PCB layout issue to have CS pins arranged
-    // like this (and in some cases it might be), there are some differences in
-    // the cs pin arrangements between different ROM types meaning this can be
-    // useful.
-    //
-    // This approach only supports a single break in otherwise contiguous pins
-    // and only 1 pin being within the break.
-    uint8_t contiguous_cs_pins;
-
-    // Whether multi-ROM mode is enabled (i.e. more than one ROM is being
-    // served via the X pins).
-    uint8_t multi_rom_mode;
-
-    // Bit mode for serving
-    bit_modes_t bit_mode;
-
-    uint8_t pad6;
-
-    // 44 bytes to here
-
-    // See `contiguous_cs_pins` above.
-    uint32_t cs_pin_2nd_match;
-
-    // 48 bytes to here
-} piorom_config_t;
-
-
 // PIO2 SM0 - CS Handler
 //
 // The program is constructed dynamically in pio_load_programs().  The overall
@@ -562,6 +427,11 @@ typedef struct piorom_config {
 #define SM_DATA_OUTPUT              0
 #define SM_DATA_WRITE               1
 #define SM_DATA_READ_RAM_WRITE      2
+#define BLOCK_MONITOR               0
+#define SM_ADDR_MONITOR_CS_MONITOR  0
+#define SM_ADDR_MONITOR_ADDR_READ   1
+#define ADDR_MONITOR_IRQ            0 
+#define DMA_CH_ADDR_MONITOR         2
 
 // Build and load the PIO programs for ROM serving
 //
@@ -1839,7 +1709,7 @@ static void piorom_finish_config(
 }
 
 // Default PIO ROM serving configuration
-static piorom_config_t piorom_config = {
+static const piorom_config_t int_piorom_config = {
     .num_cs_pins = 0,
     .invert_cs = {0, 0, 0},
     .cs_base_pin = 255,
@@ -2116,16 +1986,16 @@ int piorom(
     const sdrr_rom_set_t *set,
     uint32_t rom_table_addr
 ) {
-    piorom_config_t config;
+    piorom_config_t *config = &runtime->piorom_config;
 
     DEBUG("%s", log_divider);
 
-    memcpy(&config, &piorom_config, sizeof(piorom_config_t));
+    memcpy(config, &int_piorom_config, sizeof(piorom_config_t));
 
     // Apply any ROM set overrides
-    piorom_overrides(set, &config);
+    piorom_overrides(set, config);
 
-    piorom_finish_config(&config, info, runtime, set, rom_table_addr);
+    piorom_finish_config(config, info, runtime, set, rom_table_addr);
 
     // Bring PIO0 and DMA out of reset
     APIO_ENABLE_PIOS();
@@ -2137,8 +2007,8 @@ int piorom(
     // - SM0 is the address read SM
     // - SM1 is the data byte output SM
 #if !defined(TEST_BUILD)
-    if (!config.no_dma) {
-        piorom_setup_dma(&config, BLOCK_ADDR, SM_ADDR_READ, BLOCK_DATA, SM_DATA_WRITE);
+    if (!config->no_dma) {
+        piorom_setup_dma(config, BLOCK_ADDR, SM_ADDR_READ, BLOCK_DATA, SM_DATA_WRITE);
     }
 #endif // !TEST_BUILD
 
@@ -2148,19 +2018,19 @@ int piorom(
     // - CS active high/low config
     // - Data pins start at GPIO 0
     // - Address pins start at GPIO 8
-    piorom_set_gpio_func(&config);
+    piorom_set_gpio_func(config);
 
     // Force any address pins to zero as required
-    piorom_force_unused_addr_pins_to_zero(info, runtime, set, &config);
+    piorom_force_unused_addr_pins_to_zero(info, runtime, set, config);
 
     // Load and configure the PIO programs
     // - 2 CS pins
     // - CS pins start at GPIO 10
     // - Data pins start at GPIO 0
     // - Address pins start at GPIO 8
-    piorom_load_programs(&config);
+    piorom_load_programs(config);
 
-    if (!config.no_dma) {
+    if (!config->no_dma) {
 #if !defined(TEST_BUILD)
         if (runtime->rom_dma_copy) {
             DEBUG("DMA copy words remaining: 0x%08X", dma_copy_status());
@@ -2169,7 +2039,7 @@ int piorom(
 
         // Start the PIOs.  This kicks off the autonomous ROM serving.
         DEBUG("Start PIOs");
-        piorom_start_pios(&config);
+        piorom_start_pios(config);
 
 #if !defined(DEBUG_BUILD)
         // Done
@@ -2239,6 +2109,455 @@ int piorom(
     }
 
     return 0;
+}
+
+static void pio_setup_address_monitor_pios() {
+    piorom_config_t *piorom_config = &sdrr_runtime_info.piorom_config;
+    uint8_t num_cs_pins = piorom_config->num_cs_pins;
+    uint8_t cs_base_pin = piorom_config->cs_base_pin;
+    uint8_t num_addr_pins = piorom_config->num_addr_pins;
+    uint8_t base_addr_pin = piorom_config->addr_base_pin;
+
+    APIO_ASM_INIT();
+    APIO_SET_BLOCK(BLOCK_MONITOR);
+    APIO_GPIOBASE_0();
+
+    //
+    // SM 0: CS Monitor
+    //
+    APIO_SET_SM(SM_ADDR_MONITOR_CS_MONITOR);
+
+    if (piorom_config->contiguous_cs_pins) {
+        // All CS pins contiguous - CS active == zero
+        APIO_WRAP_BOTTOM();
+        APIO_LABEL_NEW(cs_inactive);
+        APIO_ADD_INSTR(APIO_MOV_X_PINS);
+        APIO_ADD_INSTR(APIO_JMP_X_DEC(APIO_LABEL(cs_inactive)));
+
+        APIO_ADD_INSTR(APIO_IRQ_SET(ADDR_MONITOR_IRQ));
+
+        APIO_LABEL_NEW(cs_active);
+        APIO_ADD_INSTR(APIO_MOV_X_PINS);
+        APIO_WRAP_TOP();
+        APIO_ADD_INSTR(APIO_JMP_NOT_X(APIO_LABEL(cs_active)));
+    } else {
+        // Non-contiguous CS pins - CS active == zero OR cs_pin_2nd_match
+        APIO_ADD_INSTR(APIO_SET_Y(piorom_config->cs_pin_2nd_match));
+
+        APIO_LABEL_NEW(cs_inactive);
+        APIO_ADD_INSTR(APIO_MOV_X_PINS);
+        APIO_LABEL_NEW_OFFSET(cs_active, 2);
+        APIO_ADD_INSTR(APIO_JMP_NOT_X(APIO_LABEL(cs_active)));
+        APIO_ADD_INSTR(APIO_JMP_X_NOT_Y(APIO_LABEL(cs_inactive)));
+
+        // cs_active:
+        APIO_ADD_INSTR(APIO_IRQ_SET(ADDR_MONITOR_IRQ));
+
+        APIO_WRAP_BOTTOM();
+        APIO_LABEL_NEW(test_if_inactive);
+        APIO_ADD_INSTR(APIO_MOV_X_PINS);
+        APIO_ADD_INSTR(APIO_JMP_NOT_X(APIO_LABEL(test_if_inactive)));
+        APIO_WRAP_TOP();
+        APIO_ADD_INSTR(APIO_JMP_X_NOT_Y(APIO_LABEL(cs_inactive)));
+        // cs_pin_2nd_match still active - wrap back to test_if_inactive
+    }
+
+    APIO_SM_CLKDIV_SET(1, 0);
+    APIO_SM_EXECCTRL_SET(0);
+    APIO_SM_SHIFTCTRL_SET(
+        APIO_IN_COUNT(num_cs_pins) |
+        APIO_IN_SHIFTDIR_L
+    );
+    APIO_SM_PINCTRL_SET(
+        APIO_IN_BASE(cs_base_pin)
+    );
+    APIO_SM_JMP_TO_START();
+
+    //
+    // SM 1: Address read monitor
+    //
+    APIO_SET_SM(SM_ADDR_MONITOR_ADDR_READ);
+
+    APIO_ADD_INSTR(APIO_WAIT_IRQ_HIGH(ADDR_MONITOR_IRQ));
+    APIO_WRAP_TOP();
+    APIO_ADD_INSTR(APIO_IN_PINS(num_addr_pins));
+
+    APIO_SM_CLKDIV_SET(1, 0);
+    APIO_SM_EXECCTRL_SET(0);
+    APIO_SM_SHIFTCTRL_SET(
+        APIO_AUTOPUSH        |
+        APIO_PUSH_THRESH(num_addr_pins) |
+        APIO_IN_SHIFTDIR_L
+    );
+    APIO_SM_PINCTRL_SET(
+        APIO_IN_BASE(base_addr_pin)
+    );
+    APIO_SM_JMP_TO_START();
+
+    APIO_END_BLOCK();
+
+    return;
+}
+
+static void pio_setup_address_monitor_dma(
+    uint8_t dma_ch,
+    uint8_t block,
+    uint8_t sm_addr_read,
+    volatile uint32_t *ring_buf,
+    uint8_t ring_size_log2
+) {
+    // SM1 RX FIFO -> ring_buf circular write
+    volatile dma_ch_reg_t *dma_reg = DMA_CH_REG(dma_ch);
+    dma_reg->read_addr = (uint32_t)&APIO0_SM_RXF(sm_addr_read);
+    dma_reg->write_addr = (uint32_t)ring_buf;
+    dma_reg->transfer_count = 0xffffffff;
+    dma_reg->ctrl_trig =
+        DMA_CTRL_TRIG_EN |
+        DMA_CTRL_TRIG_DATA_SIZE_32BIT |
+        DMA_CTRL_RING_SIZE(ring_size_log2) |
+        DMA_CTRL_RING_SEL |
+        DMA_CTRL_INCR_WRITE |
+        DMA_CTRL_TRIG_CHAIN_TO(dma_ch) |
+        DMA_CTRL_TRIG_TREQ_SEL(
+            APIO_DREQ_PIO_X_SM_Y_RX(
+                block,
+                sm_addr_read
+            )
+        );
+}
+
+ora_result_t pio_setup_address_monitor(
+    volatile uint32_t *ring_buf,
+    uint8_t ring_entries_log2,
+    ora_monitor_mode_t mode,
+    void *reserved
+) {
+    (void)mode;
+    (void)reserved;
+
+    uint32_t ring_size_log2 = ring_entries_log2 + 2; // 4 bytes per entry
+    uint32_t ring_size = 1 << ring_size_log2;
+
+    // Check ring_buf is valid and aligned to ring size
+    if (ring_buf == NULL) {
+        return ORA_RESULT_INVALID_ARG;
+    }
+    if (((uintptr_t)ring_buf % ring_size) != 0) {
+        return ORA_RESULT_INVALID_SIZE;
+    }
+
+    pio_setup_address_monitor_pios();
+    pio_setup_address_monitor_dma(
+        DMA_CH_ADDR_MONITOR,
+        BLOCK_MONITOR,
+        SM_ADDR_MONITOR_ADDR_READ,
+        ring_buf,
+        ring_size_log2
+    );
+
+    return ORA_RESULT_OK;
+}
+
+static ora_result_t get_addr_pin(uint8_t i, uint8_t *pin_out) {
+    uint8_t pin = (i < 16) ? sdrr_info.pins->addr[i]
+                            : sdrr_info.pins->addr2[i - 16];
+    if (pin >= MAX_USED_GPIOS) {
+        return ORA_RESULT_INTERNAL_ERROR;
+    }
+    *pin_out = pin;
+    return ORA_RESULT_OK;
+}
+
+uint32_t pio_map_addr_to_phys(uint32_t logical_addr) {
+    piorom_config_t *piorom_config = &sdrr_runtime_info.piorom_config;
+    uint8_t base = piorom_config->addr_base_pin;
+    uint8_t num  = piorom_config->num_addr_pins;
+    uint32_t physical = 0;
+
+    for (uint8_t b = 0; b < num; b++) {
+        if (logical_addr & (1u << b)) {
+            uint8_t pin;
+            if (get_addr_pin(b, &pin) == ORA_RESULT_OK) {
+                physical |= (1u << (pin - base));
+            }
+        }
+    }
+    return physical;
+}
+
+uint32_t pio_map_data_to_phys(uint32_t logical_data) {
+    piorom_config_t *piorom_config = &sdrr_runtime_info.piorom_config;
+    uint8_t base = piorom_config->data_base_pin;
+    uint32_t physical = 0;
+
+    for (uint8_t b = 0; b < 8; b++) {
+        if (logical_data & (1u << b)) {
+            uint8_t pin = sdrr_info.pins->data[b];
+            if (pin < MAX_USED_GPIOS) {
+                physical |= (1u << (pin - base));
+            }
+        }
+    }
+    return physical;
+}
+
+ora_result_t pio_demangle_addr(
+    uint32_t physical_addr,
+    uint32_t *logical_addr_out,
+    uint8_t check_control_pins
+) {
+    if (logical_addr_out == NULL) {
+        return ORA_RESULT_INVALID_ARG;
+    }
+
+    piorom_config_t *piorom_config = &sdrr_runtime_info.piorom_config;
+    uint8_t base = piorom_config->addr_base_pin;
+    uint8_t num  = piorom_config->num_addr_pins;
+
+    if (check_control_pins) {
+        uint8_t x1  = sdrr_info.pins->x1;
+        uint8_t x2  = sdrr_info.pins->x2;
+        uint8_t cs1 = sdrr_info.pins->cs1;
+        if ((x1  < MAX_USED_GPIOS) && (physical_addr & (1u << (x1  - base)))) {
+            return ORA_RESULT_CONTROL_PIN_ACTIVE;
+        }
+        if ((x2  < MAX_USED_GPIOS) && (physical_addr & (1u << (x2  - base)))) {
+            return ORA_RESULT_CONTROL_PIN_ACTIVE;
+        }
+        if ((cs1 < MAX_USED_GPIOS) && (physical_addr & (1u << (cs1 - base)))) {
+            return ORA_RESULT_CONTROL_PIN_ACTIVE;
+        }
+    }
+
+    uint32_t logical = 0;
+    for (uint8_t b = 0; b < num; b++) {
+        uint8_t pin;
+        if (get_addr_pin(b, &pin) == ORA_RESULT_OK) {
+            if (physical_addr & (1u << (pin - base))) {
+                logical |= (1u << b);
+            }
+        }
+    }
+
+    *logical_addr_out = logical;
+    return ORA_RESULT_OK;
+}
+
+ora_result_t pio_init_knock(
+    const uint32_t *knock_seq,
+    uint8_t knock_len,
+    uint8_t knock_bits,
+    ora_knock_t *knock
+) {
+    piorom_config_t *piorom_config = &sdrr_runtime_info.piorom_config;
+    if (knock_seq == NULL || knock == NULL) {
+        return ORA_RESULT_INVALID_ARG;
+    }
+    if (knock_len == 0 || knock_bits == 0 || knock_bits > piorom_config->num_addr_pins) {
+        return ORA_RESULT_INVALID_ARG;
+    }
+
+    uint8_t base = piorom_config->addr_base_pin;
+    uint8_t pin;
+    ora_result_t result;
+
+    knock->mask = 0;
+    for (uint8_t i = 0; i < knock_bits; i++) {
+        result = get_addr_pin(i, &pin);
+        if (result != ORA_RESULT_OK) {
+            return result;
+        }
+        knock->mask |= (1u << (pin - base));
+    }
+
+    for (uint8_t k = 0; k < knock_len; k++) {
+        knock->matches[k] = 0;
+        for (uint8_t i = 0; i < knock_bits; i++) {
+            result = get_addr_pin(i, &pin);
+            if (result != ORA_RESULT_OK) {
+                return result;
+            }
+            if (knock_seq[k] & (1u << i)) {
+                knock->matches[k] |= (1u << (pin - base));
+            }
+        }
+    }
+
+    knock->len  = knock_len;
+    knock->bits = knock_bits;
+
+    return ORA_RESULT_OK;
+}
+
+ora_result_t pio_wait_for_knock(
+    const ora_knock_t *knock,
+    volatile uint32_t *ring_buf,
+    uint8_t ring_entries_log2,
+    uint32_t flags,
+    uint32_t *payload_out,
+    uint8_t payload_len
+) {
+    if (knock == NULL || ring_buf == NULL) {
+        return ORA_RESULT_INVALID_ARG;
+    }
+    if (payload_len > 0 && payload_out == NULL) {
+        return ORA_RESULT_INVALID_ARG;
+    }
+
+    uint32_t ring_entries = 1u << ring_entries_log2;
+    uint32_t cs_mask = 0;
+
+    if (flags & ORA_WAIT_FOR_KNOCK_FLAG_DEBOUNCE_CS) {
+        piorom_config_t *piorom_config = &sdrr_runtime_info.piorom_config;
+        uint8_t base = piorom_config->addr_base_pin;
+        uint8_t cs1_pin = sdrr_info.pins->cs1;
+        if (cs1_pin < MAX_USED_GPIOS) {
+            cs_mask = 1u << (cs1_pin - base);
+        }
+    }
+
+    // Discard any captures that occurred before we were called
+    volatile uint32_t *read_ptr = (volatile uint32_t *)DMA_CH_REG(DMA_CH_ADDR_MONITOR)->write_addr;
+
+    // Detection loop
+    uint8_t knock_pos = 0;
+    while (knock_pos < knock->len) {
+        volatile uint32_t *write_ptr = (volatile uint32_t *)DMA_CH_REG(DMA_CH_ADDR_MONITOR)->write_addr;
+        while (read_ptr != write_ptr) {
+            uint32_t entry = *read_ptr;
+            if (++read_ptr >= ring_buf + ring_entries) {
+                read_ptr = ring_buf;
+            }
+
+            if (cs_mask && (entry & cs_mask)) {
+                continue;
+            }
+
+            if ((entry & knock->mask) == knock->matches[knock_pos]) {
+                knock_pos++;
+            } else {
+                knock_pos = ((entry & knock->mask) == knock->matches[0]) ? 1 : 0;
+            }
+        }
+    }
+
+    // Payload collection
+    uint8_t payload_pos = 0;
+    while (payload_pos < payload_len) {
+        volatile uint32_t *write_ptr = (volatile uint32_t *)DMA_CH_REG(DMA_CH_ADDR_MONITOR)->write_addr;
+        while (read_ptr != write_ptr && payload_pos < payload_len) {
+            uint32_t entry = *read_ptr;
+            if (++read_ptr >= ring_buf + ring_entries) {
+                read_ptr = ring_buf;
+            }
+
+            if (cs_mask && (entry & cs_mask)) {
+                continue;
+            }
+
+            payload_out[payload_pos++] = entry;
+        }
+    }
+
+    return ORA_RESULT_OK;
+}
+
+ora_result_t pio_reprogram_ram_rom_slot(
+    uint8_t slot,
+    uint32_t offset,
+    const uint8_t *data,
+    uint32_t len,
+    uint8_t allow_active
+) {
+    if (data == NULL || len == 0) {
+        return ORA_RESULT_INVALID_ARG;
+    }
+
+    // Get the SRAM address and size of the target slot
+    uint32_t addr, size;
+    ora_result_t result = ora_get_ram_slot_info(slot, &addr, &size);
+    if (result != ORA_RESULT_OK) {
+        return result;
+    }
+
+    // Check the write stays within the slot
+    if (offset + len > size) {
+        return ORA_RESULT_INVALID_ARG;
+    }
+
+    // If allow_active is not set, refuse to write to the currently active slot
+    if (!allow_active) {
+        uint8_t active_slot;
+        result = ora_get_active_ram_slot(&active_slot);
+        if (result == ORA_RESULT_OK && active_slot == slot) {
+            return ORA_RESULT_SLOT_ACTIVE;
+        }
+    }
+
+    // Remap logical addresses and data bytes to their physical representations
+    // and write to the target slot in SRAM
+    uint8_t *sram = (uint8_t *)addr;
+    for (uint32_t i = 0; i < len; i++) {
+        uint32_t physical_addr = pio_map_addr_to_phys(offset + i);
+        uint8_t  physical_data = pio_map_data_to_phys(data[i]);
+        sram[physical_addr] = physical_data;
+    }
+
+    return ORA_RESULT_OK;
+}
+
+ora_result_t pio_start_address_monitor(void) {
+    APIO_ENABLE_SMS(BLOCK_MONITOR, ((1 << SM_ADDR_MONITOR_CS_MONITOR) | (1 << SM_ADDR_MONITOR_ADDR_READ)));
+
+    return ORA_RESULT_OK;
+}
+
+volatile uint32_t **pio_get_address_monitor_ring_write_pos(void) {
+    return (volatile uint32_t **)&DMA_CH_REG(DMA_CH_ADDR_MONITOR)->write_addr;
+}
+
+uint8_t pio_get_effective_addr_pins(void) {
+    piorom_config_t *piorom_config = &sdrr_runtime_info.piorom_config;
+    uint8_t effective_addr_pins = piorom_config->num_addr_pins;
+    if (piorom_config->bit_mode == BIT_MODE_16) {
+        effective_addr_pins += 1;
+    }
+    return effective_addr_pins;
+}
+
+uint32_t pio_get_rom_region_size(void) {
+    return 1u << pio_get_effective_addr_pins();
+}
+
+ora_result_t pio_switch_rom_region(uint32_t new_region_addr) {
+    // Input validation is the caller's responsibility. ora_set_active_ram_slot
+    // validates the slot index and derives a correct address via
+    // ora_get_ram_slot_info before calling this function.
+    uint8_t effective_addr_pins = pio_get_effective_addr_pins();
+    uint8_t rom_table_num_addr_bits = 32 - effective_addr_pins;
+    uint32_t high_bits_mask = (1u << rom_table_num_addr_bits) - 1;
+    uint32_t rom_table_high_bits = (new_region_addr >> effective_addr_pins) & high_bits_mask;
+
+    // Update the ROM table address in the config to keep it consistent with
+    // reality.
+    piorom_config_t *piorom_config = &sdrr_runtime_info.piorom_config;
+    piorom_config->rom_table_addr = new_region_addr;
+
+    // Avoid unused variable warnings from APIO implementation causing
+    // compile errors.
+    // Update the X register in the address read SM with the new RAM table
+    // base.  This delays the address read SM by a single cycle, but is an
+    // atomic switch.
+    APIO_ASM_INIT();
+    APIO_SET_BLOCK(BLOCK_ADDR);
+    APIO_SET_SM(SM_ADDR_READ);
+    APIO_TXF = rom_table_high_bits;
+    APIO_SM_EXEC_INSTR(APIO_PULL_BLOCK);
+
+    // This is the point at which the SRAM region switch takes effect.
+    APIO_SM_EXEC_INSTR(APIO_MOV_X_OSR);
+
+    return ORA_RESULT_OK;
 }
 
 #endif // RP235X

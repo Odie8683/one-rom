@@ -468,6 +468,140 @@ typedef struct sdrr_rom_set_t {
     const uint8_t pad2[40];
 } sdrr_rom_set_t;
 
+// PIO ROM serving configuration structure
+typedef struct piorom_config {
+    // How many CS pins are used (1-3), and which ones to invert, as they are
+    // active high.  This inversion is done in hardware before the PIOs read
+    // the pins.
+    uint8_t invert_cs[4];
+    uint8_t num_cs_pins;
+
+    // 5 bytes to here
+
+    // Base CS pin.  Note that a single break in otherwise contiguous pins is
+    // allows - see contiguous_cs_pins and cs_pin_2nd_match below.
+    uint8_t cs_base_pin;
+
+    // Base data pin.  Data pins must be contiguous.
+    uint8_t data_base_pin;
+
+    // Number of data pins (typically 8, but will be 16 as/when 40 pin ROMs
+    // are supported).
+    uint8_t num_data_pins;
+
+    // 8 bytes to here
+    
+    // Lowest address pin.  For 24 pin ROMs, this includes all CS and X pins.
+    uint8_t addr_base_pin;
+
+    // Number of address pins.  This is 16 for a Fire 24 board - as
+    // they include X and CS pins.  For a Fire 28 board is is also, normally,
+    // 16 (as 2^16 is 512Kbits = 64KB), as CS lines are _not_ part of the
+    // address space.  However, the 231024 is a 28 pin board and requires 17-18
+    // pins, depending on layout, to allow the full 128KB to be addressed.
+    uint8_t num_addr_pins;
+
+    // Whether to use IRQ from CS handler to address read SM (0 = don't use)
+    uint8_t addr_read_irq;
+
+    // Number of PIO cycles to delay between address reads (in addition to any
+    // delay from the instructions themselves)
+    uint8_t addr_read_delay;
+
+    // 12 bytes to here
+
+    // Number of cycles to wait after detecting CS going active before setting
+    // data pins to outputs.
+    uint8_t cs_active_delay;
+
+    // Number of cycles to wait after CS goes inactive before setting data
+    // pins back to inputs.
+    uint8_t cs_inactive_delay;
+
+    // Whether to use DMA (0 = use)
+    uint8_t no_dma;
+
+    // /BYTE pin number (16 bit only)
+    uint8_t byte_pin;
+
+    // A-1 pin number (16 bit only)
+    uint8_t a_minus_1_pin;
+
+    // Pin to use to signal A-1 state to data output SM
+    uint8_t a_minus_1_signal_pin;
+
+    // Ignore /BYTE in 16 bit mode
+    uint8_t force_16_bit;
+
+    uint8_t pad7;
+
+    // 20 bytes to here
+
+    // ROM table base address in RAM
+    uint32_t rom_table_addr;
+
+    // 24 bytes to here
+
+    uint16_t addr_reader_read_clkdiv_int;
+    uint8_t addr_reader_read_clkdiv_frac;
+    uint8_t pad2;
+
+    uint16_t a_minus_1_clkdiv_int;
+    uint8_t a_minus_1_clkdiv_frac;
+    uint8_t pad3;
+
+    uint16_t data_io_clkdiv_int;
+    uint8_t data_io_clkdiv_frac;
+    uint8_t pad4;
+    
+    uint16_t data_out_clkdiv_int;
+    uint8_t data_out_clkdiv_frac;
+    uint8_t pad5;
+
+    // 40 bytes to here
+
+    // The PIO CS algorithm supports up to a single break between otherwise
+    // contiguous CS pins.  This is handled via a variant of the algorithm
+    // which tests for both zero and another value ("2nd match").
+    //
+    // Consider CS lines ac, being arranged abc.  Here, CS lines are all
+    // active if the read value is 000 or 010 - i.e. for both values of b.
+    // In this case the "2nd match" value is 2.
+    // 
+    // The algorithm will hence check for 0 or for 2, and consider CS to be
+    // active in either case.
+    //
+    // This algorithm is slightly less performant (one additional cycle in
+    // some cases = 6.67ns), but in reality, the CS algorithm is so quick, it
+    // is not likely to be the limiting factor, and hence is not expected to
+    // have any impacts.
+    //
+    // While it might appear to be a PCB layout issue to have CS pins arranged
+    // like this (and in some cases it might be), there are some differences in
+    // the cs pin arrangements between different ROM types meaning this can be
+    // useful.
+    //
+    // This approach only supports a single break in otherwise contiguous pins
+    // and only 1 pin being within the break.
+    uint8_t contiguous_cs_pins;
+
+    // Whether multi-ROM mode is enabled (i.e. more than one ROM is being
+    // served via the X pins).
+    uint8_t multi_rom_mode;
+
+    // Bit mode for serving
+    bit_modes_t bit_mode;
+
+    uint8_t pad6;
+
+    // 44 bytes to here
+
+    // See `contiguous_cs_pins` above.
+    uint32_t cs_pin_2nd_match;
+
+    // 48 bytes to here
+} piorom_config_t;
+
 // SDRR Runtime Information Structure
 //
 // Contains information about the SDRR runtime environment.
@@ -614,6 +748,8 @@ typedef struct sdrr_runtime_info_t {
     // Offset 56
     limp_mode_pattern_t limp_mode;
     uint8_t pad[3];
+
+    piorom_config_t piorom_config;
 
     // Length = 60 bytes
 } sdrr_runtime_info_t;

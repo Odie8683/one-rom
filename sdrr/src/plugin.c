@@ -197,6 +197,256 @@ uint8_t ora_get_data_pin_nums(uint8_t *data_pins_out, uint8_t num_pins) {
     return got_pins;
 }
 
+ora_result_t ora_setup_address_monitor(
+    volatile uint32_t *ring_buf,
+    uint8_t ring_entries_log2,
+    ora_monitor_mode_t mode,
+    void *reserved
+) {
+    return pio_setup_address_monitor(ring_buf, ring_entries_log2, mode, reserved);
+}
+
+uint32_t ora_map_addr_to_phys(uint32_t logical_addr) {
+    return pio_map_addr_to_phys(logical_addr);
+}
+
+uint8_t ora_map_data_to_phys(uint8_t logical_data) {
+    return pio_map_data_to_phys(logical_data);
+}
+
+ora_result_t ora_demangle_addr(
+    uint32_t physical_addr,
+    uint32_t *logical_addr_out,
+    uint8_t check_control_pins
+) {
+    return pio_demangle_addr(physical_addr, logical_addr_out, check_control_pins);
+}
+
+ora_result_t ora_init_knock(
+    const uint32_t *knock_seq,
+    uint8_t knock_len,
+    uint8_t knock_bits,
+    ora_knock_t *knock
+) {
+    return pio_init_knock(knock_seq, knock_len, knock_bits, knock);
+}
+
+ora_result_t ora_wait_for_knock(
+    const ora_knock_t *knock,
+    volatile uint32_t *ring_buf,
+    uint8_t ring_entries_log2,
+    uint32_t flags,
+    uint32_t *payload_out,
+    uint8_t payload_len
+) {
+    return pio_wait_for_knock(
+        knock,
+        ring_buf,
+        ring_entries_log2,
+        flags, 
+        payload_out,
+        payload_len
+    );
+}
+
+ora_result_t ora_reprogram_ram_rom_slot(
+    uint8_t slot,
+    uint32_t offset,
+    const uint8_t *data,
+    uint32_t len,
+    uint8_t allow_active
+) {
+    return pio_reprogram_ram_rom_slot(slot, offset, data, len, allow_active);
+}
+
+ora_result_t ora_start_address_monitor(void) {
+    return pio_start_address_monitor();
+}
+
+volatile uint32_t **ora_get_address_monitor_ring_write_pos(void) {
+    return pio_get_address_monitor_ring_write_pos();
+}
+
+uint8_t ora_get_ram_slot_count(void) {
+    uint8_t effective_addr_pins = pio_get_effective_addr_pins();
+
+    // Slot count based on ROM size:
+    // - 2^16=64KB=7
+    // - 2^17=128KB=3
+    // - 2^18=256KB=2
+    // - 2^19+=512KB=1
+    if (effective_addr_pins <= 16) return 7;
+    if (effective_addr_pins <= 17) return 3;
+    if (effective_addr_pins <= 18) return 2;
+    return 1;
+}
+
+ora_result_t ora_get_ram_slot_info(uint8_t ram_slot, uint32_t *addr_out, uint32_t *size_out) {
+    if (addr_out == NULL || size_out == NULL) {
+        return ORA_RESULT_INVALID_ARG;
+    }
+    if (ram_slot >= ora_get_ram_slot_count()) {
+        return ORA_RESULT_INVALID_SLOT;
+    }
+
+    uint32_t region_size = pio_get_rom_region_size();
+
+    *addr_out = SRAM_BASE + (ram_slot * region_size);
+    *size_out = region_size;
+
+    return ORA_RESULT_OK;
+}
+
+ora_result_t ora_get_active_ram_slot(uint8_t *ram_slot_out) {
+    if (ram_slot_out == NULL) {
+        return ORA_RESULT_INVALID_ARG;
+    }
+
+    piorom_config_t *piorom_config = &sdrr_runtime_info.piorom_config;
+    uint32_t rom_table_addr = piorom_config->rom_table_addr;
+
+    if (rom_table_addr == 0 || rom_table_addr == 0xFFFFFFFF) {
+        return ORA_RESULT_NO_SLOT_ACTIVE;
+    }
+
+    uint32_t region_size = pio_get_rom_region_size();
+    uint32_t sram_limit = SRAM_BASE + (region_size * ora_get_ram_slot_count());
+
+    if (rom_table_addr < SRAM_BASE || rom_table_addr >= sram_limit) {
+        return ORA_RESULT_INTERNAL_ERROR;
+    }
+
+    if ((rom_table_addr - SRAM_BASE) % region_size != 0) {
+        return ORA_RESULT_INTERNAL_ERROR;
+    }
+
+    *ram_slot_out = (uint8_t)((rom_table_addr - SRAM_BASE) / region_size);
+
+    return ORA_RESULT_OK;
+}
+
+ora_result_t ora_set_active_ram_slot(uint8_t ram_slot) {
+    uint32_t addr, size;
+    ora_result_t result = ora_get_ram_slot_info(ram_slot, &addr, &size);
+    if (result != ORA_RESULT_OK) {
+        return result;
+    }
+
+    return pio_switch_rom_region(addr);
+}
+
+static uint8_t is_plugin_type(sdrr_rom_type_t rom_type) {
+    return (rom_type == CHIP_TYPE_SYSTEM_PLUGIN ||
+            rom_type == CHIP_TYPE_USER_PLUGIN   ||
+            rom_type == CHIP_TYPE_PIO_PLUGIN);
+}
+
+static uint8_t include_flash_slot(sdrr_rom_type_t rom_type, uint32_t flags) {
+    uint8_t plugin = is_plugin_type(rom_type);
+    if (plugin && (flags & ORA_FLASH_SLOT_FLAG_EXCLUDE_PLUGINS)) return 0;
+    if (!plugin && (flags & ORA_FLASH_SLOT_FLAG_EXCLUDE_NON_PLUGINS)) return 0;
+    return 1;
+}
+
+static const sdrr_rom_set_t *get_flash_slot_set(uint8_t flash_slot, uint32_t flags) {
+    uint8_t rom_set_count = sdrr_info.metadata_header->rom_set_count;
+    uint8_t filtered_idx = 0;
+
+    for (uint8_t i = 0; i < rom_set_count; i++) {
+        const sdrr_rom_set_t *set = &sdrr_info.metadata_header->rom_sets[i];
+        sdrr_rom_type_t rom_type = set->roms[0]->rom_type;
+
+        if (!include_flash_slot(rom_type, flags)) continue;
+
+        if (filtered_idx == flash_slot) {
+            return set;
+        }
+
+        filtered_idx++;
+    }
+
+    return NULL;
+}
+
+uint8_t ora_get_flash_slot_count(uint32_t flags) {
+    uint8_t count = 0;
+    uint8_t rom_set_count = sdrr_info.metadata_header->rom_set_count;
+
+    for (uint8_t i = 0; i < rom_set_count; i++) {
+        sdrr_rom_type_t rom_type = sdrr_info.metadata_header->rom_sets[i].roms[0]->rom_type;
+        if (include_flash_slot(rom_type, flags)) count++;
+    }
+
+    return count;
+}
+
+ora_result_t ora_get_flash_slot_info(
+    uint8_t flash_slot,
+    uint32_t flags,
+    const char **name_out,
+    uint32_t *rom_type_out,
+    uint8_t *rom_count_out
+) {
+    const sdrr_rom_set_t *set = get_flash_slot_set(flash_slot, flags);
+    if (set == NULL) {
+        return ORA_RESULT_INVALID_SLOT;
+    }
+
+    if (name_out != NULL) {
+        *name_out = set->roms[0]->filename;
+    }
+    if (rom_type_out != NULL) {
+        *rom_type_out = (uint32_t)set->roms[0]->rom_type;
+    }
+    if (rom_count_out != NULL) {
+        *rom_count_out = set->rom_count;
+    }
+
+    return ORA_RESULT_OK;
+}
+
+ora_result_t ora_get_flash_slot_ext_info(uint8_t flash_slot, uint32_t flags) {
+    (void)flash_slot;
+    (void)flags;
+    return ORA_RESULT_ERROR;
+}
+
+ora_result_t ora_copy_flash_slot_to_ram_slot(
+    uint8_t flash_slot,
+    uint32_t flags,
+    uint8_t ram_slot,
+    uint32_t copy_flags
+) {
+    // Async copy via DMA not yet supported
+    if (copy_flags & ORA_COPY_FLAG_ASYNC) {
+        // Just use synchronous copy for now
+    }
+
+    // Find the flash slot, respecting the filter flags
+    const sdrr_rom_set_t *set = get_flash_slot_set(flash_slot, flags);
+    if (set == NULL) {
+        return ORA_RESULT_INVALID_SLOT;
+    }
+
+    // Get the target RAM slot address and size
+    uint32_t addr, size;
+    ora_result_t result = ora_get_ram_slot_info(ram_slot, &addr, &size);
+    if (result != ORA_RESULT_OK) {
+        return result;
+    }
+
+    // Refuse to copy if the flash image size doesn't match the RAM slot size,
+    // as this indicates an incompatible ROM type
+    if (set->size != size) {
+        return ORA_RESULT_INVALID_SIZE;
+    }
+
+    // Flash data is already in physical layout so copy directly to SRAM
+    memcpy((void *)addr, set->data, size);
+
+    return ORA_RESULT_OK;
+}
+
 void *ora_fn_lookup(api_id_t id) {
     switch (id) {
         case ORA_ID_REBOOT_BOOTSEL:
@@ -239,6 +489,40 @@ void *ora_fn_lookup(api_id_t id) {
             return ora_is_pin_output;
         case ORA_ID_GET_DATA_PIN_NUMS:
             return ora_get_data_pin_nums;
+        case ORA_ID_SETUP_ADDRESS_MONITOR:
+            return ora_setup_address_monitor;
+        case ORA_ID_MAP_ADDR_TO_PHYS:
+            return ora_map_addr_to_phys;
+        case ORA_ID_MAP_DATA_TO_PHYS:
+            return ora_map_data_to_phys;
+        case ORA_ID_DEMANGLE_ADDR:
+            return ora_demangle_addr;
+        case ORA_ID_INIT_KNOCK:
+            return ora_init_knock;
+        case ORA_ID_WAIT_FOR_KNOCK:
+            return ora_wait_for_knock;
+        case ORA_ID_REPROGRAM_RAM_ROM_SLOT:
+            return ora_reprogram_ram_rom_slot;
+        case ORA_ID_START_ADDRESS_MONITOR:
+            return ora_start_address_monitor;
+        case ORA_ID_GET_ADDRESS_MONITOR_RING_WRITE_POS:
+            return ora_get_address_monitor_ring_write_pos;
+        case ORA_ID_GET_RAM_SLOT_COUNT:
+            return ora_get_ram_slot_count;
+        case ORA_ID_GET_RAM_SLOT_INFO:
+            return ora_get_ram_slot_info;
+        case ORA_ID_GET_ACTIVE_RAM_SLOT:
+            return ora_get_active_ram_slot;
+        case ORA_ID_SET_ACTIVE_RAM_SLOT:
+            return ora_set_active_ram_slot;
+        case ORA_ID_GET_FLASH_SLOT_COUNT:
+            return ora_get_flash_slot_count;
+        case ORA_ID_GET_FLASH_SLOT_INFO:
+            return ora_get_flash_slot_info;
+        case ORA_ID_GET_FLASH_SLOT_EXT_INFO:
+            return ora_get_flash_slot_ext_info;
+        case ORA_ID_COPY_FLASH_SLOT_TO_RAM_SLOT:
+            return ora_copy_flash_slot_to_ram_slot;
         default:
             return NULL;
     }

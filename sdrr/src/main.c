@@ -57,6 +57,7 @@ sdrr_runtime_info_t sdrr_runtime_info SECTION_SDRR_RUNTIME_INFO = {
     .timer0_irq_0_handler = NULL,
     .usbctrl_irq_handler = NULL,
     .limp_mode = LIMP_MODE_NONE,
+    .piorom_config = {{0}},
 };
 
 // This function checks the state of the image select pins, and returns an
