@@ -58,9 +58,9 @@ pcb-rev-pe:HW_REV=fire-24-e,MCU=rp2350,CONFIG=old-config/test-sdrr-0.mk
 boot-logging-f401re:HW_REV=ice-24-f,BOOT_LOGGING=1,MCU=f401re,CONFIG=old-config/test-sdrr-0.mk
 boot-logging-rp2350:HW_REV=fire-24-a,BOOT_LOGGING=1,MCU=rp2350,CONFIG=old-config/test-sdrr-0.mk
 
-# Enable DEBUG_LOGGING
-debug-logging-f401re:HW_REV=ice-24-f,DEBUG_LOGGING=1,BOOT_LOGGING=1,MCU=f401re,CONFIG=old-config/test-sdrr-0.mk
-debug-logging-rp2350:HW_REV=fire-24-a,DEBUG_LOGGING=1,BOOT_LOGGING=1,MCU=rp2350,CONFIG=old-config/test-sdrr-0.mk
+# Enable DEBUG_LOGGING - disabled as firmware is now too large
+# debug-logging-f401re:HW_REV=ice-24-f,DEBUG_LOGGING=1,BOOT_LOGGING=1,MCU=f401re,CONFIG=old-config/test-sdrr-0.mk
+# debug-logging-rp2350:HW_REV=fire-24-a,DEBUG_LOGGING=1,BOOT_LOGGING=1,MCU=rp2350,CONFIG=old-config/test-sdrr-0.mk
 
 # Enable MAIN_LOOP_LOGGING
 main-loop-logging-f401re:HW_REV=ice-24-f,MAIN_LOOP_LOGGING=1,BOOT_LOGGING=1,MCU=f401re,CONFIG=old-config/test-sdrr-0.mk
