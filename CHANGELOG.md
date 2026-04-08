@@ -2,6 +2,16 @@
 
 All notables changes between versions are documented in this file.
 
+## v0.6.9 - 2026-??-??
+
+xxx in progrress
+
+- Substantial new plugin API functions.
+
+- More example plugins - C64 Kernal Mod and C64 Character Monitor.
+
+- First draft of ROM Bus Control Protocol specification.
+
 ## v0.6.8 - 2026-04-02
 
 - One ROM Fire - Add read support for 28C16 (24), 28C64 (28), 28C256 (28) and 28C512 (32) EEPROMs (#169).  These have all been live tested.
